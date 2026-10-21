@@ -1,0 +1,20 @@
+{
+  "agent": "traffic_prediction_control",
+  "request_id": null,
+  "sensor_id": null,
+  "forecast": {
+    "horizon_minutes": 15,
+    "predicted_occupancy": null
+  },
+  "traffic_state": null,
+  "risk_level": null,
+  "recommended_action": "manual_review",
+  "reason": "ValueError: request_id, sensor_id, timestep et traffic_data sont obligatoires.",
+  "confidence": 0.0,
+  "decision_source": "rule_based_fallback",
+  "status": "error",
+  "metadata": {
+    "integration_test_fixture": true,
+    "error_controlled": true
+  }
+}

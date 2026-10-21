@@ -1,0 +1,6 @@
+timestep,location,current_flow,current_speed,current_occupancy,target_occupy_t15,day_index,slot_in_day,hour,minute,predicted_occupancy_t15,occupancy_change,neighbor_occupancy_range,scenario,selection_criterion
+15227,33,0.0,65.0,0.0,0.0032,52,250,20,50,0.0027397831,0.0027397831,0.023700000000000002,trafic_fluide,current_occupancy
+17200,23,116.0,5.9,0.7237,0.5547,59,207,17,15,0.346324,-0.377376,0.015300000000000001,occupation_elevee,current_occupancy
+16252,134,1.0,35.9,0.003,0.1823,56,123,10,15,0.27063107,0.26763106999999997,0.1154,forte_hausse_predite,occupancy_change
+15331,17,78.0,44.2,0.6938,0.144,53,66,5,30,0.19864067,-0.49515933,0.059,amelioration_prevue,occupancy_change
+17530,34,114.0,67.2,0.0458,0.0387,60,249,20,45,0.043239314,-0.0025606859999999995,0.6866,voisins_contrastes,neighbor_occupancy_range

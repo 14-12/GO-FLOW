@@ -1,0 +1,65 @@
+# Environnements Python locaux.
+.venv/
+.venv-*/
+
+# Bytecode Python et checkpoints Jupyter.
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Caches de développement et sorties de packaging régénérables.
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+/build/
+/dist/
+*.egg-info/
+
+# Caches de modèles/Hugging Face, distincts des poids explicitement sauvegardés.
+.cache/
+.huggingface/
+.hf_cache/
+hf_cache/
+huggingface_cache/
+models--*/
+
+# Journaux locaux temporaires. Les journaux historiques des expériences restent visibles.
+/logs/
+/.logs/
+*.log
+!/results/**/*.log
+
+# Téléchargements incomplets, fichiers temporaires et fichiers d'éditeur.
+/tmp/
+/temp/
+/.tmp/
+/.temp/
+*.tmp
+*.temp
+*.part
+*.download
+*.swp
+*.swo
+*~
+~$*
+
+# Distribution llama.cpp locale récupérable : b11596, URL/SHA256 dans la provenance GGUF.
+# Conserver les scripts, manifests, README et licences ; ne rien supprimer sur disque.
+/tools/llama.cpp/**/*.exe
+/tools/llama.cpp/**/*.dll
+/tools/llama.cpp/**/release.zip
+
+# Métadonnées locales du système d'exploitation.
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Ne pas ignorer globalement models/, data/ ou results/.
+# Ne pas masquer les poids (*.safetensors, *.gguf, *.pt), datasets ou CSV de résultats.
+# Les éléments À DISCUTER restent visibles jusqu'au choix de leur stockage/récupération.

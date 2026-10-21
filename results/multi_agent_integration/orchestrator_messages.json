@@ -1,0 +1,579 @@
+[
+  {
+    "request_id": "trafic_normal",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": false
+  },
+  {
+    "request_id": "forte_congestion_prevue",
+    "timestamp": null,
+    "sensor_id": 134,
+    "timestep": 16252,
+    "traffic_data": {
+      "current_flow": 1.0,
+      "current_speed": 35.9,
+      "current_occupancy": 0.003
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": false
+  },
+  {
+    "request_id": "incident_externe",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": true,
+      "incident_type": "integration_test_fixture",
+      "severity": "high"
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "urgence_externe",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": true,
+      "priority_level": "high"
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "voisins_congestionnes",
+    "timestamp": null,
+    "sensor_id": 34,
+    "timestep": 17530,
+    "traffic_data": {
+      "current_flow": 114.0,
+      "current_speed": 67.2,
+      "current_occupancy": 0.0458
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": [
+        {
+          "sensor_id": 128,
+          "timestep": 17530,
+          "current_speed": 5.3,
+          "current_occupancy": 0.6946,
+          "predicted_occupancy_t15": 0.3917158
+        },
+        {
+          "sensor_id": 155,
+          "timestep": 17530,
+          "current_speed": 64.8,
+          "current_occupancy": 0.008,
+          "predicted_occupancy_t15": 0.0068603
+        }
+      ]
+    },
+    "integration_test_fixture": false
+  },
+  {
+    "request_id": "contextes_absents",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "integration_test_fixture": false
+  },
+  {
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "priorite_transport_public",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": true
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "urgence_prioritaire_sur_incident",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": true,
+      "incident_type": "integration_test_fixture",
+      "severity": "high"
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": true,
+      "priority_level": "high"
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "trafic_modifie",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 1.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "bool_capteur",
+    "timestamp": null,
+    "sensor_id": true,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "horizon_hors_export",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 20000,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "boolean_externe_invalide",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": "true",
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "contexte_contradictoire",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": false,
+      "incident_type": null,
+      "severity": "high"
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "voisin_arbitraire",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": [
+        {
+          "sensor_id": 33,
+          "timestep": 15227,
+          "current_speed": 0.0,
+          "current_occupancy": 0.0
+        }
+      ]
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "timestamp_sans_fuseau",
+    "timestamp": "2026-10-13T12:00:00",
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "garde_fou_avant_llm",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": true,
+      "priority_level": "high"
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "timeout_llm",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "erreur_llm",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "json_llm_invalide",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "llm_sans_sortie",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  },
+  {
+    "request_id": "backend_valide_simule",
+    "timestamp": null,
+    "sensor_id": 33,
+    "timestep": 15227,
+    "traffic_data": {
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0
+    },
+    "incident_context": {
+      "incident_detected": null,
+      "incident_type": null,
+      "severity": null
+    },
+    "emergency_context": {
+      "emergency_vehicle_present": null,
+      "priority_level": null
+    },
+    "public_transport_context": {
+      "priority_requested": null
+    },
+    "cooperative_context": {
+      "neighboring_sensors": null
+    },
+    "integration_test_fixture": true
+  }
+]

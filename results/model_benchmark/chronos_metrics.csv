@@ -1,0 +1,2 @@
+model,model_id,target,horizon_minutes,MAE,RMSE,R2,training_time_s,inference_time_s,inference_us_per_row,n_test,sequence_length,history_last_offset,prediction_length_from_last_observation,central_prediction,model_parameters,device,model_revision,fine_tuned_on_pems08
+Chronos Zero-Shot,amazon/chronos-bolt-tiny,target_occupy_t15,15,0.00910808673856344,0.02052570826662068,0.8297268175324736,0.0,166.99277880007867,366.9445138326016,455090,48,-1,4,quantile_0.5,8652672,cpu,a0e552de83495b5c28c14c71c374f3e33280b340,False

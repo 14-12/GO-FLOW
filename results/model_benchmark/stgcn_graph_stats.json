@@ -1,0 +1,20 @@
+{
+  "shape": [
+    170,
+    170
+  ],
+  "sigma_unique_distances": 217.57677221507444,
+  "raw_rows": 295,
+  "unique_directed_edges": 277,
+  "undirected_edges_without_loops": 274,
+  "degree_mean": 3.223529411764706,
+  "degree_min": 1,
+  "degree_max": 9,
+  "isolated_nodes_before_loops": [],
+  "symmetric": true,
+  "normalized_symmetric": true,
+  "nan": 0,
+  "minimum_positive_weight": 4.3556186762958745e-99,
+  "self_loop_strategy": "A+I",
+  "mapping_status": "hypothèse documentée pour les groupes indiscernables"
+}

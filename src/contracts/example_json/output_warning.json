@@ -1,0 +1,40 @@
+{
+  "agent": "traffic_prediction_control",
+  "request_id": "trafic_normal",
+  "sensor_id": 33,
+  "forecast": {
+    "horizon_minutes": 15,
+    "predicted_occupancy": 0.0027397831
+  },
+  "traffic_state": "free_flow",
+  "risk_level": "low",
+  "recommended_action": "keep_current_signal_plan",
+  "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+  "confidence": 0.5,
+  "decision_source": "rule_based_fallback",
+  "status": "warning",
+  "metadata": {
+    "timestep": 15227,
+    "priority_policy_experimental": {
+      "emergency": 100,
+      "incident": 80,
+      "severe_congestion": 60,
+      "public_transport": 40,
+      "normal": 20
+    },
+    "priority": "normal",
+    "priority_rank": 20,
+    "llm_mode": "replay_saved_09_no_new_inference",
+    "fallback_reason": "llm_output_invalid_or_not_grounded",
+    "llm_error": null,
+    "critical_guard_before": false,
+    "critical_guard_after": false,
+    "cached_original_fallback": "Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected",
+    "warnings": [
+      "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+      "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+      "Décision déterministe : llm_output_invalid_or_not_grounded"
+    ],
+    "integration_test_fixture": false
+  }
+}

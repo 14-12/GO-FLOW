@@ -1,0 +1,6 @@
+scenario,json_valid,authorized_action,no_unsupported_claim_detected,reason_grounded,risk_action_coherent,confidence_valid,missing_information_respected,hallucination_detected,final_source,fallback_reason
+trafic_fluide,False,False,True,False,False,False,False,False,rule_based_fallback,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+occupation_elevee,False,False,True,False,False,False,False,False,rule_based_fallback,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+forte_hausse_predite,False,False,True,False,False,False,False,False,rule_based_fallback,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+amelioration_prevue,False,False,True,False,False,False,False,False,rule_based_fallback,ValueError: Aucun objet JSON dans la réponse brute.
+voisins_contrastes,False,False,True,False,False,False,False,False,rule_based_fallback,ValueError: Aucun objet JSON dans la réponse brute.

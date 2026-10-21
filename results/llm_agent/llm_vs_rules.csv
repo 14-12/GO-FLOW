@@ -1,0 +1,6 @@
+Scenario,Rule-based action,LLM action,Same action?,LLM JSON valid?,Hallucination detected?,Reason grounded?,Inference time,Final source
+trafic_fluide,keep_current_signal_plan,keep_current_signal_plan,True,True,False,False,6.070576300029643,rule_based_fallback
+occupation_elevee,manual_review,keep_current_signal_plan,False,True,False,False,5.108968500047922,rule_based_fallback
+forte_hausse_predite,coordinate_with_neighbor,keep_current_signal_plan,False,True,False,False,4.58452789997682,rule_based_fallback
+amelioration_prevue,coordinate_with_neighbor,keep_current_signal_plan,False,True,False,False,5.72223319998011,rule_based_fallback
+voisins_contrastes,monitor,keep_current_signal_plan,False,True,False,False,4.811959499958903,rule_based_fallback

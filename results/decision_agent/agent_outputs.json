@@ -1,0 +1,62 @@
+[
+  {
+    "scenario": "trafic_fluide",
+    "decision": {
+      "traffic_state": "free_flow",
+      "risk_level": "low",
+      "recommended_action": "keep_current_signal_plan",
+      "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based",
+    "fallback_reason": "llm_unavailable"
+  },
+  {
+    "scenario": "occupation_elevee",
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "manual_review",
+      "reason": "Occupation actuelle=0.723700, prévue à +15 min=0.346324, variation=-0.377376; vitesse=5.900000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based",
+    "fallback_reason": "llm_unavailable"
+  },
+  {
+    "scenario": "forte_hausse_predite",
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.003000, prévue à +15 min=0.270631, variation=+0.267631; vitesse=35.900000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based",
+    "fallback_reason": "llm_unavailable"
+  },
+  {
+    "scenario": "amelioration_prevue",
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.693800, prévue à +15 min=0.198641, variation=-0.495159; vitesse=44.200000; voisins à occupation élevée=1/5. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based",
+    "fallback_reason": "llm_unavailable"
+  },
+  {
+    "scenario": "voisins_contrastes",
+    "decision": {
+      "traffic_state": "moderate",
+      "risk_level": "medium",
+      "recommended_action": "monitor",
+      "reason": "Occupation actuelle=0.045800, prévue à +15 min=0.043239, variation=-0.002561; vitesse=67.200000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based",
+    "fallback_reason": "llm_unavailable"
+  }
+]

@@ -1,0 +1,84 @@
+{
+  "conclusion": "B. Vrais fichiers PEMS08 récupérés mais mapping encore incertain pour les séries identiques.",
+  "npz_keys_shapes": {
+    "data": [
+      17856,
+      170,
+      3
+    ]
+  },
+  "npz_key": "data",
+  "axes_time_sensor_feature": [
+    0,
+    1,
+    2
+  ],
+  "feature_to_npz_channel": {
+    "flow": 0,
+    "occupy": 1,
+    "speed": 2
+  },
+  "csv_sha256": "7bcc4a2161229a4b5187bd727c1e63f989aa193301d6773137bd4a59e1680293",
+  "rtol": 1e-05,
+  "atol": 1e-06,
+  "all_170_full_series_match": true,
+  "unique_sensor_series": false,
+  "unique_series_count": 149,
+  "duplicate_sensor_groups": [
+    [
+      48,
+      61,
+      80,
+      121,
+      122,
+      123,
+      141,
+      142
+    ],
+    [
+      50,
+      51,
+      74,
+      75,
+      90,
+      91,
+      115,
+      131
+    ],
+    [
+      55,
+      70,
+      73,
+      81,
+      83,
+      84,
+      159
+    ],
+    [
+      62,
+      109
+    ]
+  ],
+  "uniquely_identifiable_sensor_count": 145,
+  "max_absolute_error": 9.8879238130678e-17,
+  "edge_columns": [
+    "from",
+    "to",
+    "cost"
+  ],
+  "edge_count": 295,
+  "distinct_edge_nodes": 170,
+  "id_min": 0,
+  "id_max": 169,
+  "nodes_absent_from_edges": [],
+  "distance_statistics": {
+    "count": 295.0,
+    "mean": 315.8952542372881,
+    "std": 216.68663911103948,
+    "min": 6.3,
+    "25%": 240.3,
+    "50%": 328.1,
+    "75%": 372.15,
+    "max": 3274.4
+  }
+}

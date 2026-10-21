@@ -1,0 +1,6 @@
+scenario,json_valid,authorized_action,no_unsupported_claim_detected,reason_grounded,risk_action_coherent,confidence_valid,missing_information_respected,hallucination_detected,hallucination_check_applicable,final_source,fallback_reason
+trafic_fluide,True,True,True,False,False,True,False,False,True,rule_based_fallback,"Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected"
+occupation_elevee,True,True,True,False,False,True,False,False,True,rule_based_fallback,"Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected"
+forte_hausse_predite,True,True,True,False,False,True,False,False,True,rule_based_fallback,"Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected"
+amelioration_prevue,True,True,True,False,False,True,False,False,True,rule_based_fallback,"Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected"
+voisins_contrastes,True,True,True,False,False,True,False,False,True,rule_based_fallback,"Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected"

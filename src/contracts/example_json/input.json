@@ -1,0 +1,27 @@
+{
+  "request_id": "trafic_normal",
+  "timestamp": null,
+  "sensor_id": 33,
+  "timestep": 15227,
+  "traffic_data": {
+    "current_flow": 0.0,
+    "current_speed": 65.0,
+    "current_occupancy": 0.0
+  },
+  "incident_context": {
+    "incident_detected": null,
+    "incident_type": null,
+    "severity": null
+  },
+  "emergency_context": {
+    "emergency_vehicle_present": null,
+    "priority_level": null
+  },
+  "public_transport_context": {
+    "priority_requested": null
+  },
+  "cooperative_context": {
+    "neighboring_sensors": null
+  },
+  "integration_test_fixture": false
+}

@@ -1,0 +1,6 @@
+scenario,inference_time_s,input_tokens,output_tokens,error
+trafic_fluide,60.10208209999837,775,224,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+occupation_elevee,60.129406299907714,769,223,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+forte_hausse_predite,60.17664030008018,767,245,TimeoutError: Délai souple d'inférence dépassé ; sortie conservée pour diagnostic.
+amelioration_prevue,4.508290800033137,952,2,ValueError: Aucun objet JSON dans la réponse brute.
+voisins_contrastes,58.19248349999543,768,300,ValueError: Aucun objet JSON dans la réponse brute.

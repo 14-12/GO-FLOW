@@ -1,0 +1,5 @@
+# Extension du socle pour le backend Qwen et ses diagnostics existants.
+-r requirements.txt
+# Versions déjà présentes dans le projet ; llama.cpp est un binaire externe.
+torch==2.11.0
+transformers==5.5.4

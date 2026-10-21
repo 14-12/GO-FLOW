@@ -1,0 +1,6 @@
+scenario,inference_time_s,input_tokens,output_tokens,error
+trafic_fluide,13.20887119998224,775,300,JSONDecodeError: Unterminated string starting at: line 17 column 5 (char 641)
+occupation_elevee,11.10385099996347,769,300,"JSONDecodeError: Expecting ',' delimiter: line 18 column 1 (char 671)"
+forte_hausse_predite,10.847540899994783,767,300,JSONDecodeError: Expecting value: line 16 column 25 (char 636)
+amelioration_prevue,12.013055499992333,952,300,JSONDecodeError: Expecting value: line 15 column 37 (char 635)
+voisins_contrastes,10.731908799964003,768,300,JSONDecodeError: Unterminated string starting at: line 16 column 5 (char 618)

@@ -1,0 +1,18 @@
+{
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct-GGUF",
+  "revision": "9217f5db79a29953eb74d5343926648285ec7e67",
+  "llama_cpp_release": "b11596",
+  "files": {
+    "models\\qwen2.5-0.5b-instruct-gguf\\qwen2.5-0.5b-instruct-q4_k_m.gguf": {
+      "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/9217f5db79a29953eb74d5343926648285ec7e67/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "bytes": 491400032,
+      "sha256": "74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db"
+    },
+    "tools\\llama.cpp\\b11596\\release.zip": {
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11596/llama-b11596-bin-win-cpu-x64.zip",
+      "bytes": 19515355,
+      "sha256": "f305e4bc59977ff9d6cda86a2b6d1fee496dfb0425a33804e5de819307e26416"
+    }
+  },
+  "llama_server_path": "tools\\llama.cpp\\b11596\\llama-server.exe"
+}

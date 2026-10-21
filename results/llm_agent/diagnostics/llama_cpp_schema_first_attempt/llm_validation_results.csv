@@ -1,0 +1,6 @@
+scenario,json_valid,authorized_action,no_unsupported_claim_detected,reason_grounded,risk_action_coherent,confidence_valid,missing_information_respected,hallucination_detected,hallucination_check_applicable,final_source,fallback_reason
+trafic_fluide,False,False,True,False,False,False,False,False,False,rule_based_fallback,JSONDecodeError: Unterminated string starting at: line 17 column 5 (char 641)
+occupation_elevee,False,False,True,False,False,False,False,False,False,rule_based_fallback,"JSONDecodeError: Expecting ',' delimiter: line 18 column 1 (char 671)"
+forte_hausse_predite,False,False,True,False,False,False,False,False,False,rule_based_fallback,JSONDecodeError: Expecting value: line 16 column 25 (char 636)
+amelioration_prevue,False,False,True,False,False,False,False,False,False,rule_based_fallback,JSONDecodeError: Expecting value: line 15 column 37 (char 635)
+voisins_contrastes,False,False,True,False,False,False,False,False,False,rule_based_fallback,JSONDecodeError: Unterminated string starting at: line 16 column 5 (char 618)

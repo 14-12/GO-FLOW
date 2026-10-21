@@ -1,0 +1,798 @@
+{
+  "thresholds": {
+    "occupancy_median": 0.0599,
+    "occupancy_high": 0.1071,
+    "occupancy_severe": 0.1604,
+    "speed_low": 62.6,
+    "speed_median": 64.9,
+    "strong_change": 0.015000000000000006
+  },
+  "cases": [
+    {
+      "name": "free_flow",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 100.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=100.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_returned_no_output",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "congestion",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 100.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.1071,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "congested",
+          "risk_level": "high",
+          "recommended_action": "manual_review",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.107100, variation=+0.000000; vitesse=100.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_returned_no_output",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "severe",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 100.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.1604,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "severe",
+          "risk_level": "high",
+          "recommended_action": "manual_review",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.160400, variation=+0.000000; vitesse=100.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "severe_congestion",
+          "priority_rank": 60,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_returned_no_output",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "fallback",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": false,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "not_called",
+          "fallback_reason": "llm_unavailable_for_this_context",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "llm_invalide",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": {
+        "risk_level": "low"
+      },
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_output_invalid_or_not_grounded",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "json_invalide",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": "{",
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_backend_error",
+          "llm_error": "JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "action_interdite",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": {
+        "traffic_state": "free_flow",
+        "risk_level": "low",
+        "recommended_action": "invented_action",
+        "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+        "confidence": 0.5
+      },
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_output_invalid_or_not_grounded",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "risk_action_incoherent",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": {
+        "traffic_state": "free_flow",
+        "risk_level": "high",
+        "recommended_action": "keep_current_signal_plan",
+        "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+        "confidence": 0.5
+      },
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_output_invalid_or_not_grounded",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "hallucination_incident",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": {
+        "traffic_state": "free_flow",
+        "risk_level": "low",
+        "recommended_action": "keep_current_signal_plan",
+        "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible. Accident detected.",
+        "confidence": 0.5
+      },
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_output_invalid_or_not_grounded",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "hallucination_emergency",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": {
+        "traffic_state": "free_flow",
+        "risk_level": "low",
+        "recommended_action": "keep_current_signal_plan",
+        "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible. Emergency detected.",
+        "confidence": 0.5
+      },
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "low",
+          "recommended_action": "keep_current_signal_plan",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_output_invalid_or_not_grounded",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "priorite_emergency",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": true,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": true,
+          "priority_level": "high"
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "high",
+          "recommended_action": "manual_review",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence signalée par le contexte externe; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale emergency : arbitrage orchestrateur requis.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "emergency",
+          "priority_rank": 100,
+          "llm_mode": "not_called",
+          "fallback_reason": "critical_priority_guard_before_llm",
+          "llm_error": null,
+          "critical_guard_before": true,
+          "critical_guard_after": true
+        }
+      }
+    },
+    {
+      "name": "priorite_incident",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": true,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": true,
+          "incident_type": "fixture",
+          "severity": "high"
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "high",
+          "recommended_action": "manual_review",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident signalé par le contexte externe; urgence inconnue; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale incident : arbitrage orchestrateur requis.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "incident",
+          "priority_rank": 80,
+          "llm_mode": "not_called",
+          "fallback_reason": "critical_priority_guard_before_llm",
+          "llm_error": null,
+          "critical_guard_before": true,
+          "critical_guard_after": true
+        }
+      }
+    },
+    {
+      "name": "transport_public",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 70.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": true
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "free_flow",
+          "risk_level": "medium",
+          "recommended_action": "manual_review",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=70.000000; voisins à occupation élevée=0/0. Incident inconnu; urgence inconnue; priorité transport public demandée; plan de feux indisponible. Priorité expérimentale public_transport : arbitrage orchestrateur requis.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "public_transport",
+          "priority_rank": 40,
+          "llm_mode": "not_called",
+          "fallback_reason": "external_priority_requires_orchestrator_review",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    },
+    {
+      "name": "voisin_congestionne",
+      "state": {
+        "sensor_id": 0,
+        "timestep": 15177,
+        "current_flow": 100.0,
+        "current_speed": 100.0,
+        "current_occupancy": 0.0,
+        "predicted_occupancy_t15": 0.0,
+        "occupancy_change": 0.0,
+        "recent_occupancy_trend": 0.0,
+        "recent_speed_trend": 0.0,
+        "neighbors": [
+          {
+            "current_occupancy": 0.1071
+          }
+        ],
+        "incident_detected": null,
+        "emergency_vehicle_present": null,
+        "incident_context": {
+          "incident_detected": null,
+          "incident_type": null,
+          "severity": null
+        },
+        "emergency_context": {
+          "emergency_vehicle_present": null,
+          "priority_level": null
+        },
+        "public_transport_context": {
+          "priority_requested": null
+        },
+        "cooperative_context": {
+          "neighboring_sensors": null
+        },
+        "integration_test_fixture": true
+      },
+      "candidate": null,
+      "backend_present": true,
+      "expected": {
+        "decision": {
+          "traffic_state": "moderate",
+          "risk_level": "medium",
+          "recommended_action": "monitor",
+          "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.000000, variation=+0.000000; vitesse=100.000000; voisins à occupation élevée=1/1. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+          "confidence": 0.5
+        },
+        "decision_source": "rule_based_fallback",
+        "trace": {
+          "priority": "normal",
+          "priority_rank": 20,
+          "llm_mode": "injected_backend",
+          "fallback_reason": "llm_returned_no_output",
+          "llm_error": null,
+          "critical_guard_before": false,
+          "critical_guard_after": false
+        }
+      }
+    }
+  ]
+}

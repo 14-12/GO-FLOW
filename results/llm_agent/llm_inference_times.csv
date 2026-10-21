@@ -1,0 +1,6 @@
+scenario,inference_time_s,input_tokens,output_tokens,error
+trafic_fluide,6.070576300029643,775,65,
+occupation_elevee,5.108968500047922,769,81,
+forte_hausse_predite,4.58452789997682,767,77,
+amelioration_prevue,5.72223319998011,952,77,
+voisins_contrastes,4.811959499958903,768,81,

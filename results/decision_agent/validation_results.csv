@@ -1,0 +1,6 @@
+scenario,source,json_valid,authorized_action,canonical_input_verified,reason_grounded_in_input,missing_information_signaled,risk_action_coherent,no_fabricated_data_in_contract,high_occupancy_neighbors
+trafic_fluide,rule_based,True,True,True,True,True,True,True,0
+occupation_elevee,rule_based,True,True,True,True,True,True,True,0
+forte_hausse_predite,rule_based,True,True,True,True,True,True,True,1
+amelioration_prevue,rule_based,True,True,True,True,True,True,True,1
+voisins_contrastes,rule_based,True,True,True,True,True,True,True,1

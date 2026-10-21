@@ -1,0 +1,711 @@
+[
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "trafic_normal",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "replay_saved_09_no_new_inference",
+      "fallback_reason": "llm_output_invalid_or_not_grounded",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "cached_original_fallback": "Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected",
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_output_invalid_or_not_grounded"
+      ],
+      "integration_test_fixture": false
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "forte_congestion_prevue",
+    "sensor_id": 134,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.27063107
+    },
+    "traffic_state": "severe",
+    "risk_level": "high",
+    "recommended_action": "coordinate_with_neighbor",
+    "reason": "Occupation actuelle=0.003000, prévue à +15 min=0.270631, variation=+0.267631; vitesse=35.900000; voisins à occupation élevée=1/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 16252,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "severe_congestion",
+      "priority_rank": 60,
+      "llm_mode": "replay_saved_09_no_new_inference",
+      "fallback_reason": "llm_output_invalid_or_not_grounded",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "cached_original_fallback": "Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected",
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_output_invalid_or_not_grounded"
+      ],
+      "integration_test_fixture": false
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "incident_externe",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "high",
+    "recommended_action": "manual_review",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident signalé par le contexte externe; urgence inconnue; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale incident : arbitrage orchestrateur requis.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "incident",
+      "priority_rank": 80,
+      "llm_mode": "not_called",
+      "fallback_reason": "critical_priority_guard_before_llm",
+      "llm_error": null,
+      "critical_guard_before": true,
+      "critical_guard_after": true,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : critical_priority_guard_before_llm"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "urgence_externe",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "high",
+    "recommended_action": "manual_review",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence signalée par le contexte externe; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale emergency : arbitrage orchestrateur requis.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "emergency",
+      "priority_rank": 100,
+      "llm_mode": "not_called",
+      "fallback_reason": "critical_priority_guard_before_llm",
+      "llm_error": null,
+      "critical_guard_before": true,
+      "critical_guard_after": true,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : critical_priority_guard_before_llm"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "voisins_congestionnes",
+    "sensor_id": 34,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.043239314
+    },
+    "traffic_state": "moderate",
+    "risk_level": "medium",
+    "recommended_action": "monitor",
+    "reason": "Occupation actuelle=0.045800, prévue à +15 min=0.043239, variation=-0.002561; vitesse=67.200000; voisins à occupation élevée=1/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 17530,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "replay_saved_09_no_new_inference",
+      "fallback_reason": "llm_output_invalid_or_not_grounded",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "cached_original_fallback": "Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected",
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_output_invalid_or_not_grounded"
+      ],
+      "integration_test_fixture": false
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "contextes_absents",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "replay_saved_09_no_new_inference",
+      "fallback_reason": "llm_output_invalid_or_not_grounded",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "cached_original_fallback": "Critères refusés : reason_grounded, risk_action_coherent, missing_information_respected",
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_output_invalid_or_not_grounded"
+      ],
+      "integration_test_fixture": false
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": null,
+    "sensor_id": null,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: request_id, sensor_id, timestep et traffic_data sont obligatoires.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "priorite_transport_public",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "medium",
+    "recommended_action": "manual_review",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public demandée; plan de feux indisponible. Priorité expérimentale public_transport : arbitrage orchestrateur requis.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "public_transport",
+      "priority_rank": 40,
+      "llm_mode": "not_called",
+      "fallback_reason": "external_priority_requires_orchestrator_review",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : external_priority_requires_orchestrator_review"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "urgence_prioritaire_sur_incident",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "high",
+    "recommended_action": "manual_review",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident signalé par le contexte externe; urgence signalée par le contexte externe; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale emergency : arbitrage orchestrateur requis.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "emergency",
+      "priority_rank": 100,
+      "llm_mode": "not_called",
+      "fallback_reason": "critical_priority_guard_before_llm",
+      "llm_error": null,
+      "critical_guard_before": true,
+      "critical_guard_after": true,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : critical_priority_guard_before_llm"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "trafic_modifie",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: current_occupancy incompatible avec le snapshot de la prévision sauvegardée.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "bool_capteur",
+    "sensor_id": null,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: sensor_id : entier entre 0 et 169 requis.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "horizon_hors_export",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: timestep hors de la période test exportée 15177–17853.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "boolean_externe_invalide",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: emergency_vehicle_present : true, false ou null requis.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "contexte_contradictoire",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: Incident non confirmé : type et gravité doivent rester null.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "voisin_arbitraire",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: Voisin inconnu du graphe, identifiant invalide ou dupliqué.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "timestamp_sans_fuseau",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": null
+    },
+    "traffic_state": null,
+    "risk_level": null,
+    "recommended_action": "manual_review",
+    "reason": "ValueError: timestamp sans fuseau : refusé.",
+    "confidence": 0.0,
+    "decision_source": "rule_based_fallback",
+    "status": "error",
+    "metadata": {
+      "integration_test_fixture": true,
+      "error_controlled": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "garde_fou_avant_llm",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "high",
+    "recommended_action": "manual_review",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence signalée par le contexte externe; priorité transport public inconnue; plan de feux indisponible. Priorité expérimentale emergency : arbitrage orchestrateur requis.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "emergency",
+      "priority_rank": 100,
+      "llm_mode": "not_called",
+      "fallback_reason": "critical_priority_guard_before_llm",
+      "llm_error": null,
+      "critical_guard_before": true,
+      "critical_guard_after": true,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : critical_priority_guard_before_llm"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "timeout_llm",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "injected_backend",
+      "fallback_reason": "llm_backend_error",
+      "llm_error": "TimeoutError: integration_test_fixture",
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_backend_error"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "erreur_llm",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "injected_backend",
+      "fallback_reason": "llm_backend_error",
+      "llm_error": "RuntimeError: integration_test_fixture",
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_backend_error"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "json_llm_invalide",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "injected_backend",
+      "fallback_reason": "llm_output_invalid_or_not_grounded",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_output_invalid_or_not_grounded"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "llm_sans_sortie",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "rule_based_fallback",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "injected_backend",
+      "fallback_reason": "llm_returned_no_output",
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée.",
+        "Décision déterministe : llm_returned_no_output"
+      ],
+      "integration_test_fixture": true
+    }
+  },
+  {
+    "agent": "traffic_prediction_control",
+    "request_id": "backend_valide_simule",
+    "sensor_id": 33,
+    "forecast": {
+      "horizon_minutes": 15,
+      "predicted_occupancy": 0.0027397831
+    },
+    "traffic_state": "free_flow",
+    "risk_level": "low",
+    "recommended_action": "keep_current_signal_plan",
+    "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incident inconnu; urgence inconnue; priorité transport public inconnue; plan de feux indisponible.",
+    "confidence": 0.5,
+    "decision_source": "llm",
+    "status": "warning",
+    "metadata": {
+      "timestep": 15227,
+      "priority_policy_experimental": {
+        "emergency": 100,
+        "incident": 80,
+        "severe_congestion": 60,
+        "public_transport": 40,
+        "normal": 20
+      },
+      "priority": "normal",
+      "priority_rank": 20,
+      "llm_mode": "injected_backend",
+      "fallback_reason": null,
+      "llm_error": null,
+      "critical_guard_before": false,
+      "critical_guard_after": false,
+      "warnings": [
+        "Mapping location=index NPZ sous hypothèse pour 25 capteurs indiscernables.",
+        "Aucun plan de feux disponible ; recommandation sans commande exécutée."
+      ],
+      "integration_test_fixture": true
+    }
+  }
+]

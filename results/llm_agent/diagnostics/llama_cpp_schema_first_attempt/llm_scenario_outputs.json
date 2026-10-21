@@ -1,0 +1,368 @@
+[
+  {
+    "scenario": "trafic_fluide",
+    "state": {
+      "sensor_id": 33,
+      "timestep": 15227,
+      "current_flow": 0.0,
+      "current_speed": 65.0,
+      "current_occupancy": 0.0,
+      "predicted_occupancy_t15": 0.0027397831,
+      "occupancy_change": 0.0027397831,
+      "recent_occupancy_trend": 0.0001,
+      "recent_speed_trend": 0.019999999999998862,
+      "neighbors": [
+        {
+          "sensor_id": 32,
+          "timestep": 15227,
+          "current_speed": 61.8,
+          "current_occupancy": 0.0381,
+          "predicted_occupancy_t15": 0.039587665
+        },
+        {
+          "sensor_id": 156,
+          "timestep": 15227,
+          "current_speed": 64.5,
+          "current_occupancy": 0.0144,
+          "predicted_occupancy_t15": 0.013298589
+        }
+      ],
+      "incident_detected": null,
+      "emergency_vehicle_present": null
+    },
+    "rule_based_output": {
+      "traffic_state": "free_flow",
+      "risk_level": "low",
+      "recommended_action": "keep_current_signal_plan",
+      "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "decision": {
+      "traffic_state": "free_flow",
+      "risk_level": "low",
+      "recommended_action": "keep_current_signal_plan",
+      "reason": "Occupation actuelle=0.000000, prévue à +15 min=0.002740, variation=+0.002740; vitesse=65.000000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based_fallback",
+    "fallback_reason": "JSONDecodeError: Unterminated string starting at: line 17 column 5 (char 641)",
+    "llm_output": null,
+    "validation": {
+      "json_valid": false,
+      "authorized_action": false,
+      "no_unsupported_claim_detected": true,
+      "reason_grounded": false,
+      "risk_action_coherent": false,
+      "confidence_valid": false,
+      "missing_information_respected": false,
+      "hallucination_detected": false,
+      "hallucination_check_applicable": false
+    },
+    "llm_call": {
+      "raw_text": "{\n  \"state\": {\n    \"sensor_id\": 33,\n    \"timestep\": 15227,\n    \"current_flow\": 0.0,\n    \"current_speed\": 65.0,\n    \"current_occupancy\": 0.0,\n    \"predicted_occupancy_t15\": 0.0027397831,\n    \"occupancy_change\": 0.0027397831,\n    \"recent_occupancy_trend\": 0.0001,\n    \"recent_speed_trend\": 0.0199999999999988,\n    \"neighbors\": [\n      {\"sensor_id\": 32, \"timestep\": 15227, \"current_speed\": 61.8, \"current_occupancy\": 0.0381, \"predicted_occupancy_t15\": 0.039587665},\n      {\"sensor_id\": 156, \"timestep\": 15227, \"current_speed\": 64.5, \"current_occupancy\": 0.0144, \"predicted_occupancy_t15\": 0.013298589}\n    ],\n    \"incident_detected\": null,\n    \"",
+      "parsed_output": null,
+      "error": "JSONDecodeError: Unterminated string starting at: line 17 column 5 (char 641)",
+      "inference_time_s": 13.20887119998224,
+      "input_tokens": 775,
+      "output_tokens": 300,
+      "finish_reason": "length"
+    }
+  },
+  {
+    "scenario": "occupation_elevee",
+    "state": {
+      "sensor_id": 23,
+      "timestep": 17200,
+      "current_flow": 116.0,
+      "current_speed": 5.9,
+      "current_occupancy": 0.7237,
+      "predicted_occupancy_t15": 0.346324,
+      "occupancy_change": -0.377376,
+      "recent_occupancy_trend": 0.07210000000000001,
+      "recent_speed_trend": -5.22,
+      "neighbors": [
+        {
+          "sensor_id": 103,
+          "timestep": 17200,
+          "current_speed": 63.3,
+          "current_occupancy": 0.0592,
+          "predicted_occupancy_t15": 0.06495913
+        },
+        {
+          "sensor_id": 165,
+          "timestep": 17200,
+          "current_speed": 73.5,
+          "current_occupancy": 0.0439,
+          "predicted_occupancy_t15": 0.050445165
+        }
+      ],
+      "incident_detected": null,
+      "emergency_vehicle_present": null
+    },
+    "rule_based_output": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "manual_review",
+      "reason": "Occupation actuelle=0.723700, prévue à +15 min=0.346324, variation=-0.377376; vitesse=5.900000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "manual_review",
+      "reason": "Occupation actuelle=0.723700, prévue à +15 min=0.346324, variation=-0.377376; vitesse=5.900000; voisins à occupation élevée=0/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based_fallback",
+    "fallback_reason": "JSONDecodeError: Expecting ',' delimiter: line 18 column 1 (char 671)",
+    "llm_output": null,
+    "validation": {
+      "json_valid": false,
+      "authorized_action": false,
+      "no_unsupported_claim_detected": true,
+      "reason_grounded": false,
+      "risk_action_coherent": false,
+      "confidence_valid": false,
+      "missing_information_respected": false,
+      "hallucination_detected": false,
+      "hallucination_check_applicable": false
+    },
+    "llm_call": {
+      "raw_text": "{\n  \"state\": {\n    \"sensor_id\": 23,\n    \"timestep\": 17200,\n    \"current_flow\": 116.0,\n    \"current_speed\": 5.9,\n    \"current_occupancy\": 0.7237,\n    \"predicted_occupancy_t15\": 0.346324,\n    \"occupancy_change\": -0.377376,\n    \"recent_occupancy_trend\": 0.0721000000000000,\n    \"recent_speed_trend\": -5.22,\n    \"neighbors\": [\n      {\"sensor_id\": 103, \"timestep\": 17200, \"current_speed\": 63.3, \"current_occupancy\": 0.0592, \"predicted_occupancy_t15\": 0.06495913},\n      {\"sensor_id\": 165, \"timestep\": 17200, \"current_speed\": 73.5, \"current_occupancy\": 0.0439, \"predicted_occupancy_t15\": 0.050445165}\n    ],\n    \"incident_detected\": null,\n    \"emergency_vehicle_present\": null\n",
+      "parsed_output": null,
+      "error": "JSONDecodeError: Expecting ',' delimiter: line 18 column 1 (char 671)",
+      "inference_time_s": 11.10385099996347,
+      "input_tokens": 769,
+      "output_tokens": 300,
+      "finish_reason": "length"
+    }
+  },
+  {
+    "scenario": "forte_hausse_predite",
+    "state": {
+      "sensor_id": 134,
+      "timestep": 16252,
+      "current_flow": 1.0,
+      "current_speed": 35.9,
+      "current_occupancy": 0.003,
+      "predicted_occupancy_t15": 0.27063107,
+      "occupancy_change": 0.26763106999999997,
+      "recent_occupancy_trend": -0.013340000000000001,
+      "recent_speed_trend": -0.6,
+      "neighbors": [
+        {
+          "sensor_id": 132,
+          "timestep": 16252,
+          "current_speed": 32.9,
+          "current_occupancy": 0.1176,
+          "predicted_occupancy_t15": 0.13400355
+        },
+        {
+          "sensor_id": 136,
+          "timestep": 16252,
+          "current_speed": 72.8,
+          "current_occupancy": 0.0022,
+          "predicted_occupancy_t15": 0.034467984
+        }
+      ],
+      "incident_detected": null,
+      "emergency_vehicle_present": null
+    },
+    "rule_based_output": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.003000, prévue à +15 min=0.270631, variation=+0.267631; vitesse=35.900000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.003000, prévue à +15 min=0.270631, variation=+0.267631; vitesse=35.900000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based_fallback",
+    "fallback_reason": "JSONDecodeError: Expecting value: line 16 column 25 (char 636)",
+    "llm_output": null,
+    "validation": {
+      "json_valid": false,
+      "authorized_action": false,
+      "no_unsupported_claim_detected": true,
+      "reason_grounded": false,
+      "risk_action_coherent": false,
+      "confidence_valid": false,
+      "missing_information_respected": false,
+      "hallucination_detected": false,
+      "hallucination_check_applicable": false
+    },
+    "llm_call": {
+      "raw_text": "{\n  \"state\": {\n    \"sensor_id\": 134,\n    \"timestep\": 16252,\n    \"current_flow\": 1.0,\n    \"current_speed\": 35.9,\n    \"current_occupancy\": 0.003,\n    \"predicted_occupancy_t15\": 0.27063107,\n    \"occupancy_change\": 0.2676310699999999,\n    \"recent_occupancy_trend\": -0.0133400000000000,\n    \"recent_speed_trend\": -0.6,\n    \"neighbors\": [\n      {\"sensor_id\": 132, \"timestep\": 16252, \"current_speed\": 32.9, \"current_occupancy\": 0.1176, \"predicted_occupancy_t15\": 0.13400355},\n      {\"sensor_id\": 136, \"timestep\": 16252, \"current_speed\": 72.8, \"current_occupancy\": 0.0022, \"predicted_occupancy_t15\": 0.034467984}\n    ],\n    \"incident_detected\":",
+      "parsed_output": null,
+      "error": "JSONDecodeError: Expecting value: line 16 column 25 (char 636)",
+      "inference_time_s": 10.847540899994783,
+      "input_tokens": 767,
+      "output_tokens": 300,
+      "finish_reason": "length"
+    }
+  },
+  {
+    "scenario": "amelioration_prevue",
+    "state": {
+      "sensor_id": 17,
+      "timestep": 15331,
+      "current_flow": 78.0,
+      "current_speed": 44.2,
+      "current_occupancy": 0.6938,
+      "predicted_occupancy_t15": 0.19864067,
+      "occupancy_change": -0.49515933,
+      "recent_occupancy_trend": 0.03154,
+      "recent_speed_trend": -2.520000000000002,
+      "neighbors": [
+        {
+          "sensor_id": 5,
+          "timestep": 15331,
+          "current_speed": 67.5,
+          "current_occupancy": 0.0818,
+          "predicted_occupancy_t15": 0.08955527
+        },
+        {
+          "sensor_id": 60,
+          "timestep": 15331,
+          "current_speed": 68.6,
+          "current_occupancy": 0.0656,
+          "predicted_occupancy_t15": 0.072322644
+        },
+        {
+          "sensor_id": 153,
+          "timestep": 15331,
+          "current_speed": 70.2,
+          "current_occupancy": 0.0688,
+          "predicted_occupancy_t15": 0.07502784
+        },
+        {
+          "sensor_id": 154,
+          "timestep": 15331,
+          "current_speed": 68.5,
+          "current_occupancy": 0.0656,
+          "predicted_occupancy_t15": 0.080434434
+        },
+        {
+          "sensor_id": 168,
+          "timestep": 15331,
+          "current_speed": 62.8,
+          "current_occupancy": 0.1246,
+          "predicted_occupancy_t15": 0.12887311
+        }
+      ],
+      "incident_detected": null,
+      "emergency_vehicle_present": null
+    },
+    "rule_based_output": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.693800, prévue à +15 min=0.198641, variation=-0.495159; vitesse=44.200000; voisins à occupation élevée=1/5. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "decision": {
+      "traffic_state": "severe",
+      "risk_level": "high",
+      "recommended_action": "coordinate_with_neighbor",
+      "reason": "Occupation actuelle=0.693800, prévue à +15 min=0.198641, variation=-0.495159; vitesse=44.200000; voisins à occupation élevée=1/5. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based_fallback",
+    "fallback_reason": "JSONDecodeError: Expecting value: line 15 column 37 (char 635)",
+    "llm_output": null,
+    "validation": {
+      "json_valid": false,
+      "authorized_action": false,
+      "no_unsupported_claim_detected": true,
+      "reason_grounded": false,
+      "risk_action_coherent": false,
+      "confidence_valid": false,
+      "missing_information_respected": false,
+      "hallucination_detected": false,
+      "hallucination_check_applicable": false
+    },
+    "llm_call": {
+      "raw_text": "{\n  \"state\": {\n    \"sensor_id\": 17,\n    \"timestep\": 15331,\n    \"current_flow\": 78.0,\n    \"current_speed\": 44.2,\n    \"current_occupancy\": 0.6938,\n    \"predicted_occupancy_t15\": 0.19864067,\n    \"occupancy_change\": -0.49515933,\n    \"recent_occupancy_trend\": 0.03154,\n    \"recent_speed_trend\": -2.520000000000002,\n    \"neighbors\": [\n      {\"sensor_id\": 5, \"timestep\": 15331, \"current_speed\": 67.5, \"current_occupancy\": 0.0818, \"predicted_occupancy_t15\": 0.08955527},\n      {\"sensor_id\": 60, \"timestep\": 15331, \"current_speed\": 68.6, \"current_occupancy\": 0.0656, \"predicted_occupancy_t15\": 0.072322644},\n      {\"sensor_id\": 153, \"timestep\":",
+      "parsed_output": null,
+      "error": "JSONDecodeError: Expecting value: line 15 column 37 (char 635)",
+      "inference_time_s": 12.013055499992333,
+      "input_tokens": 952,
+      "output_tokens": 300,
+      "finish_reason": "length"
+    }
+  },
+  {
+    "scenario": "voisins_contrastes",
+    "state": {
+      "sensor_id": 34,
+      "timestep": 17530,
+      "current_flow": 114.0,
+      "current_speed": 67.2,
+      "current_occupancy": 0.0458,
+      "predicted_occupancy_t15": 0.043239314,
+      "occupancy_change": -0.0025606859999999995,
+      "recent_occupancy_trend": -0.00334,
+      "recent_speed_trend": 0.5399999999999977,
+      "neighbors": [
+        {
+          "sensor_id": 128,
+          "timestep": 17530,
+          "current_speed": 5.3,
+          "current_occupancy": 0.6946,
+          "predicted_occupancy_t15": 0.3917158
+        },
+        {
+          "sensor_id": 155,
+          "timestep": 17530,
+          "current_speed": 64.8,
+          "current_occupancy": 0.008,
+          "predicted_occupancy_t15": 0.0068603
+        }
+      ],
+      "incident_detected": null,
+      "emergency_vehicle_present": null
+    },
+    "rule_based_output": {
+      "traffic_state": "moderate",
+      "risk_level": "medium",
+      "recommended_action": "monitor",
+      "reason": "Occupation actuelle=0.045800, prévue à +15 min=0.043239, variation=-0.002561; vitesse=67.200000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "decision": {
+      "traffic_state": "moderate",
+      "risk_level": "medium",
+      "recommended_action": "monitor",
+      "reason": "Occupation actuelle=0.045800, prévue à +15 min=0.043239, variation=-0.002561; vitesse=67.200000; voisins à occupation élevée=1/2. Incidents et urgences inconnus; plan de feux indisponible.",
+      "confidence": 0.5
+    },
+    "source": "rule_based_fallback",
+    "fallback_reason": "JSONDecodeError: Unterminated string starting at: line 16 column 5 (char 618)",
+    "llm_output": null,
+    "validation": {
+      "json_valid": false,
+      "authorized_action": false,
+      "no_unsupported_claim_detected": true,
+      "reason_grounded": false,
+      "risk_action_coherent": false,
+      "confidence_valid": false,
+      "missing_information_respected": false,
+      "hallucination_detected": false,
+      "hallucination_check_applicable": false
+    },
+    "llm_call": {
+      "raw_text": "{\n  \"state\": {\n    \"sensor_id\": 34,\n    \"timestep\": 17530,\n    \"current_flow\": 114.0,\n    \"current_speed\": 67.2,\n    \"current_occupancy\": 0.0458,\n    \"predicted_occupancy_t15\": 0.043239314,\n    \"occupancy_change\": -0.0025606859999999,\n    \"recent_occupancy_trend\": -0.00334,\n    \"recent_speed_trend\": 0.5399999999999977,\n    \"neighbors\": [\n      {\"sensor_id\": 128, \"timestep\": 17530, \"current_speed\": 5.3, \"current_occupancy\": 0.6946, \"predicted_occupancy_t15\": 0.3917158},\n      {\"sensor_id\": 155, \"timestep\": 17530, \"current_speed\": 64.8, \"current_occupancy\": 0.008, \"predicted_occupancy_t15\": 0.0068603}\n    ],\n    \"incident",
+      "parsed_output": null,
+      "error": "JSONDecodeError: Unterminated string starting at: line 16 column 5 (char 618)",
+      "inference_time_s": 10.731908799964003,
+      "input_tokens": 768,
+      "output_tokens": 300,
+      "finish_reason": "length"
+    }
+  }
+]

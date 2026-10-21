@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "goflow"
+version = "0.1.0"
+description = "Agents de décision GoFlow sur prévisions historiques sauvegardées"
+requires-python = ">=3.11"
+dependencies = ["numpy", "pandas", "psutil", "jsonschema>=4"]
+
+[project.optional-dependencies]
+llm = ["torch", "transformers"]
+prediction = ["xgboost==3.2.0"]
+test = ["pytest==8.4.2", "xgboost==3.2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
+
+[tool.setuptools.packages.find]
+include = ["src", "src.*", "tests"]
+
+[tool.setuptools.package-data]
+"src.contracts" = ["example_json/*.json"]
