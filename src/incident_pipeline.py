@@ -19,18 +19,27 @@ def run_traffic_pipeline(video_path, *, source_id=None, observation_provider=Non
     detector = incident_detector or IncidentDetector()
     incidents = detector.predict_windows(video_processor(video_path), source_id)
     agent = prediction_agent
-    if agent is None and observation_provider is not None and history_provider is not None:
-        agent = TrafficPredictionControlAgent(
-            project_root=project_root, prediction_mode="live", history_provider=history_provider)
+    if agent is None:
+        if observation_provider is not None and history_provider is not None:
+            agent = TrafficPredictionControlAgent(
+                project_root=project_root, prediction_mode="live", history_provider=history_provider)
+        else:
+            # Ask Agent 2 to validate a deliberately incomplete message. Its
+            # controlled error is a genuine agent response, never a forecast.
+            agent = TrafficPredictionControlAgent(project_root=project_root)
     output = []
     for incident in incidents:
         item = {"incident": incident, "handoff": None, "prediction": None}
         if observation_provider is None or history_provider is None:
-            item["prediction_error"] = (
-                "Live PEMS08 prediction requires an observation_provider with sensor_id, "
-                "five-minute timestep, measured flow/speed/occupancy, and a causal "
-                "history_provider for that sensor and its graph neighbors. Video motion "
-                "features cannot supply those measurements.")
+            message = {"request_id": f"{source_id}-{incident['window_start_sec']:g}",
+                       "incident_context": {"incident_detected": incident["incident_detected"],
+                                            "incident_type": None, "severity": None}}
+            item["handoff"] = message
+            try:
+                item["prediction"] = agent.handle_message(message)
+                item["prediction_error"] = item["prediction"]["reason"]
+            except Exception as error:
+                item["prediction_error"] = f"{type(error).__name__}: {error}"
             output.append(item)
             continue
         try:

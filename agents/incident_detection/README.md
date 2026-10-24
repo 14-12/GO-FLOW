@@ -40,7 +40,8 @@ python -m pytest tests/test_incident_pipeline.py -q
 ```
 
 Ultralytics may need to acquire `yolo11n.pt` on first use. For offline use,
-provide that weight through its normal model cache. The optional LangChain
+set `GOFLOW_YOLO_WEIGHTS` to an existing local weight path. ByteTrack requires
+`lap>=0.5.12`, included in `requirements.txt`. The optional LangChain
 experiment remains in the notebook and reads `APINEX_API_KEY` from Colab
 Secrets; the integrated pipeline never calls APInex.
 
@@ -64,5 +65,8 @@ the required graph neighbors. A caller must provide both
 camera-to-sensor/timestep mapping and measured traffic values, and
 `history_provider(sensor_id, timestep)` returning the causal history DataFrame.
 No video motion proxy is converted into flow, physical speed, or occupancy.
-Without these providers, incident results remain available and each window
-reports the exact missing prediction inputs.
+Without these providers, each window includes the partial handoff actually
+sent to `TrafficPredictionControlAgent.handle_message` and its controlled
+missing-fields response. The incident result remains available. A standalone
+genuine PEMS08 live inference, unrelated to any camera, can be checked with
+`python -m scripts.run_pems08_live_smoke`.

@@ -1,5 +1,6 @@
 """YOLO11/ByteTrack extraction with the training notebook's window statistics."""
 from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
@@ -80,7 +81,7 @@ def process_video(video_path, *, yolo_factory=None, device=None):
             from ultralytics import YOLO
         except ImportError as error:
             raise RuntimeError("Install ultralytics to run YOLO11 and ByteTrack") from error
-        yolo_factory = lambda: YOLO("yolo11n.pt")
+        yolo_factory = lambda: YOLO(os.environ.get("GOFLOW_YOLO_WEIGHTS", "yolo11n.pt"))
     if device is None:
         import torch
         device = 0 if torch.cuda.is_available() else "cpu"

@@ -88,3 +88,17 @@ def test_missing_measurements_do_not_invoke_prediction():
         observation_provider=lambda source, incident: {"sensor_id": 1},
         history_provider=lambda sensor, timestep: None)
     assert "Missing measured prediction fields" in result["windows"][0]["prediction_error"]
+
+
+def test_missing_provider_calls_real_prediction_agent_for_controlled_error():
+    class Detector:
+        def predict_windows(self, frame, source):
+            return [{"window_start_sec": 0., "incident_detected": False}]
+    result = run_traffic_pipeline("x.mp4", incident_detector=Detector(),
+                                  video_processor=lambda _: None)
+    item = result["windows"][0]
+    assert item["handoff"]["incident_context"]["incident_detected"] is False
+    assert item["prediction"]["agent"] == "traffic_prediction_control"
+    assert item["prediction"]["status"] == "error"
+    assert item["prediction"]["forecast"]["predicted_occupancy"] is None
+    assert "sensor_id" in item["prediction_error"]

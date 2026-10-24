@@ -3,8 +3,9 @@ opencv-python-headless
 torch
 numpy
 pandas
-scikit-learn
+scikit-learn==1.6.1
 joblib
 xgboost
 langchain
 langchain-openai
+lap>=0.5.12

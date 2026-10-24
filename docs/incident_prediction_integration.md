@@ -33,8 +33,9 @@ model metadata. Histories for graph neighbors are also needed.
 The result contains ordered per-window incident evidence, the exact message
 handed to Agent 2, and Agent 2's complete genuine response. Errors from Agent
 2 are retained as a response and repeated in `prediction_error`. In the
-absence of providers, the CLI still runs incident inference and clearly
-reports why a forecast is unavailable. No LLM or emergency notification is
+absence of providers, the CLI still runs incident inference, sends a partial
+message to the actual prediction agent, and retains its controlled validation
+error with a null forecast. No LLM or emergency notification is
 involved in the deterministic path.
 
 The source branches do not contain a camera-to-PEMS08 sensor map or a live
