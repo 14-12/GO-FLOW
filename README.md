@@ -1,5 +1,17 @@
 # GO-FLOW
 
+## Video incident integration
+
+The integration branch adds an MP4 incident detector and a deterministic
+handoff to the existing Traffic Prediction agent. See
+[`docs/incident_prediction_integration.md`](docs/incident_prediction_integration.md)
+for the provider contract and
+[`agents/incident_detection/README.md`](agents/incident_detection/README.md)
+for detector setup. Run `python -m scripts.run_incident_pipeline highway.mp4`
+to obtain per-window detector results. A genuine +15 minute forecast additionally
+requires measured PEMS08 flow, speed, occupancy, and causal history from
+callable providers; the MP4 alone cannot supply them.
+
 ## Composant GoFlow — Traffic Prediction & Adaptive Signal Control
 
 Composant expérimental de prévision du trafic et d'aide à la décision sur PEMS08,

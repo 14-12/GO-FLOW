@@ -1,0 +1,10 @@
+ultralytics
+opencv-python-headless
+torch
+numpy
+pandas
+scikit-learn
+joblib
+xgboost
+langchain
+langchain-openai
