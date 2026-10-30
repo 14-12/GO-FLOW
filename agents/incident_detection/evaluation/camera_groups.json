@@ -1,0 +1,25 @@
+{
+  "description": "AI City 2021 Track 4 train videos that share a camera view. Built from edge-map similarity of frames at 5 s and 300 s (threshold 0.6), checked by eye on contact sheets; video 12 added to the 35/38/40/82 group by eye. Video 2 had no extracted frame and stays alone. Videos not listed are their own group.",
+  "method": "max Pearson correlation of blurred Sobel edge maps (96x54) over frame pairs; union-find at >= 0.6",
+  "groups": [
+    [1, 79, 96],
+    [3, 8, 15, 18, 83],
+    [4, 76],
+    [6, 68],
+    [7, 36, 54, 60],
+    [10, 89],
+    [12, 35, 38, 40, 82],
+    [17, 42, 50, 52, 69],
+    [19, 47],
+    [22, 29],
+    [23, 30, 57, 84],
+    [24, 46, 80, 86],
+    [25, 67],
+    [32, 64],
+    [41, 61, 93],
+    [43, 85],
+    [70, 87],
+    [81, 100],
+    [98, 99]
+  ]
+}

@@ -45,6 +45,35 @@ set `GOFLOW_YOLO_WEIGHTS` to an existing local weight path. ByteTrack requires
 experiment remains in the notebook and reads `APINEX_API_KEY` from Colab
 Secrets; the integrated pipeline never calls APInex.
 
+## Frames input and detector config
+
+`process_frames(frames, fps, frame_size, source_id)` takes any iterable of BGR
+images (for example live CARLA camera frames) and returns the same five-second
+windows; `process_video` is now a thin wrapper that reads the MP4 and calls it.
+Frames are subsampled exactly like Ultralytics' `vid_stride`, so an MP4 gives
+identical windows through either function (checked against the v1 video path
+with real YOLO in `tests/test_incident_frames.py`). The whole stream is consumed
+before windows are returned, so live use passes a finite chunk of frames.
+
+Detector weights, class map, confidence, image size and tracker come from
+`config/detector_v1.json` (the v1 settings: `yolo11n.pt`, COCO car, motorcycle,
+bus, truck, confidence 0.25). Another detector is used by pointing
+`GOFLOW_DETECTOR_CONFIG` at its file or passing `config=` directly; see
+`config/detector_carla_yolo26n.example.json`. Class names are resolved against
+the model's own `names`, so a wrong map fails loudly. The window table carries
+`attrs["detector"]` with the config name. The saved Random Forest was trained on
+COCO YOLO11n features; other detectors change the feature distribution, so
+their windows must be evaluated before any result is trusted.
+
+## Evaluation by camera
+
+`evaluation/evaluate_v1.py` re-scores the v1 recipe on all 100 AI City videos
+with 5-fold cross-validation grouped by video and by camera
+(`evaluation/camera_groups.json`), and reports per-event recall, time to detect,
+false alarms per camera-hour and bootstrap 95 % intervals. It reads the feature
+CSVs from `data/` (not committed) and writes a new JSON under
+`evaluation/results/` on every run.
+
 ## Handoff to Traffic Prediction
 
 `src.incident_pipeline.run_traffic_pipeline` runs this detector first, then

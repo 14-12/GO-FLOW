@@ -1,13 +1,15 @@
 """YOLO11/ByteTrack extraction with the training notebook's window statistics."""
 from pathlib import Path
-import os
 
 import numpy as np
 import pandas as pd
 
+from .detector_config import CATEGORIES, load_detector_config
+
 WINDOW_SECONDS = 5.0
 TARGET_FPS = 5.0
 VEHICLE_CLASSES = (2, 3, 5, 7)
+COCO_CATEGORIES = dict(zip(VEHICLE_CLASSES, CATEGORIES))
 
 
 def aggregate_windows(frame_rows, detection_rows, duration):
@@ -18,6 +20,8 @@ def aggregate_windows(frame_rows, detection_rows, duration):
     detections = pd.DataFrame(detection_rows)
     frames["window_start_sec"] = (np.floor(frames.source_time_sec / WINDOW_SECONDS) * WINDOW_SECONDS).round(3)
     if not detections.empty:
+        if "category" not in detections:
+            detections["category"] = detections.class_id.map(COCO_CATEGORIES)
         detections["window_start_sec"] = (np.floor(detections.source_time_sec / WINDOW_SECONDS) * WINDOW_SECONDS).round(3)
         detections = detections.sort_values(["track_id", "source_time_sec"]).reset_index(drop=True)
         for current, previous in (("center_x", "prev_x"), ("center_y", "prev_y"), ("source_time_sec", "prev_time")):
@@ -49,13 +53,85 @@ def aggregate_windows(frame_rows, detection_rows, duration):
             "bbox_coverage_proxy": float(fg.bbox_coverage.mean()) if not fg.empty else 0.0,
             "max_bbox_coverage_proxy": float(fg.bbox_coverage.max()) if not fg.empty else 0.0,
             "mean_detection_confidence": float(fg.mean_detection_confidence.mean()) if not fg.empty else 0.0,
-            **{name: int(dg.loc[dg.class_id == cls, "track_id"].nunique()) if not dg.empty else 0
-               for name, cls in (("car_unique", 2), ("motorcycle_unique", 3), ("bus_unique", 5), ("truck_unique", 7))},
+            **{f"{category}_unique": int(dg.loc[dg.category == category, "track_id"].nunique()) if not dg.empty else 0
+               for category in CATEGORIES},
         })
     return pd.DataFrame(rows)
 
 
-def process_video(video_path, *, yolo_factory=None, device=None):
+def result_rows(result, time_sec, frame_area, categories):
+    """One frame row and its tracked detection rows from an Ultralytics tracking result."""
+    confidences, area, detections = [], 0.0, []
+    for box in result.boxes or []:
+        if box.id is None:
+            continue
+        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().tolist()
+        confidence = float(box.conf[0].item())
+        class_id = int(box.cls[0].item())
+        confidences.append(confidence)
+        area += (x2 - x1) * (y2 - y1)
+        detections.append({"source_time_sec": time_sec, "track_id": int(box.id[0].item()),
+                           "class_id": class_id, "category": categories[class_id], "confidence": confidence,
+                           "center_x": (x1 + x2) / 2, "center_y": (y1 + y2) / 2,
+                           "bbox_height": y2 - y1, "bbox_area": (x2 - x1) * (y2 - y1)})
+    frame = {"source_time_sec": time_sec, "vehicle_count": len(confidences),
+             "bbox_coverage": min(area / frame_area, 1.0),
+             "mean_detection_confidence": float(np.mean(confidences)) if confidences else 0.0}
+    return frame, detections
+
+
+def default_device():
+    import torch
+    return 0 if torch.cuda.is_available() else "cpu"
+
+
+def build_detector(config, yolo_factory=None):
+    """Fresh model per stream so tracker IDs never leak across videos or cameras."""
+    if yolo_factory is None:
+        try:
+            from ultralytics import YOLO
+        except ImportError as error:
+            raise RuntimeError("Install ultralytics to run YOLO and ByteTrack") from error
+        yolo_factory = lambda: YOLO(config.weights)
+    model = yolo_factory()
+    return model, config.class_ids(model.names)
+
+
+def process_frames(frames, fps, frame_size, source_id=None, *, duration_sec=None, config=None,
+                   yolo_factory=None, device=None):
+    """Window features from an iterable of BGR frames captured at `fps`.
+
+    Keeps input frames stride-1, 2*stride-1, ... (0-based), the same frames Ultralytics
+    selects with vid_stride, so an MP4 gives identical windows through either entry point.
+    frame_size is (width, height). duration_sec defaults to frames received / fps.
+    """
+    fps = float(fps)
+    width, height = (float(x) for x in frame_size)
+    if not all(np.isfinite(x) and x > 0 for x in (fps, width, height)):
+        raise ValueError("fps and frame_size must be positive")
+    config = config or load_detector_config()
+    device = default_device() if device is None else device
+    model, categories = build_detector(config, yolo_factory)
+    stride = max(1, round(fps / TARGET_FPS))
+    processed_fps = fps / stride
+    options = dict(tracker=config.tracker, persist=True, conf=config.confidence,
+                   classes=sorted(categories), device=device, verbose=False, save=False)
+    if config.imgsz:
+        options["imgsz"] = config.imgsz
+    frame_rows, detection_rows, received = [], [], 0
+    for received, frame in enumerate(frames, start=1):
+        if received % stride:
+            continue
+        result = model.track(frame, **options)[0]
+        row, detections = result_rows(result, len(frame_rows) / processed_fps, width * height, categories)
+        frame_rows.append(row)
+        detection_rows.extend(detections)
+    windows = aggregate_windows(frame_rows, detection_rows, duration_sec or received / fps)
+    windows.attrs.update(source_id=source_id, detector=config.name)
+    return windows
+
+
+def process_video(video_path, *, yolo_factory=None, device=None, config=None, source_id=None):
     """Process one MP4 with a fresh tracker; inject a factory for lightweight tests."""
     path = Path(video_path)
     if not path.is_file() or path.suffix.lower() != ".mp4":
@@ -67,46 +143,24 @@ def process_video(video_path, *, yolo_factory=None, device=None):
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
         raise ValueError(f"Cannot open MP4: {path}")
-    try:
-        fps = float(cap.get(cv2.CAP_PROP_FPS))
-        frame_count = float(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        width = float(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = float(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    finally:
-        cap.release()
+    fps = float(cap.get(cv2.CAP_PROP_FPS))
+    frame_count = float(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    width = float(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = float(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     if not all(np.isfinite(x) and x > 0 for x in (fps, frame_count, width, height)):
+        cap.release()
         raise ValueError("Invalid MP4 FPS, frame count, or frame dimensions")
-    if yolo_factory is None:
+
+    def read_frames():
         try:
-            from ultralytics import YOLO
-        except ImportError as error:
-            raise RuntimeError("Install ultralytics to run YOLO11 and ByteTrack") from error
-        yolo_factory = lambda: YOLO(os.environ.get("GOFLOW_YOLO_WEIGHTS", "yolo11n.pt"))
-    if device is None:
-        import torch
-        device = 0 if torch.cuda.is_available() else "cpu"
-    stride = max(1, round(fps / TARGET_FPS))
-    processed_fps = fps / stride
-    frames, detections = [], []
-    model = yolo_factory()  # Fresh model ensures tracker IDs do not leak across videos.
-    results = model.track(source=str(path), tracker="bytetrack.yaml", persist=True, stream=True,
-                          vid_stride=stride, conf=0.25, classes=list(VEHICLE_CLASSES), device=device,
-                          verbose=False, save=False)
-    for index, result in enumerate(results):
-        time_sec = index / processed_fps
-        confidences, area = [], 0.0
-        for box in result.boxes or []:
-            if box.id is None:
-                continue
-            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().tolist()
-            confidence = float(box.conf[0].item())
-            confidences.append(confidence)
-            area += (x2 - x1) * (y2 - y1)
-            detections.append({"source_time_sec": time_sec, "track_id": int(box.id[0].item()),
-                               "class_id": int(box.cls[0].item()), "confidence": confidence,
-                               "center_x": (x1 + x2) / 2, "center_y": (y1 + y2) / 2,
-                               "bbox_height": y2 - y1, "bbox_area": (x2 - x1) * (y2 - y1)})
-        frames.append({"source_time_sec": time_sec, "vehicle_count": len(confidences),
-                       "bbox_coverage": min(area / (width * height), 1.0),
-                       "mean_detection_confidence": float(np.mean(confidences)) if confidences else 0.0})
-    return aggregate_windows(frames, detections, frame_count / fps)
+            for _ in range(int(frame_count)):
+                ok, frame = cap.read()
+                if not ok:
+                    return
+                yield frame
+        finally:
+            cap.release()
+
+    return process_frames(read_frames(), fps, (width, height), source_id or path.stem,
+                          duration_sec=frame_count / fps, config=config,
+                          yolo_factory=yolo_factory, device=device)

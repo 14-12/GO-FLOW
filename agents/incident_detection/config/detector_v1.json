@@ -1,0 +1,8 @@
+{
+  "name": "yolo11n-coco",
+  "weights": "yolo11n.pt",
+  "class_map": {"car": "car", "motorcycle": "motorcycle", "bus": "bus", "truck": "truck"},
+  "confidence": 0.25,
+  "imgsz": null,
+  "tracker": "bytetrack.yaml"
+}

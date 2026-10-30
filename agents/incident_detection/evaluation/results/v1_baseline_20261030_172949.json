@@ -1,0 +1,999 @@
+{
+  "created": "2026-10-30T17:28:08",
+  "recipe": {
+    "model": "RandomForest v1 hyperparameters",
+    "rule": "mean3",
+    "threshold": 0.35,
+    "features": 27,
+    "folds": 5,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "data": "all 100 labelled AI City Track 4 videos (train+val+test pooled)",
+    "note": "threshold 0.35 was chosen in the notebook on train+val OOF scores, so it is slightly optimistic here"
+  },
+  "n_cameras": {
+    "video_grouped": 100,
+    "camera_grouped": 64
+  },
+  "results": {
+    "video_grouped": [
+      {
+        "window": {
+          "precision": 0.4427,
+          "recall": 0.4873,
+          "f2": 0.4777,
+          "f2_ci95": [
+            0.2905,
+            0.6219
+          ],
+          "average_precision": 0.3278,
+          "roc_auc": 0.716
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 15,
+          "event_recall": 0.8333,
+          "event_recall_ci95": [
+            0.6667,
+            1.0
+          ],
+          "time_to_detect_median_s": 25.0,
+          "time_to_detect_p90_s": 172.99999999999997,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 143.0
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 655.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 135.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 193.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 24.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 8.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 110.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 12.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 60.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 32.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 25.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 179,
+          "normal_hours": 21.85,
+          "per_camera_hour": 8.192,
+          "per_camera_hour_ci95": [
+            5.2021,
+            11.2957
+          ]
+        },
+        "seed": 0
+      },
+      {
+        "window": {
+          "precision": 0.5253,
+          "recall": 0.5266,
+          "f2": 0.5264,
+          "f2_ci95": [
+            0.3271,
+            0.6985
+          ],
+          "average_precision": 0.4286,
+          "roc_auc": 0.7293
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 14,
+          "event_recall": 0.7778,
+          "event_recall_ci95": [
+            0.5556,
+            0.9444
+          ],
+          "time_to_detect_median_s": 19.5,
+          "time_to_detect_p90_s": 157.20000000000005,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 410.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 20.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 168.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 19.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 8.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 115.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 132.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 37.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 20.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 158,
+          "normal_hours": 21.85,
+          "per_camera_hour": 7.231,
+          "per_camera_hour_ci95": [
+            4.7294,
+            10.2259
+          ]
+        },
+        "seed": 1
+      },
+      {
+        "window": {
+          "precision": 0.482,
+          "recall": 0.4221,
+          "f2": 0.4329,
+          "f2_ci95": [
+            0.2511,
+            0.6258
+          ],
+          "average_precision": 0.3861,
+          "roc_auc": 0.7707
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 15,
+          "event_recall": 0.8333,
+          "event_recall_ci95": [
+            0.6667,
+            1.0
+          ],
+          "time_to_detect_median_s": 29.0,
+          "time_to_detect_p90_s": 205.2,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 143.0
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 410.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 35.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 230.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 168.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 29.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 8.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 125.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 12.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 32.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 140,
+          "normal_hours": 21.85,
+          "per_camera_hour": 6.407,
+          "per_camera_hour_ci95": [
+            3.8065,
+            9.63
+          ]
+        },
+        "seed": 2
+      }
+    ],
+    "camera_grouped": [
+      {
+        "window": {
+          "precision": 0.3758,
+          "recall": 0.433,
+          "f2": 0.4202,
+          "f2_ci95": [
+            0.2463,
+            0.5788
+          ],
+          "average_precision": 0.2943,
+          "roc_auc": 0.7638
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 15,
+          "event_recall": 0.8333,
+          "event_recall_ci95": [
+            0.6667,
+            1.0
+          ],
+          "time_to_detect_median_s": 25.0,
+          "time_to_detect_p90_s": 132.79999999999995,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 410.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 35.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 40.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": true,
+              "time_to_detect_s": 34.0
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 168.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 24.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 8.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 80.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 12.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 32.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 25.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 162,
+          "normal_hours": 21.85,
+          "per_camera_hour": 7.414,
+          "per_camera_hour_ci95": [
+            4.7527,
+            10.2702
+          ]
+        },
+        "seed": 0
+      },
+      {
+        "window": {
+          "precision": 0.3226,
+          "recall": 0.3823,
+          "f2": 0.3687,
+          "f2_ci95": [
+            0.2303,
+            0.507
+          ],
+          "average_precision": 0.2437,
+          "roc_auc": 0.7075
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 15,
+          "event_recall": 0.8333,
+          "event_recall_ci95": [
+            0.6667,
+            1.0
+          ],
+          "time_to_detect_median_s": 35.0,
+          "time_to_detect_p90_s": 153.6,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 655.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 35.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 40.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": true,
+              "time_to_detect_s": 34.0
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 168.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 29.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 8.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 115.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 132.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 15.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 85.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 37.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 30.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 187,
+          "normal_hours": 21.85,
+          "per_camera_hour": 8.559,
+          "per_camera_hour_ci95": [
+            5.6992,
+            11.8915
+          ]
+        },
+        "seed": 1
+      },
+      {
+        "window": {
+          "precision": 0.4456,
+          "recall": 0.4558,
+          "f2": 0.4537,
+          "f2_ci95": [
+            0.274,
+            0.6258
+          ],
+          "average_precision": 0.3413,
+          "roc_auc": 0.7462
+        },
+        "events": {
+          "n_events": 18,
+          "detected": 15,
+          "event_recall": 0.8333,
+          "event_recall_ci95": [
+            0.6667,
+            1.0
+          ],
+          "time_to_detect_median_s": 25.0,
+          "time_to_detect_p90_s": 158.0,
+          "per_event": [
+            {
+              "video_id": 2,
+              "start_sec": 587.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 143.0
+            },
+            {
+              "video_id": 9,
+              "start_sec": 0.0,
+              "end_sec": 287.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 11,
+              "start_sec": 0.0,
+              "end_sec": 888.0,
+              "detected": true,
+              "time_to_detect_s": 405.0
+            },
+            {
+              "video_id": 14,
+              "start_sec": 475.0,
+              "end_sec": 600.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 0.0,
+              "end_sec": 90.0,
+              "detected": true,
+              "time_to_detect_s": 5.0
+            },
+            {
+              "video_id": 33,
+              "start_sec": 165.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 10.0
+            },
+            {
+              "video_id": 35,
+              "start_sec": 106.0,
+              "end_sec": 185.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 49,
+              "start_sec": 422.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 168.0
+            },
+            {
+              "video_id": 51,
+              "start_sec": 431.0,
+              "end_sec": 891.0,
+              "detected": true,
+              "time_to_detect_s": 24.0
+            },
+            {
+              "video_id": 63,
+              "start_sec": 87.0,
+              "end_sec": 853.0,
+              "detected": false,
+              "time_to_detect_s": NaN
+            },
+            {
+              "video_id": 72,
+              "start_sec": 87.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 13.0
+            },
+            {
+              "video_id": 73,
+              "start_sec": 155.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 125.0
+            },
+            {
+              "video_id": 74,
+              "start_sec": 293.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 132.0
+            },
+            {
+              "video_id": 83,
+              "start_sec": 540.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 15.0
+            },
+            {
+              "video_id": 91,
+              "start_sec": 602.0,
+              "end_sec": 900.0,
+              "detected": true,
+              "time_to_detect_s": 3.0
+            },
+            {
+              "video_id": 93,
+              "start_sec": 0.0,
+              "end_sec": 892.0,
+              "detected": true,
+              "time_to_detect_s": 90.0
+            },
+            {
+              "video_id": 95,
+              "start_sec": 38.0,
+              "end_sec": 894.0,
+              "detected": true,
+              "time_to_detect_s": 37.0
+            },
+            {
+              "video_id": 97,
+              "start_sec": 0.0,
+              "end_sec": 890.0,
+              "detected": true,
+              "time_to_detect_s": 25.0
+            }
+          ]
+        },
+        "false_alarms": {
+          "episodes": 163,
+          "normal_hours": 21.85,
+          "per_camera_hour": 7.46,
+          "per_camera_hour_ci95": [
+            4.5713,
+            10.7243
+          ]
+        },
+        "seed": 2
+      }
+    ]
+  }
+}
