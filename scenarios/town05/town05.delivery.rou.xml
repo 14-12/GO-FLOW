@@ -1,0 +1,791 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-10-19 12:33:08.196256 by Eclipse SUMO randomTrips.py v1.27.1
+<configuration>
+    <net-file value="town05.net.xml"/>
+    <output-trip-file value="town05.delivery.trips.xml"/>
+    <route-file value="town05.delivery.rou.xml"/>
+    <prefix value="del"/>
+    <trip-attributes value="departLane=&quot;best&quot; departSpeed=&quot;max&quot;"/>
+    <vehicle-class value="delivery"/>
+    <fringe-factor value="10"/>
+    <seed value="8"/>
+    <min-distance value="120.0"/>
+    <period value="14.545454545454545"/>
+</configuration>
+-->
+
+<!-- generated on 2026-10-19T12:33:08.184850+00:00 by Eclipse SUMO duarouter 1.27.1
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="town05.net.xml"/>
+        <route-files value="town05.delivery.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="town05.delivery.rou.xml"/>
+        <alternatives-output value="NUL"/>
+    </output>
+
+    <time>
+        <begin value="0.0"/>
+        <end value="3600.0"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <ignore-errors value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="del_delivery" vClass="delivery"/>
+    <vehicle id="del0" type="del_delivery" depart="0.00" departLane="best" departSpeed="max">
+        <route edges="-29 -0 17 6"/>
+    </vehicle>
+    <vehicle id="del1" type="del_delivery" depart="14.55" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 25"/>
+    </vehicle>
+    <vehicle id="del2" type="del_delivery" depart="29.09" departLane="best" departSpeed="max">
+        <route edges="-16 -0 -1 -2 -3"/>
+    </vehicle>
+    <vehicle id="del3" type="del_delivery" depart="43.64" departLane="best" departSpeed="max">
+        <route edges="9 8 7 6 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="del4" type="del_delivery" depart="58.18" departLane="best" departSpeed="max">
+        <route edges="20 48 31 -21 -41 -51"/>
+    </vehicle>
+    <vehicle id="del5" type="del_delivery" depart="72.73" departLane="best" departSpeed="max">
+        <route edges="-51 22 40 17 -7"/>
+    </vehicle>
+    <vehicle id="del6" type="del_delivery" depart="87.27" departLane="best" departSpeed="max">
+        <route edges="-1 -50 22 21 -30 -32"/>
+    </vehicle>
+    <vehicle id="del7" type="del_delivery" depart="101.82" departLane="best" departSpeed="max">
+        <route edges="-30 -39 -0 -1 -2 -3 10 9"/>
+    </vehicle>
+    <vehicle id="del8" type="del_delivery" depart="116.36" departLane="best" departSpeed="max">
+        <route edges="-45 -46 -47 -18 21"/>
+    </vehicle>
+    <vehicle id="del9" type="del_delivery" depart="130.91" departLane="best" departSpeed="max">
+        <route edges="-7 4 -46 6 15 13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="del10" type="del_delivery" depart="145.45" departLane="best" departSpeed="max">
+        <route edges="46 -4 7 6 15 13"/>
+    </vehicle>
+    <vehicle id="del11" type="del_delivery" depart="160.00" departLane="best" departSpeed="max">
+        <route edges="-21 40 0 -26 28 27 -38 -13 -14"/>
+    </vehicle>
+    <vehicle id="del12" type="del_delivery" depart="174.55" departLane="best" departSpeed="max">
+        <route edges="51 41 40 17 -7"/>
+    </vehicle>
+    <vehicle id="del13" type="del_delivery" depart="189.09" departLane="best" departSpeed="max">
+        <route edges="-26 -21 -22 51"/>
+    </vehicle>
+    <vehicle id="del14" type="del_delivery" depart="203.64" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -29 39 31 28"/>
+    </vehicle>
+    <vehicle id="del15" type="del_delivery" depart="218.18" departLane="best" departSpeed="max">
+        <route edges="44 2 1 0 25 15 13 -36"/>
+    </vehicle>
+    <vehicle id="del16" type="del_delivery" depart="232.73" departLane="best" departSpeed="max">
+        <route edges="-18 -22 -52 -2 -3 -11 24"/>
+    </vehicle>
+    <vehicle id="del17" type="del_delivery" depart="247.27" departLane="best" departSpeed="max">
+        <route edges="25 -6 -7 -5 -50 51"/>
+    </vehicle>
+    <vehicle id="del18" type="del_delivery" depart="261.82" departLane="best" departSpeed="max">
+        <route edges="41 40 17 -7 -8"/>
+    </vehicle>
+    <vehicle id="del19" type="del_delivery" depart="276.36" departLane="best" departSpeed="max">
+        <route edges="-26 -21 -22"/>
+    </vehicle>
+    <vehicle id="del20" type="del_delivery" depart="290.91" departLane="best" departSpeed="max">
+        <route edges="0 25 -6 -7 -8"/>
+    </vehicle>
+    <vehicle id="del21" type="del_delivery" depart="305.45" departLane="best" departSpeed="max">
+        <route edges="-14 -6 46"/>
+    </vehicle>
+    <vehicle id="del22" type="del_delivery" depart="320.00" departLane="best" departSpeed="max">
+        <route edges="-8 44 2 1 0 25"/>
+    </vehicle>
+    <vehicle id="del23" type="del_delivery" depart="334.55" departLane="best" departSpeed="max">
+        <route edges="-28 -29 -0 -1 -2 -3"/>
+    </vehicle>
+    <vehicle id="del24" type="del_delivery" depart="349.09" departLane="best" departSpeed="max">
+        <route edges="-0 -18 -41 -42"/>
+    </vehicle>
+    <vehicle id="del25" type="del_delivery" depart="363.64" departLane="best" departSpeed="max">
+        <route edges="-45 -4 -5 -50 22 40"/>
+    </vehicle>
+    <vehicle id="del26" type="del_delivery" depart="378.18" departLane="best" departSpeed="max">
+        <route edges="45 44 43 -24"/>
+    </vehicle>
+    <vehicle id="del27" type="del_delivery" depart="392.73" departLane="best" departSpeed="max">
+        <route edges="-46 -47 -18 -22 -23"/>
+    </vehicle>
+    <vehicle id="del28" type="del_delivery" depart="407.27" departLane="best" departSpeed="max">
+        <route edges="22 40 -1 49 7"/>
+    </vehicle>
+    <vehicle id="del29" type="del_delivery" depart="421.82" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -29 25 33"/>
+    </vehicle>
+    <vehicle id="del30" type="del_delivery" depart="436.36" departLane="best" departSpeed="max">
+        <route edges="-39 -0 -1"/>
+    </vehicle>
+    <vehicle id="del31" type="del_delivery" depart="450.91" departLane="best" departSpeed="max">
+        <route edges="33 31 -21 -41 -42"/>
+    </vehicle>
+    <vehicle id="del32" type="del_delivery" depart="465.45" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 -29 39 -48"/>
+    </vehicle>
+    <vehicle id="del33" type="del_delivery" depart="480.00" departLane="best" departSpeed="max">
+        <route edges="-19 48 -32 -6 -7 -8 -9"/>
+    </vehicle>
+    <vehicle id="del34" type="del_delivery" depart="494.55" departLane="best" departSpeed="max">
+        <route edges="-43 2 1 0 39"/>
+    </vehicle>
+    <vehicle id="del35" type="del_delivery" depart="509.09" departLane="best" departSpeed="max">
+        <route edges="-8 44 2 1 0 25"/>
+    </vehicle>
+    <vehicle id="del36" type="del_delivery" depart="523.64" departLane="best" departSpeed="max">
+        <route edges="8 7 6 -16 -26 28 27 -38 -13 -14"/>
+    </vehicle>
+    <vehicle id="del37" type="del_delivery" depart="538.18" departLane="best" departSpeed="max">
+        <route edges="7 6 33 31"/>
+    </vehicle>
+    <vehicle id="del38" type="del_delivery" depart="552.73" departLane="best" departSpeed="max">
+        <route edges="9 8 7 6 15 13"/>
+    </vehicle>
+    <vehicle id="del39" type="del_delivery" depart="567.27" departLane="best" departSpeed="max">
+        <route edges="-24 11 10 9 8 7"/>
+    </vehicle>
+    <vehicle id="del40" type="del_delivery" depart="581.82" departLane="best" departSpeed="max">
+        <route edges="-50 22 40 17 6 -16"/>
+    </vehicle>
+    <vehicle id="del41" type="del_delivery" depart="596.36" departLane="best" departSpeed="max">
+        <route edges="-2 -44 8 7 6 15 13"/>
+    </vehicle>
+    <vehicle id="del42" type="del_delivery" depart="610.91" departLane="best" departSpeed="max">
+        <route edges="-51 -52 1 0 39 -48 -20"/>
+    </vehicle>
+    <vehicle id="del43" type="del_delivery" depart="625.45" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 28"/>
+    </vehicle>
+    <vehicle id="del44" type="del_delivery" depart="640.00" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -16 -26 -21 -22 -52"/>
+    </vehicle>
+    <vehicle id="del45" type="del_delivery" depart="654.55" departLane="best" departSpeed="max">
+        <route edges="-46 -47 -18 -22 -23 -43"/>
+    </vehicle>
+    <vehicle id="del46" type="del_delivery" depart="669.09" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 -29 25 15 -19"/>
+    </vehicle>
+    <vehicle id="del47" type="del_delivery" depart="683.64" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 33 -39 25"/>
+    </vehicle>
+    <vehicle id="del48" type="del_delivery" depart="698.18" departLane="best" departSpeed="max">
+        <route edges="31 -21 -22 -52 49 -8"/>
+    </vehicle>
+    <vehicle id="del49" type="del_delivery" depart="712.73" departLane="best" departSpeed="max">
+        <route edges="25 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="del50" type="del_delivery" depart="727.27" departLane="best" departSpeed="max">
+        <route edges="3 2 1 0 25 15 13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="del51" type="del_delivery" depart="741.82" departLane="best" departSpeed="max">
+        <route edges="-0 17 6 33 -48 19"/>
+    </vehicle>
+    <vehicle id="del52" type="del_delivery" depart="756.36" departLane="best" departSpeed="max">
+        <route edges="46 45 -9 -10 3"/>
+    </vehicle>
+    <vehicle id="del53" type="del_delivery" depart="770.91" departLane="best" departSpeed="max">
+        <route edges="-28 -29 39 31 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del54" type="del_delivery" depart="785.45" departLane="best" departSpeed="max">
+        <route edges="-44 8 -5 -50 51"/>
+    </vehicle>
+    <vehicle id="del55" type="del_delivery" depart="800.00" departLane="best" departSpeed="max">
+        <route edges="42 -51 -52 49 -8 -9"/>
+    </vehicle>
+    <vehicle id="del56" type="del_delivery" depart="814.55" departLane="best" departSpeed="max">
+        <route edges="2 49 7 6"/>
+    </vehicle>
+    <vehicle id="del57" type="del_delivery" depart="829.09" departLane="best" departSpeed="max">
+        <route edges="41 40 0 -26"/>
+    </vehicle>
+    <vehicle id="del58" type="del_delivery" depart="843.64" departLane="best" departSpeed="max">
+        <route edges="-44 8 7 6"/>
+    </vehicle>
+    <vehicle id="del59" type="del_delivery" depart="858.18" departLane="best" departSpeed="max">
+        <route edges="41 21 -30 -39"/>
+    </vehicle>
+    <vehicle id="del60" type="del_delivery" depart="872.73" departLane="best" departSpeed="max">
+        <route edges="-38 -13 -14 -16 39 -48 19"/>
+    </vehicle>
+    <vehicle id="del61" type="del_delivery" depart="887.27" departLane="best" departSpeed="max">
+        <route edges="49 7 6 -16 -26 28"/>
+    </vehicle>
+    <vehicle id="del62" type="del_delivery" depart="901.82" departLane="best" departSpeed="max">
+        <route edges="-7 -5 1 0"/>
+    </vehicle>
+    <vehicle id="del63" type="del_delivery" depart="916.36" departLane="best" departSpeed="max">
+        <route edges="41 21 -30 -32"/>
+    </vehicle>
+    <vehicle id="del64" type="del_delivery" depart="930.91" departLane="best" departSpeed="max">
+        <route edges="-14 -16 -26 28"/>
+    </vehicle>
+    <vehicle id="del65" type="del_delivery" depart="945.45" departLane="best" departSpeed="max">
+        <route edges="-32 -16 -26 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del66" type="del_delivery" depart="960.00" departLane="best" departSpeed="max">
+        <route edges="39 -32 -6 -7 -8"/>
+    </vehicle>
+    <vehicle id="del67" type="del_delivery" depart="974.55" departLane="best" departSpeed="max">
+        <route edges="-36 -27 -28 -29 -0 -1 49 4 45"/>
+    </vehicle>
+    <vehicle id="del68" type="del_delivery" depart="989.09" departLane="best" departSpeed="max">
+        <route edges="-47 -18 -22 -23 -43"/>
+    </vehicle>
+    <vehicle id="del69" type="del_delivery" depart="1003.64" departLane="best" departSpeed="max">
+        <route edges="7 6 -16 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="del70" type="del_delivery" depart="1018.18" departLane="best" departSpeed="max">
+        <route edges="4 -46 6 15"/>
+    </vehicle>
+    <vehicle id="del71" type="del_delivery" depart="1032.73" departLane="best" departSpeed="max">
+        <route edges="40 -1 -2 -44"/>
+    </vehicle>
+    <vehicle id="del72" type="del_delivery" depart="1047.27" departLane="best" departSpeed="max">
+        <route edges="-46 -47 -18 21"/>
+    </vehicle>
+    <vehicle id="del73" type="del_delivery" depart="1061.82" departLane="best" departSpeed="max">
+        <route edges="35 -27 -28 -21 -22 -23 -24 11 10 9"/>
+    </vehicle>
+    <vehicle id="del74" type="del_delivery" depart="1076.36" departLane="best" departSpeed="max">
+        <route edges="48 -32 15 13 35"/>
+    </vehicle>
+    <vehicle id="del75" type="del_delivery" depart="1090.91" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 -0 17"/>
+    </vehicle>
+    <vehicle id="del76" type="del_delivery" depart="1105.45" departLane="best" departSpeed="max">
+        <route edges="23 -52 49 7 6 -16"/>
+    </vehicle>
+    <vehicle id="del77" type="del_delivery" depart="1120.00" departLane="best" departSpeed="max">
+        <route edges="43 23 22 21"/>
+    </vehicle>
+    <vehicle id="del78" type="del_delivery" depart="1134.55" departLane="best" departSpeed="max">
+        <route edges="-4 -8 -9 -10 -11"/>
+    </vehicle>
+    <vehicle id="del79" type="del_delivery" depart="1149.09" departLane="best" departSpeed="max">
+        <route edges="48 31 -21 -22 -23 42"/>
+    </vehicle>
+    <vehicle id="del80" type="del_delivery" depart="1163.64" departLane="best" departSpeed="max">
+        <route edges="21 -29 -0 -1 -2 -44"/>
+    </vehicle>
+    <vehicle id="del81" type="del_delivery" depart="1178.18" departLane="best" departSpeed="max">
+        <route edges="40 17 -7 4"/>
+    </vehicle>
+    <vehicle id="del82" type="del_delivery" depart="1192.73" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -16 39 -32 15"/>
+    </vehicle>
+    <vehicle id="del83" type="del_delivery" depart="1207.27" departLane="best" departSpeed="max">
+        <route edges="-4 -5 -50 22 21 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del84" type="del_delivery" depart="1221.82" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -16 -0 -18 -41 -42"/>
+    </vehicle>
+    <vehicle id="del85" type="del_delivery" depart="1236.36" departLane="best" departSpeed="max">
+        <route edges="-22 51 41 21 -30"/>
+    </vehicle>
+    <vehicle id="del86" type="del_delivery" depart="1250.91" departLane="best" departSpeed="max">
+        <route edges="-46 -7 -5"/>
+    </vehicle>
+    <vehicle id="del87" type="del_delivery" depart="1265.45" departLane="best" departSpeed="max">
+        <route edges="35 -27 -28 -29 -0 -18"/>
+    </vehicle>
+    <vehicle id="del88" type="del_delivery" depart="1280.00" departLane="best" departSpeed="max">
+        <route edges="-28 -29 39 31 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del89" type="del_delivery" depart="1294.55" departLane="best" departSpeed="max">
+        <route edges="10 9 8 7 6 -16 -26 28"/>
+    </vehicle>
+    <vehicle id="del90" type="del_delivery" depart="1309.09" departLane="best" departSpeed="max">
+        <route edges="40 -1 -2 -3 10"/>
+    </vehicle>
+    <vehicle id="del91" type="del_delivery" depart="1323.64" departLane="best" departSpeed="max">
+        <route edges="-41 -51 -52 49 -8 44"/>
+    </vehicle>
+    <vehicle id="del92" type="del_delivery" depart="1338.18" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -6"/>
+    </vehicle>
+    <vehicle id="del93" type="del_delivery" depart="1352.73" departLane="best" departSpeed="max">
+        <route edges="11 3 2 49"/>
+    </vehicle>
+    <vehicle id="del94" type="del_delivery" depart="1367.27" departLane="best" departSpeed="max">
+        <route edges="9 44 2 49"/>
+    </vehicle>
+    <vehicle id="del95" type="del_delivery" depart="1381.82" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -21 -41"/>
+    </vehicle>
+    <vehicle id="del96" type="del_delivery" depart="1396.36" departLane="best" departSpeed="max">
+        <route edges="-47 -18 -22 -23"/>
+    </vehicle>
+    <vehicle id="del97" type="del_delivery" depart="1410.91" departLane="best" departSpeed="max">
+        <route edges="31 28 27 -38 -13"/>
+    </vehicle>
+    <vehicle id="del98" type="del_delivery" depart="1425.45" departLane="best" departSpeed="max">
+        <route edges="44 2 1 0 25 15 13"/>
+    </vehicle>
+    <vehicle id="del99" type="del_delivery" depart="1440.00" departLane="best" departSpeed="max">
+        <route edges="49 7 6 15 13"/>
+    </vehicle>
+    <vehicle id="del100" type="del_delivery" depart="1454.55" departLane="best" departSpeed="max">
+        <route edges="45 8 7 6 15 -19 48"/>
+    </vehicle>
+    <vehicle id="del101" type="del_delivery" depart="1469.09" departLane="best" departSpeed="max">
+        <route edges="24 -43 -44 8"/>
+    </vehicle>
+    <vehicle id="del102" type="del_delivery" depart="1483.64" departLane="best" departSpeed="max">
+        <route edges="-7 -5 -2 -44"/>
+    </vehicle>
+    <vehicle id="del103" type="del_delivery" depart="1498.18" departLane="best" departSpeed="max">
+        <route edges="41 40 0"/>
+    </vehicle>
+    <vehicle id="del104" type="del_delivery" depart="1512.73" departLane="best" departSpeed="max">
+        <route edges="-39 -0 -1 -2 43 23"/>
+    </vehicle>
+    <vehicle id="del105" type="del_delivery" depart="1527.27" departLane="best" departSpeed="max">
+        <route edges="-6 -47 0 39 -48 -20"/>
+    </vehicle>
+    <vehicle id="del106" type="del_delivery" depart="1541.82" departLane="best" departSpeed="max">
+        <route edges="41 40 17 -7"/>
+    </vehicle>
+    <vehicle id="del107" type="del_delivery" depart="1556.36" departLane="best" departSpeed="max">
+        <route edges="7 -47 0"/>
+    </vehicle>
+    <vehicle id="del108" type="del_delivery" depart="1570.91" departLane="best" departSpeed="max">
+        <route edges="49 7 6 -16 -26 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del109" type="del_delivery" depart="1585.45" departLane="best" departSpeed="max">
+        <route edges="-28 -21 40 0"/>
+    </vehicle>
+    <vehicle id="del110" type="del_delivery" depart="1600.00" departLane="best" departSpeed="max">
+        <route edges="33 -39 -0 -1 49 4"/>
+    </vehicle>
+    <vehicle id="del111" type="del_delivery" depart="1614.55" departLane="best" departSpeed="max">
+        <route edges="20 48 -39 -0 -1 -2"/>
+    </vehicle>
+    <vehicle id="del112" type="del_delivery" depart="1629.09" departLane="best" departSpeed="max">
+        <route edges="-46 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="del113" type="del_delivery" depart="1643.64" departLane="best" departSpeed="max">
+        <route edges="-44 8 -5 -50 51"/>
+    </vehicle>
+    <vehicle id="del114" type="del_delivery" depart="1658.18" departLane="best" departSpeed="max">
+        <route edges="19 13 35 -27 -28 -21"/>
+    </vehicle>
+    <vehicle id="del115" type="del_delivery" depart="1672.73" departLane="best" departSpeed="max">
+        <route edges="24 23 -52 49 7 6 -16"/>
+    </vehicle>
+    <vehicle id="del116" type="del_delivery" depart="1687.27" departLane="best" departSpeed="max">
+        <route edges="-24 11 10 9 8 7 6 15 13"/>
+    </vehicle>
+    <vehicle id="del117" type="del_delivery" depart="1701.82" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 -0 -1 49 7"/>
+    </vehicle>
+    <vehicle id="del118" type="del_delivery" depart="1716.36" departLane="best" departSpeed="max">
+        <route edges="7 6 15 -19"/>
+    </vehicle>
+    <vehicle id="del119" type="del_delivery" depart="1730.91" departLane="best" departSpeed="max">
+        <route edges="51 41 21"/>
+    </vehicle>
+    <vehicle id="del120" type="del_delivery" depart="1745.45" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -5 -50 -23"/>
+    </vehicle>
+    <vehicle id="del121" type="del_delivery" depart="1760.00" departLane="best" departSpeed="max">
+        <route edges="-29 -0 -1 -2 -44"/>
+    </vehicle>
+    <vehicle id="del122" type="del_delivery" depart="1774.55" departLane="best" departSpeed="max">
+        <route edges="-42 -43 -44"/>
+    </vehicle>
+    <vehicle id="del123" type="del_delivery" depart="1789.09" departLane="best" departSpeed="max">
+        <route edges="39 31 -29 -0 -1 -2 -44"/>
+    </vehicle>
+    <vehicle id="del124" type="del_delivery" depart="1803.64" departLane="best" departSpeed="max">
+        <route edges="-21 40 0 25"/>
+    </vehicle>
+    <vehicle id="del125" type="del_delivery" depart="1818.18" departLane="best" departSpeed="max">
+        <route edges="-10 -11 24 23 22 21 -29"/>
+    </vehicle>
+    <vehicle id="del126" type="del_delivery" depart="1832.73" departLane="best" departSpeed="max">
+        <route edges="-43 -44"/>
+    </vehicle>
+    <vehicle id="del127" type="del_delivery" depart="1847.27" departLane="best" departSpeed="max">
+        <route edges="10 9 8 7 6 33 -39"/>
+    </vehicle>
+    <vehicle id="del128" type="del_delivery" depart="1861.82" departLane="best" departSpeed="max">
+        <route edges="35 -27 -28 -21 -22 -23 -24 11 3"/>
+    </vehicle>
+    <vehicle id="del129" type="del_delivery" depart="1876.36" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -30"/>
+    </vehicle>
+    <vehicle id="del130" type="del_delivery" depart="1890.91" departLane="best" departSpeed="max">
+        <route edges="41 21 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del131" type="del_delivery" depart="1905.45" departLane="best" departSpeed="max">
+        <route edges="21 -29 -0 -18 -41 -42"/>
+    </vehicle>
+    <vehicle id="del132" type="del_delivery" depart="1920.00" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -29 39 31 28"/>
+    </vehicle>
+    <vehicle id="del133" type="del_delivery" depart="1934.55" departLane="best" departSpeed="max">
+        <route edges="-43 2 1 17"/>
+    </vehicle>
+    <vehicle id="del134" type="del_delivery" depart="1949.09" departLane="best" departSpeed="max">
+        <route edges="-51 -52"/>
+    </vehicle>
+    <vehicle id="del135" type="del_delivery" depart="1963.64" departLane="best" departSpeed="max">
+        <route edges="-45 -4 -5 1"/>
+    </vehicle>
+    <vehicle id="del136" type="del_delivery" depart="1978.18" departLane="best" departSpeed="max">
+        <route edges="25 -6 -7 -5 -50 -23"/>
+    </vehicle>
+    <vehicle id="del137" type="del_delivery" depart="1992.73" departLane="best" departSpeed="max">
+        <route edges="-21 -22 -52 49 4"/>
+    </vehicle>
+    <vehicle id="del138" type="del_delivery" depart="2007.27" departLane="best" departSpeed="max">
+        <route edges="-18 21 28 27 37"/>
+    </vehicle>
+    <vehicle id="del139" type="del_delivery" depart="2021.82" departLane="best" departSpeed="max">
+        <route edges="2 -50 22 21 -30"/>
+    </vehicle>
+    <vehicle id="del140" type="del_delivery" depart="2036.36" departLane="best" departSpeed="max">
+        <route edges="44 2 1 0 -26"/>
+    </vehicle>
+    <vehicle id="del141" type="del_delivery" depart="2050.91" departLane="best" departSpeed="max">
+        <route edges="-2 -44 -9 -10"/>
+    </vehicle>
+    <vehicle id="del142" type="del_delivery" depart="2065.45" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -6 -7 -8 -9 -10 3"/>
+    </vehicle>
+    <vehicle id="del143" type="del_delivery" depart="2080.00" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="del144" type="del_delivery" depart="2094.55" departLane="best" departSpeed="max">
+        <route edges="-0 -1 49 4"/>
+    </vehicle>
+    <vehicle id="del145" type="del_delivery" depart="2109.09" departLane="best" departSpeed="max">
+        <route edges="-48 -20 -28 -29 -0 17 46"/>
+    </vehicle>
+    <vehicle id="del146" type="del_delivery" depart="2123.64" departLane="best" departSpeed="max">
+        <route edges="-0 -1 -2 -44 8"/>
+    </vehicle>
+    <vehicle id="del147" type="del_delivery" depart="2138.18" departLane="best" departSpeed="max">
+        <route edges="-18 -22 -52 49 -8"/>
+    </vehicle>
+    <vehicle id="del148" type="del_delivery" depart="2152.73" departLane="best" departSpeed="max">
+        <route edges="-6 -7 4 45 8"/>
+    </vehicle>
+    <vehicle id="del149" type="del_delivery" depart="2167.27" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -6 -7 4 45 8"/>
+    </vehicle>
+    <vehicle id="del150" type="del_delivery" depart="2181.82" departLane="best" departSpeed="max">
+        <route edges="46 -4 -5"/>
+    </vehicle>
+    <vehicle id="del151" type="del_delivery" depart="2196.36" departLane="best" departSpeed="max">
+        <route edges="15 -19 48 -39 -0 -18 21"/>
+    </vehicle>
+    <vehicle id="del152" type="del_delivery" depart="2210.91" departLane="best" departSpeed="max">
+        <route edges="-30 -39 -0 -1 -2 -3 -11 24"/>
+    </vehicle>
+    <vehicle id="del153" type="del_delivery" depart="2225.45" departLane="best" departSpeed="max">
+        <route edges="-26 -21 -22 -52 49 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="del154" type="del_delivery" depart="2240.00" departLane="best" departSpeed="max">
+        <route edges="-14 -6 -7"/>
+    </vehicle>
+    <vehicle id="del155" type="del_delivery" depart="2254.55" departLane="best" departSpeed="max">
+        <route edges="24 23 22 21 -29"/>
+    </vehicle>
+    <vehicle id="del156" type="del_delivery" depart="2269.09" departLane="best" departSpeed="max">
+        <route edges="-46 -7 -8 -9 -10 -11 24"/>
+    </vehicle>
+    <vehicle id="del157" type="del_delivery" depart="2283.64" departLane="best" departSpeed="max">
+        <route edges="-32 -6 -7 -8 -9"/>
+    </vehicle>
+    <vehicle id="del158" type="del_delivery" depart="2298.18" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -29 -0 -1 -2 -3 -11 24"/>
+    </vehicle>
+    <vehicle id="del159" type="del_delivery" depart="2312.73" departLane="best" departSpeed="max">
+        <route edges="43 23 22 21 -29 25 15 13 35"/>
+    </vehicle>
+    <vehicle id="del160" type="del_delivery" depart="2327.27" departLane="best" departSpeed="max">
+        <route edges="-7 -5 -50 22 21 28 27"/>
+    </vehicle>
+    <vehicle id="del161" type="del_delivery" depart="2341.82" departLane="best" departSpeed="max">
+        <route edges="-4 -5 -50 22 21"/>
+    </vehicle>
+    <vehicle id="del162" type="del_delivery" depart="2356.36" departLane="best" departSpeed="max">
+        <route edges="-16 -0 -18 -41 -42"/>
+    </vehicle>
+    <vehicle id="del163" type="del_delivery" depart="2370.91" departLane="best" departSpeed="max">
+        <route edges="23 22 40 17 46"/>
+    </vehicle>
+    <vehicle id="del164" type="del_delivery" depart="2385.45" departLane="best" departSpeed="max">
+        <route edges="43 23 -52 49 7"/>
+    </vehicle>
+    <vehicle id="del165" type="del_delivery" depart="2400.00" departLane="best" departSpeed="max">
+        <route edges="19"/>
+    </vehicle>
+    <vehicle id="del166" type="del_delivery" depart="2414.55" departLane="best" departSpeed="max">
+        <route edges="-52 1 0 39 -48 -20 -28"/>
+    </vehicle>
+    <vehicle id="del167" type="del_delivery" depart="2429.09" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -16 -0 17"/>
+    </vehicle>
+    <vehicle id="del168" type="del_delivery" depart="2443.64" departLane="best" departSpeed="max">
+        <route edges="-22 -52 -2 -3"/>
+    </vehicle>
+    <vehicle id="del169" type="del_delivery" depart="2458.18" departLane="best" departSpeed="max">
+        <route edges="15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="del170" type="del_delivery" depart="2472.73" departLane="best" departSpeed="max">
+        <route edges="-32 -16 -0 -1 -50"/>
+    </vehicle>
+    <vehicle id="del171" type="del_delivery" depart="2487.27" departLane="best" departSpeed="max">
+        <route edges="9 8 7 6 -16 -26 -21"/>
+    </vehicle>
+    <vehicle id="del172" type="del_delivery" depart="2501.82" departLane="best" departSpeed="max">
+        <route edges="-29 25 15"/>
+    </vehicle>
+    <vehicle id="del173" type="del_delivery" depart="2516.36" departLane="best" departSpeed="max">
+        <route edges="41 21 -29 25 15 -19 48"/>
+    </vehicle>
+    <vehicle id="del174" type="del_delivery" depart="2530.91" departLane="best" departSpeed="max">
+        <route edges="-46 6 33"/>
+    </vehicle>
+    <vehicle id="del175" type="del_delivery" depart="2545.45" departLane="best" departSpeed="max">
+        <route edges="-2 -44 -45"/>
+    </vehicle>
+    <vehicle id="del176" type="del_delivery" depart="2560.00" departLane="best" departSpeed="max">
+        <route edges="42 -51 22"/>
+    </vehicle>
+    <vehicle id="del177" type="del_delivery" depart="2574.55" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 -29 25 15"/>
+    </vehicle>
+    <vehicle id="del178" type="del_delivery" depart="2589.09" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -5 1"/>
+    </vehicle>
+    <vehicle id="del179" type="del_delivery" depart="2603.64" departLane="best" departSpeed="max">
+        <route edges="51 41 40 17"/>
+    </vehicle>
+    <vehicle id="del180" type="del_delivery" depart="2618.18" departLane="best" departSpeed="max">
+        <route edges="17 -7 -5 -2"/>
+    </vehicle>
+    <vehicle id="del181" type="del_delivery" depart="2632.73" departLane="best" departSpeed="max">
+        <route edges="9 8 7 6 15 13 -36"/>
+    </vehicle>
+    <vehicle id="del182" type="del_delivery" depart="2647.27" departLane="best" departSpeed="max">
+        <route edges="1 0 -26"/>
+    </vehicle>
+    <vehicle id="del183" type="del_delivery" depart="2661.82" departLane="best" departSpeed="max">
+        <route edges="2 1 0 -26 28 27 -38 -13 -14"/>
+    </vehicle>
+    <vehicle id="del184" type="del_delivery" depart="2676.36" departLane="best" departSpeed="max">
+        <route edges="-41 -42 -43 -44 -45"/>
+    </vehicle>
+    <vehicle id="del185" type="del_delivery" depart="2690.91" departLane="best" departSpeed="max">
+        <route edges="-22 -52 1 17 -7"/>
+    </vehicle>
+    <vehicle id="del186" type="del_delivery" depart="2705.45" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -6 -7 -8 44 2"/>
+    </vehicle>
+    <vehicle id="del187" type="del_delivery" depart="2720.00" departLane="best" departSpeed="max">
+        <route edges="7 6"/>
+    </vehicle>
+    <vehicle id="del188" type="del_delivery" depart="2734.55" departLane="best" departSpeed="max">
+        <route edges="-6 -47 -18 -22 -52"/>
+    </vehicle>
+    <vehicle id="del189" type="del_delivery" depart="2749.09" departLane="best" departSpeed="max">
+        <route edges="31 -21 -22 -52 49 -8 44"/>
+    </vehicle>
+    <vehicle id="del190" type="del_delivery" depart="2763.64" departLane="best" departSpeed="max">
+        <route edges="39 31 -21 -22"/>
+    </vehicle>
+    <vehicle id="del191" type="del_delivery" depart="2778.18" departLane="best" departSpeed="max">
+        <route edges="-2 -44 8 7 6 15 -19 48"/>
+    </vehicle>
+    <vehicle id="del192" type="del_delivery" depart="2792.73" departLane="best" departSpeed="max">
+        <route edges="-8 -9 -10 -11 24"/>
+    </vehicle>
+    <vehicle id="del193" type="del_delivery" depart="2807.27" departLane="best" departSpeed="max">
+        <route edges="48 31 28"/>
+    </vehicle>
+    <vehicle id="del194" type="del_delivery" depart="2821.82" departLane="best" departSpeed="max">
+        <route edges="11 10 9 8 7 6"/>
+    </vehicle>
+    <vehicle id="del195" type="del_delivery" depart="2836.36" departLane="best" departSpeed="max">
+        <route edges="19 13 35 -27 -28 -29 -0 -1 -50"/>
+    </vehicle>
+    <vehicle id="del196" type="del_delivery" depart="2850.91" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -6 -7 4 45"/>
+    </vehicle>
+    <vehicle id="del197" type="del_delivery" depart="2865.45" departLane="best" departSpeed="max">
+        <route edges="-43 2 1 0"/>
+    </vehicle>
+    <vehicle id="del198" type="del_delivery" depart="2880.00" departLane="best" departSpeed="max">
+        <route edges="23 22 40 17"/>
+    </vehicle>
+    <vehicle id="del199" type="del_delivery" depart="2894.55" departLane="best" departSpeed="max">
+        <route edges="-36 -27 -28 -29 -0 17 46"/>
+    </vehicle>
+    <vehicle id="del200" type="del_delivery" depart="2909.09" departLane="best" departSpeed="max">
+        <route edges="10 9 8 7 6 -16 -26 28 27"/>
+    </vehicle>
+    <vehicle id="del201" type="del_delivery" depart="2923.64" departLane="best" departSpeed="max">
+        <route edges="24 -43 2 -50"/>
+    </vehicle>
+    <vehicle id="del202" type="del_delivery" depart="2938.18" departLane="best" departSpeed="max">
+        <route edges="1 -18 21"/>
+    </vehicle>
+    <vehicle id="del203" type="del_delivery" depart="2952.73" departLane="best" departSpeed="max">
+        <route edges="2 1 0 -26 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del204" type="del_delivery" depart="2967.27" departLane="best" departSpeed="max">
+        <route edges="-24 11 10 9 8 7 6 15 -19"/>
+    </vehicle>
+    <vehicle id="del205" type="del_delivery" depart="2981.82" departLane="best" departSpeed="max">
+        <route edges="-2 43 -24"/>
+    </vehicle>
+    <vehicle id="del206" type="del_delivery" depart="2996.36" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -5 -50 -23 -24 11"/>
+    </vehicle>
+    <vehicle id="del207" type="del_delivery" depart="3010.91" departLane="best" departSpeed="max">
+        <route edges="25 -6 -7 -5 -50"/>
+    </vehicle>
+    <vehicle id="del208" type="del_delivery" depart="3025.45" departLane="best" departSpeed="max">
+        <route edges="33 -39 -0 17 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="del209" type="del_delivery" depart="3040.00" departLane="best" departSpeed="max">
+        <route edges="-42 23 -52 -2"/>
+    </vehicle>
+    <vehicle id="del210" type="del_delivery" depart="3054.55" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -29 -0 -1 -50"/>
+    </vehicle>
+    <vehicle id="del211" type="del_delivery" depart="3069.09" departLane="best" departSpeed="max">
+        <route edges="-44 8 7 -47 -18 -41"/>
+    </vehicle>
+    <vehicle id="del212" type="del_delivery" depart="3083.64" departLane="best" departSpeed="max">
+        <route edges="-19 48 -39 -26"/>
+    </vehicle>
+    <vehicle id="del213" type="del_delivery" depart="3098.18" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -5 -50 -23 -24 11"/>
+    </vehicle>
+    <vehicle id="del214" type="del_delivery" depart="3112.73" departLane="best" departSpeed="max">
+        <route edges="-19 48 31 -21 -22 51 41"/>
+    </vehicle>
+    <vehicle id="del215" type="del_delivery" depart="3127.27" departLane="best" departSpeed="max">
+        <route edges="-10 3 2 1 0 39 -48 -20"/>
+    </vehicle>
+    <vehicle id="del216" type="del_delivery" depart="3141.82" departLane="best" departSpeed="max">
+        <route edges="-50 22 -41"/>
+    </vehicle>
+    <vehicle id="del217" type="del_delivery" depart="3156.36" departLane="best" departSpeed="max">
+        <route edges="-9 -10 -11 24"/>
+    </vehicle>
+    <vehicle id="del218" type="del_delivery" depart="3170.91" departLane="best" departSpeed="max">
+        <route edges="15 13 35"/>
+    </vehicle>
+    <vehicle id="del219" type="del_delivery" depart="3185.45" departLane="best" departSpeed="max">
+        <route edges="-48 -20"/>
+    </vehicle>
+    <vehicle id="del220" type="del_delivery" depart="3200.00" departLane="best" departSpeed="max">
+        <route edges="-14 -16 -26 -21 -22 -23 -24"/>
+    </vehicle>
+    <vehicle id="del221" type="del_delivery" depart="3214.55" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 -29 25 15 13 -36"/>
+    </vehicle>
+    <vehicle id="del222" type="del_delivery" depart="3229.09" departLane="best" departSpeed="max">
+        <route edges="10 9 8 -5 -50 22"/>
+    </vehicle>
+    <vehicle id="del223" type="del_delivery" depart="3243.64" departLane="best" departSpeed="max">
+        <route edges="48 31 -21"/>
+    </vehicle>
+    <vehicle id="del224" type="del_delivery" depart="3258.18" departLane="best" departSpeed="max">
+        <route edges="-44 8 7 6 -16 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="del225" type="del_delivery" depart="3272.73" departLane="best" departSpeed="max">
+        <route edges="-8 44 -3 10"/>
+    </vehicle>
+    <vehicle id="del226" type="del_delivery" depart="3287.27" departLane="best" departSpeed="max">
+        <route edges="48 -32 15"/>
+    </vehicle>
+    <vehicle id="del227" type="del_delivery" depart="3301.82" departLane="best" departSpeed="max">
+        <route edges="46 -4 7 6 33 -48 -20 -28"/>
+    </vehicle>
+    <vehicle id="del228" type="del_delivery" depart="3316.36" departLane="best" departSpeed="max">
+        <route edges="-21 40 0 -26 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del229" type="del_delivery" depart="3330.91" departLane="best" departSpeed="max">
+        <route edges="49 -8 -45"/>
+    </vehicle>
+    <vehicle id="del230" type="del_delivery" depart="3345.45" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 28 27 -38"/>
+    </vehicle>
+    <vehicle id="del231" type="del_delivery" depart="3360.00" departLane="best" departSpeed="max">
+        <route edges="-14 -16 -0 -1 -50"/>
+    </vehicle>
+    <vehicle id="del232" type="del_delivery" depart="3374.55" departLane="best" departSpeed="max">
+        <route edges="-7 -5 -50 22 -41"/>
+    </vehicle>
+    <vehicle id="del233" type="del_delivery" depart="3389.09" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -29 25 15 -19"/>
+    </vehicle>
+    <vehicle id="del234" type="del_delivery" depart="3403.64" departLane="best" departSpeed="max">
+        <route edges="10 9 8 7 6 33 -48 19"/>
+    </vehicle>
+    <vehicle id="del235" type="del_delivery" depart="3418.18" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -16 -0 -1 -2 -3 10 9"/>
+    </vehicle>
+    <vehicle id="del236" type="del_delivery" depart="3432.73" departLane="best" departSpeed="max">
+        <route edges="25 -6 -7 -8 -9 -10 -11"/>
+    </vehicle>
+    <vehicle id="del237" type="del_delivery" depart="3447.27" departLane="best" departSpeed="max">
+        <route edges="2 1 0 39 -48 19"/>
+    </vehicle>
+    <vehicle id="del238" type="del_delivery" depart="3461.82" departLane="best" departSpeed="max">
+        <route edges="1 -18 -22 51"/>
+    </vehicle>
+    <vehicle id="del239" type="del_delivery" depart="3476.36" departLane="best" departSpeed="max">
+        <route edges="-13 -14 -16 -0 -1"/>
+    </vehicle>
+    <vehicle id="del240" type="del_delivery" depart="3490.91" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -16 39 -32 15 -19"/>
+    </vehicle>
+    <vehicle id="del241" type="del_delivery" depart="3505.45" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 -0 -1 49 4"/>
+    </vehicle>
+    <vehicle id="del242" type="del_delivery" depart="3520.00" departLane="best" departSpeed="max">
+        <route edges="-43 -44 8 7 6 -16"/>
+    </vehicle>
+    <vehicle id="del243" type="del_delivery" depart="3534.55" departLane="best" departSpeed="max">
+        <route edges="8 -5 -2 43"/>
+    </vehicle>
+    <vehicle id="del244" type="del_delivery" depart="3549.09" departLane="best" departSpeed="max">
+        <route edges="48 -32 -6 -7 -8"/>
+    </vehicle>
+    <vehicle id="del245" type="del_delivery" depart="3563.64" departLane="best" departSpeed="max">
+        <route edges="-36 -27 -28 -21 -22 -23 -43 2"/>
+    </vehicle>
+    <vehicle id="del246" type="del_delivery" depart="3578.18" departLane="best" departSpeed="max">
+        <route edges="-21 40 0 39 -32"/>
+    </vehicle>
+    <vehicle id="del247" type="del_delivery" depart="3592.73" departLane="best" departSpeed="max">
+        <route edges="33 31 -21 -22 -23"/>
+    </vehicle>
+</routes>

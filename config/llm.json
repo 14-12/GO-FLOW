@@ -1,0 +1,37 @@
+{
+  "_comment": "Free models tried in this order (cosim/llm.py). Keys are NOT here: put them in .env (project folder or config/) (GROQ_API_KEY=..., GEMINI_API_KEY=..., OPENROUTER_API_KEY=...). Limits are the free tiers measured or published in October 2026; the providers' own 429s are what count, these only stop us from hammering them.",
+  "providers": [
+    {
+      "name": "groq-gpt-oss-120b",
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "openai/gpt-oss-120b",
+      "key_env": "GROQ_API_KEY",
+      "rpm": 30, "rpd": 1000, "tpm": 8000,
+      "extra": {"reasoning_effort": "low"}
+    },
+    {
+      "name": "gemini-3.5-flash-lite",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "model": "gemini-3.5-flash-lite",
+      "key_env": "GEMINI_API_KEY",
+      "rpm": 15, "rpd": 500,
+      "extra": {"reasoning_effort": "low"}
+    },
+    {
+      "name": "groq-gpt-oss-20b",
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "openai/gpt-oss-20b",
+      "key_env": "GROQ_API_KEY",
+      "rpm": 30, "rpd": 1000, "tpm": 8000,
+      "extra": {"reasoning_effort": "low"}
+    },
+    {
+      "name": "openrouter-free",
+      "base_url": "https://openrouter.ai/api/v1",
+      "model": "openrouter/free",
+      "key_env": "OPENROUTER_API_KEY",
+      "rpm": 20, "rpd": 50,
+      "json_schema": false
+    }
+  ]
+}

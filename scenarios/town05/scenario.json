@@ -1,0 +1,51 @@
+{
+  "kind": "carla-town",
+  "carla_map": "Town05",
+  "xodr_sha256": "7edc53b0be840e177598da7a4ed9571146d7b2595ce280d154c90f92e8a48851",
+  "net_content_sha256": "57d3d6011a731bfceaa7f6160db7cfbdcd29892210a5eeec9e3076b2d67eb83b",
+  "tls": 15,
+  "signal_control_completed": {
+    "same_lane_group": 53,
+    "opposite_approach": 3,
+    "signalised_junctions": 15,
+    "movements": 256,
+    "were_controlled": 200
+  },
+  "actuated_programs": 15,
+  "webster_programs": 15,
+  "vehicles": {
+    "passenger": 2475,
+    "delivery": 248,
+    "truck": 99,
+    "bus": 44,
+    "motorcycle": 165
+  },
+  "end": 3600.0,
+  "step_length": 0.5,
+  "seed": 7,
+  "clock_start_s": 57600,
+  "scale": 1.1,
+  "tools": {
+    "sumo": "Eclipse SUMO sumo 1.27.1",
+    "netconvert_carla": "CARLA 0.9.16"
+  },
+  "pedestrian_crossings": {
+    "crossings": 55,
+    "signalised_junctions": 15,
+    "walkingareas": 80,
+    "tool": "tools/build_town05_peds.py",
+    "original_net": "town05.noped.net.xml"
+  },
+  "signal_layout": {
+    "layout": "opposites (opposite approaches together, permissive lefts, walk with the parallel traffic)",
+    "tool": "tools/build_town05_signals.py",
+    "original_net": "town05.carla_cycle.net.xml",
+    "carried_links": 200,
+    "lost_links": 0
+  },
+  "coordinated": {
+    "cycle_s": 115.0,
+    "arrivals_on_green": 0.447,
+    "arrivals_on_green_offsets_0": 0.305
+  }
+}

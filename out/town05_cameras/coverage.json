@@ -1,0 +1,172 @@
+{
+ "cameras": 55,
+ "lanes_counted": 475,
+ "lanes_owned": 475,
+ "reach_m": 75.0,
+ "in_share": 0.781,
+ "out_share": 0.721,
+ "junctions": {
+  "1126": {
+   "in_seen_m": 568,
+   "in_total_m": 767,
+   "in_share": 0.74,
+   "out_seen_m": 575,
+   "out_total_m": 745,
+   "out_share": 0.772,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "1292": {
+   "in_seen_m": 513,
+   "in_total_m": 687,
+   "in_share": 0.748,
+   "out_seen_m": 548,
+   "out_total_m": 716,
+   "out_share": 0.764,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "1427": {
+   "in_seen_m": 545,
+   "in_total_m": 786,
+   "in_share": 0.693,
+   "out_seen_m": 582,
+   "out_total_m": 774,
+   "out_share": 0.752,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "1574": {
+   "in_seen_m": 557,
+   "in_total_m": 768,
+   "in_share": 0.725,
+   "out_seen_m": 560,
+   "out_total_m": 731,
+   "out_share": 0.767,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": [
+    "-30_5",
+    "33_3"
+   ]
+  },
+  "1722": {
+   "in_seen_m": 591,
+   "in_total_m": 797,
+   "in_share": 0.741,
+   "out_seen_m": 632,
+   "out_total_m": 824,
+   "out_share": 0.767,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": [
+    "24_3",
+    "24_4",
+    "41_4"
+   ]
+  },
+  "1882": {
+   "in_seen_m": 541,
+   "in_total_m": 621,
+   "in_share": 0.872,
+   "out_seen_m": 502,
+   "out_total_m": 594,
+   "out_share": 0.845,
+   "cameras": 3,
+   "incoming_lanes_under_half_seen": []
+  },
+  "2014": {
+   "in_seen_m": 554,
+   "in_total_m": 679,
+   "in_share": 0.816,
+   "out_seen_m": 108,
+   "out_total_m": 607,
+   "out_share": 0.177,
+   "cameras": 3,
+   "incoming_lanes_under_half_seen": []
+  },
+  "207": {
+   "in_seen_m": 537,
+   "in_total_m": 756,
+   "in_share": 0.711,
+   "out_seen_m": 551,
+   "out_total_m": 748,
+   "out_share": 0.737,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "2086": {
+   "in_seen_m": 616,
+   "in_total_m": 739,
+   "in_share": 0.834,
+   "out_seen_m": 558,
+   "out_total_m": 677,
+   "out_share": 0.823,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "2240": {
+   "in_seen_m": 459,
+   "in_total_m": 544,
+   "in_share": 0.844,
+   "out_seen_m": 444,
+   "out_total_m": 556,
+   "out_share": 0.799,
+   "cameras": 3,
+   "incoming_lanes_under_half_seen": []
+  },
+  "2296": {
+   "in_seen_m": 345,
+   "in_total_m": 477,
+   "in_share": 0.724,
+   "out_seen_m": 331,
+   "out_total_m": 469,
+   "out_share": 0.707,
+   "cameras": 3,
+   "incoming_lanes_under_half_seen": [
+    "-38_5"
+   ]
+  },
+  "2328": {
+   "in_seen_m": 536,
+   "in_total_m": 611,
+   "in_share": 0.877,
+   "out_seen_m": 197,
+   "out_total_m": 669,
+   "out_share": 0.295,
+   "cameras": 3,
+   "incoming_lanes_under_half_seen": []
+  },
+  "53": {
+   "in_seen_m": 649,
+   "in_total_m": 797,
+   "in_share": 0.815,
+   "out_seen_m": 695,
+   "out_total_m": 822,
+   "out_share": 0.846,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  },
+  "838": {
+   "in_seen_m": 758,
+   "in_total_m": 835,
+   "in_share": 0.908,
+   "out_seen_m": 676,
+   "out_total_m": 754,
+   "out_share": 0.896,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": [
+    "24_4"
+   ]
+  },
+  "979": {
+   "in_seen_m": 571,
+   "in_total_m": 823,
+   "in_share": 0.695,
+   "out_seen_m": 603,
+   "out_total_m": 809,
+   "out_share": 0.745,
+   "cameras": 4,
+   "incoming_lanes_under_half_seen": []
+  }
+ },
+ "ground": "map file (CARLA client library)"
+}

@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-10-19 12:33:09.439849 by Eclipse SUMO randomTrips.py v1.27.1
+<configuration>
+    <net-file value="town05.net.xml"/>
+    <output-trip-file value="town05.motorcycle.trips.xml"/>
+    <route-file value="town05.motorcycle.rou.xml"/>
+    <prefix value="mot"/>
+    <trip-attributes value="departLane=&quot;best&quot; departSpeed=&quot;max&quot;"/>
+    <vehicle-class value="motorcycle"/>
+    <fringe-factor value="10"/>
+    <seed value="11"/>
+    <min-distance value="120.0"/>
+    <period value="21.818181818181817"/>
+</configuration>
+-->
+
+<!-- generated on 2026-10-19T12:33:09.429975+00:00 by Eclipse SUMO duarouter 1.27.1
+<duarouterConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="town05.net.xml"/>
+        <route-files value="town05.motorcycle.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="town05.motorcycle.rou.xml"/>
+        <alternatives-output value="NUL"/>
+    </output>
+
+    <time>
+        <begin value="0.0"/>
+        <end value="3600.0"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <ignore-errors value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</duarouterConfiguration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="mot_motorcycle" vClass="motorcycle"/>
+    <vehicle id="mot0" type="mot_motorcycle" depart="0.00" departLane="best" departSpeed="max">
+        <route edges="-51 -23 -24 11 10"/>
+    </vehicle>
+    <vehicle id="mot1" type="mot_motorcycle" depart="21.82" departLane="best" departSpeed="max">
+        <route edges="48 31 -21 -22 -52"/>
+    </vehicle>
+    <vehicle id="mot2" type="mot_motorcycle" depart="43.64" departLane="best" departSpeed="max">
+        <route edges="-8 -45 -46 6 15 13"/>
+    </vehicle>
+    <vehicle id="mot3" type="mot_motorcycle" depart="65.45" departLane="best" departSpeed="max">
+        <route edges="-24 11 3 2 49 -8"/>
+    </vehicle>
+    <vehicle id="mot4" type="mot_motorcycle" depart="87.27" departLane="best" departSpeed="max">
+        <route edges="2 1 0 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot5" type="mot_motorcycle" depart="109.09" departLane="best" departSpeed="max">
+        <route edges="-18 21 -29 39"/>
+    </vehicle>
+    <vehicle id="mot6" type="mot_motorcycle" depart="130.91" departLane="best" departSpeed="max">
+        <route edges="8 7"/>
+    </vehicle>
+    <vehicle id="mot7" type="mot_motorcycle" depart="152.73" departLane="best" departSpeed="max">
+        <route edges="21 -29 39 -48 19"/>
+    </vehicle>
+    <vehicle id="mot8" type="mot_motorcycle" depart="174.55" departLane="best" departSpeed="max">
+        <route edges="0 -26 28 27 -38 -13"/>
+    </vehicle>
+    <vehicle id="mot9" type="mot_motorcycle" depart="196.36" departLane="best" departSpeed="max">
+        <route edges="-26 -21 -22 -52 -2 -3"/>
+    </vehicle>
+    <vehicle id="mot10" type="mot_motorcycle" depart="218.18" departLane="best" departSpeed="max">
+        <route edges="-10 -11 24 23 -52"/>
+    </vehicle>
+    <vehicle id="mot11" type="mot_motorcycle" depart="240.00" departLane="best" departSpeed="max">
+        <route edges="-9 -10 3 2 1 0 25 15 13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="mot12" type="mot_motorcycle" depart="261.82" departLane="best" departSpeed="max">
+        <route edges="-7 -5 -50 22 21"/>
+    </vehicle>
+    <vehicle id="mot13" type="mot_motorcycle" depart="283.64" departLane="best" departSpeed="max">
+        <route edges="-51 22 21 -29 25 15 13 -36"/>
+    </vehicle>
+    <vehicle id="mot14" type="mot_motorcycle" depart="305.45" departLane="best" departSpeed="max">
+        <route edges="41 21 -29 25"/>
+    </vehicle>
+    <vehicle id="mot15" type="mot_motorcycle" depart="327.27" departLane="best" departSpeed="max">
+        <route edges="-4 -5 -50 22 21 -29"/>
+    </vehicle>
+    <vehicle id="mot16" type="mot_motorcycle" depart="349.09" departLane="best" departSpeed="max">
+        <route edges="-38 -13 -14"/>
+    </vehicle>
+    <vehicle id="mot17" type="mot_motorcycle" depart="370.91" departLane="best" departSpeed="max">
+        <route edges="33 -39 25 -6 -47"/>
+    </vehicle>
+    <vehicle id="mot18" type="mot_motorcycle" depart="392.73" departLane="best" departSpeed="max">
+        <route edges="41 40 -1 -2 -44 -45"/>
+    </vehicle>
+    <vehicle id="mot19" type="mot_motorcycle" depart="414.55" departLane="best" departSpeed="max">
+        <route edges="6 -16 -0 -1 -50 51 41"/>
+    </vehicle>
+    <vehicle id="mot20" type="mot_motorcycle" depart="436.36" departLane="best" departSpeed="max">
+        <route edges="-0 17 6 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="mot21" type="mot_motorcycle" depart="458.18" departLane="best" departSpeed="max">
+        <route edges="46 45 44 43 23 -52"/>
+    </vehicle>
+    <vehicle id="mot22" type="mot_motorcycle" depart="480.00" departLane="best" departSpeed="max">
+        <route edges="8 4 -46"/>
+    </vehicle>
+    <vehicle id="mot23" type="mot_motorcycle" depart="501.82" departLane="best" departSpeed="max">
+        <route edges="-14 -6 -7 -8 44 2"/>
+    </vehicle>
+    <vehicle id="mot24" type="mot_motorcycle" depart="523.64" departLane="best" departSpeed="max">
+        <route edges="-16 -0 -18 -41"/>
+    </vehicle>
+    <vehicle id="mot25" type="mot_motorcycle" depart="545.45" departLane="best" departSpeed="max">
+        <route edges="7 6 33 31"/>
+    </vehicle>
+    <vehicle id="mot26" type="mot_motorcycle" depart="567.27" departLane="best" departSpeed="max">
+        <route edges="-2 -3"/>
+    </vehicle>
+    <vehicle id="mot27" type="mot_motorcycle" depart="589.09" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -16 -26 -21 -22 -23 -24"/>
+    </vehicle>
+    <vehicle id="mot28" type="mot_motorcycle" depart="610.91" departLane="best" departSpeed="max">
+        <route edges="10 9 8 -5 -50"/>
+    </vehicle>
+    <vehicle id="mot29" type="mot_motorcycle" depart="632.73" departLane="best" departSpeed="max">
+        <route edges="-26 28"/>
+    </vehicle>
+    <vehicle id="mot30" type="mot_motorcycle" depart="654.55" departLane="best" departSpeed="max">
+        <route edges="-2 -44 8 7 6 33 -48"/>
+    </vehicle>
+    <vehicle id="mot31" type="mot_motorcycle" depart="676.36" departLane="best" departSpeed="max">
+        <route edges="-28 -30 -32"/>
+    </vehicle>
+    <vehicle id="mot32" type="mot_motorcycle" depart="698.18" departLane="best" departSpeed="max">
+        <route edges="7 6 -16 39"/>
+    </vehicle>
+    <vehicle id="mot33" type="mot_motorcycle" depart="720.00" departLane="best" departSpeed="max">
+        <route edges="-39 -0 17 -7 -8 44"/>
+    </vehicle>
+    <vehicle id="mot34" type="mot_motorcycle" depart="741.82" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -29 -0 -1 49 4 -46"/>
+    </vehicle>
+    <vehicle id="mot35" type="mot_motorcycle" depart="763.64" departLane="best" departSpeed="max">
+        <route edges="42 41 21 -29 25 15 13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="mot36" type="mot_motorcycle" depart="785.45" departLane="best" departSpeed="max">
+        <route edges="-19 48 -39 -0 -1 -2 -3 10 9"/>
+    </vehicle>
+    <vehicle id="mot37" type="mot_motorcycle" depart="807.27" departLane="best" departSpeed="max">
+        <route edges="-28 -30"/>
+    </vehicle>
+    <vehicle id="mot38" type="mot_motorcycle" depart="829.09" departLane="best" departSpeed="max">
+        <route edges="33 31 -21 -41"/>
+    </vehicle>
+    <vehicle id="mot39" type="mot_motorcycle" depart="850.91" departLane="best" departSpeed="max">
+        <route edges="-38 -13 -14"/>
+    </vehicle>
+    <vehicle id="mot40" type="mot_motorcycle" depart="872.73" departLane="best" departSpeed="max">
+        <route edges="-18 21 -29 25 15 13"/>
+    </vehicle>
+    <vehicle id="mot41" type="mot_motorcycle" depart="894.55" departLane="best" departSpeed="max">
+        <route edges="-3 10 9 8 -5 1 17"/>
+    </vehicle>
+    <vehicle id="mot42" type="mot_motorcycle" depart="916.36" departLane="best" departSpeed="max">
+        <route edges="-3 10 9 8 7 6 -16 -26"/>
+    </vehicle>
+    <vehicle id="mot43" type="mot_motorcycle" depart="938.18" departLane="best" departSpeed="max">
+        <route edges="3 2 -50 51"/>
+    </vehicle>
+    <vehicle id="mot44" type="mot_motorcycle" depart="960.00" departLane="best" departSpeed="max">
+        <route edges="44 2 1 17"/>
+    </vehicle>
+    <vehicle id="mot45" type="mot_motorcycle" depart="981.82" departLane="best" departSpeed="max">
+        <route edges="-11 24 23 -52 49 7"/>
+    </vehicle>
+    <vehicle id="mot46" type="mot_motorcycle" depart="1003.64" departLane="best" departSpeed="max">
+        <route edges="-3 -11 24 23 22 21 -29 25"/>
+    </vehicle>
+    <vehicle id="mot47" type="mot_motorcycle" depart="1025.45" departLane="best" departSpeed="max">
+        <route edges="-30 -32 -6 -7 4"/>
+    </vehicle>
+    <vehicle id="mot48" type="mot_motorcycle" depart="1047.27" departLane="best" departSpeed="max">
+        <route edges="-24 11 3 2 1 0 -26 28 27"/>
+    </vehicle>
+    <vehicle id="mot49" type="mot_motorcycle" depart="1069.09" departLane="best" departSpeed="max">
+        <route edges="-14 33 31 -29"/>
+    </vehicle>
+    <vehicle id="mot50" type="mot_motorcycle" depart="1090.91" departLane="best" departSpeed="max">
+        <route edges="10 9 44 43 42"/>
+    </vehicle>
+    <vehicle id="mot51" type="mot_motorcycle" depart="1112.73" departLane="best" departSpeed="max">
+        <route edges="19 13 -36"/>
+    </vehicle>
+    <vehicle id="mot52" type="mot_motorcycle" depart="1134.55" departLane="best" departSpeed="max">
+        <route edges="48 -32 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="mot53" type="mot_motorcycle" depart="1156.36" departLane="best" departSpeed="max">
+        <route edges="-1 -50 22 21 -30 -32"/>
+    </vehicle>
+    <vehicle id="mot54" type="mot_motorcycle" depart="1178.18" departLane="best" departSpeed="max">
+        <route edges="-50 22 21 28 27 -38 -13"/>
+    </vehicle>
+    <vehicle id="mot55" type="mot_motorcycle" depart="1200.00" departLane="best" departSpeed="max">
+        <route edges="-24 11 3 -44"/>
+    </vehicle>
+    <vehicle id="mot56" type="mot_motorcycle" depart="1221.82" departLane="best" departSpeed="max">
+        <route edges="11 3 2 1 0 39 -48 -20"/>
+    </vehicle>
+    <vehicle id="mot57" type="mot_motorcycle" depart="1243.64" departLane="best" departSpeed="max">
+        <route edges="-43 -44 8 4 45"/>
+    </vehicle>
+    <vehicle id="mot58" type="mot_motorcycle" depart="1265.45" departLane="best" departSpeed="max">
+        <route edges="8 -5 -50 22 21"/>
+    </vehicle>
+    <vehicle id="mot59" type="mot_motorcycle" depart="1287.27" departLane="best" departSpeed="max">
+        <route edges="24 23 22 21 -29 25 15 13"/>
+    </vehicle>
+    <vehicle id="mot60" type="mot_motorcycle" depart="1309.09" departLane="best" departSpeed="max">
+        <route edges="-21 -22 -52 49 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="mot61" type="mot_motorcycle" depart="1330.91" departLane="best" departSpeed="max">
+        <route edges="-1 49 7 46"/>
+    </vehicle>
+    <vehicle id="mot62" type="mot_motorcycle" depart="1352.73" departLane="best" departSpeed="max">
+        <route edges="25 -6 46 -4 7"/>
+    </vehicle>
+    <vehicle id="mot63" type="mot_motorcycle" depart="1374.55" departLane="best" departSpeed="max">
+        <route edges="-6 -47 -18 21 28"/>
+    </vehicle>
+    <vehicle id="mot64" type="mot_motorcycle" depart="1396.36" departLane="best" departSpeed="max">
+        <route edges="-16 -26 -21 -22 -52 1"/>
+    </vehicle>
+    <vehicle id="mot65" type="mot_motorcycle" depart="1418.18" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -6 46"/>
+    </vehicle>
+    <vehicle id="mot66" type="mot_motorcycle" depart="1440.00" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 33 -39 25"/>
+    </vehicle>
+    <vehicle id="mot67" type="mot_motorcycle" depart="1461.82" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -16 39 -32 15 -19 48"/>
+    </vehicle>
+    <vehicle id="mot68" type="mot_motorcycle" depart="1483.64" departLane="best" departSpeed="max">
+        <route edges="46 45 44 43"/>
+    </vehicle>
+    <vehicle id="mot69" type="mot_motorcycle" depart="1505.45" departLane="best" departSpeed="max">
+        <route edges="-48 -20 -28 -29 39 31 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot70" type="mot_motorcycle" depart="1527.27" departLane="best" departSpeed="max">
+        <route edges="19 13 35 -27 -28 -29 -0 -1 -2 -44 -45"/>
+    </vehicle>
+    <vehicle id="mot71" type="mot_motorcycle" depart="1549.09" departLane="best" departSpeed="max">
+        <route edges="-16 39 -32 15 13 35 -27 20"/>
+    </vehicle>
+    <vehicle id="mot72" type="mot_motorcycle" depart="1570.91" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -6 -7 4 -46"/>
+    </vehicle>
+    <vehicle id="mot73" type="mot_motorcycle" depart="1592.73" departLane="best" departSpeed="max">
+        <route edges="28 27 -38 -13 -14 -16 39 -32 15 13"/>
+    </vehicle>
+    <vehicle id="mot74" type="mot_motorcycle" depart="1614.55" departLane="best" departSpeed="max">
+        <route edges="-16 39 31"/>
+    </vehicle>
+    <vehicle id="mot75" type="mot_motorcycle" depart="1636.36" departLane="best" departSpeed="max">
+        <route edges="-10 3 2 1 17"/>
+    </vehicle>
+    <vehicle id="mot76" type="mot_motorcycle" depart="1658.18" departLane="best" departSpeed="max">
+        <route edges="24 23 22 40 17 -7"/>
+    </vehicle>
+    <vehicle id="mot77" type="mot_motorcycle" depart="1680.00" departLane="best" departSpeed="max">
+        <route edges="-39 -0 -1 -2 43 23"/>
+    </vehicle>
+    <vehicle id="mot78" type="mot_motorcycle" depart="1701.82" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -21 -22 -23"/>
+    </vehicle>
+    <vehicle id="mot79" type="mot_motorcycle" depart="1723.64" departLane="best" departSpeed="max">
+        <route edges="46 -4 -5 -50 22 21"/>
+    </vehicle>
+    <vehicle id="mot80" type="mot_motorcycle" depart="1745.45" departLane="best" departSpeed="max">
+        <route edges="-26 -21 40 17 -7 -5"/>
+    </vehicle>
+    <vehicle id="mot81" type="mot_motorcycle" depart="1767.27" departLane="best" departSpeed="max">
+        <route edges="13 35 -27 -28 -29 -0 17 46 -4"/>
+    </vehicle>
+    <vehicle id="mot82" type="mot_motorcycle" depart="1789.09" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 -0 17 -7"/>
+    </vehicle>
+    <vehicle id="mot83" type="mot_motorcycle" depart="1810.91" departLane="best" departSpeed="max">
+        <route edges="-36 -27 -28 -21 -22 -23"/>
+    </vehicle>
+    <vehicle id="mot84" type="mot_motorcycle" depart="1832.73" departLane="best" departSpeed="max">
+        <route edges="-51 22 21 -29 25 15 13 -36"/>
+    </vehicle>
+    <vehicle id="mot85" type="mot_motorcycle" depart="1854.55" departLane="best" departSpeed="max">
+        <route edges="-28 -29 39 -48"/>
+    </vehicle>
+    <vehicle id="mot86" type="mot_motorcycle" depart="1876.36" departLane="best" departSpeed="max">
+        <route edges="-4 -5 -50 51 41"/>
+    </vehicle>
+    <vehicle id="mot87" type="mot_motorcycle" depart="1898.18" departLane="best" departSpeed="max">
+        <route edges="8 7 -47 -18 -41 -51"/>
+    </vehicle>
+    <vehicle id="mot88" type="mot_motorcycle" depart="1920.00" departLane="best" departSpeed="max">
+        <route edges="-14 -6 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="mot89" type="mot_motorcycle" depart="1941.82" departLane="best" departSpeed="max">
+        <route edges="25 -6 -7 -5 -50 -23 -24 11"/>
+    </vehicle>
+    <vehicle id="mot90" type="mot_motorcycle" depart="1963.64" departLane="best" departSpeed="max">
+        <route edges="-39 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot91" type="mot_motorcycle" depart="1985.45" departLane="best" departSpeed="max">
+        <route edges="-1 49 7 6 33 -48 -20"/>
+    </vehicle>
+    <vehicle id="mot92" type="mot_motorcycle" depart="2007.27" departLane="best" departSpeed="max">
+        <route edges="-51 22 40 -1"/>
+    </vehicle>
+    <vehicle id="mot93" type="mot_motorcycle" depart="2029.09" departLane="best" departSpeed="max">
+        <route edges="-21 -22 -52 -2 -3 -11"/>
+    </vehicle>
+    <vehicle id="mot94" type="mot_motorcycle" depart="2050.91" departLane="best" departSpeed="max">
+        <route edges="2 -50 22 21"/>
+    </vehicle>
+    <vehicle id="mot95" type="mot_motorcycle" depart="2072.73" departLane="best" departSpeed="max">
+        <route edges="23 -52 1 0 -26"/>
+    </vehicle>
+    <vehicle id="mot96" type="mot_motorcycle" depart="2094.55" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -5 -50 -23 -24"/>
+    </vehicle>
+    <vehicle id="mot97" type="mot_motorcycle" depart="2116.36" departLane="best" departSpeed="max">
+        <route edges="-0 -18 -22 -52"/>
+    </vehicle>
+    <vehicle id="mot98" type="mot_motorcycle" depart="2138.18" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -16 -26 -21 -22 -23 -24"/>
+    </vehicle>
+    <vehicle id="mot99" type="mot_motorcycle" depart="2160.00" departLane="best" departSpeed="max">
+        <route edges="-32 -6 -47 -18 -41 -42"/>
+    </vehicle>
+    <vehicle id="mot100" type="mot_motorcycle" depart="2181.82" departLane="best" departSpeed="max">
+        <route edges="19 13 35 -27 -28 -29 39 31"/>
+    </vehicle>
+    <vehicle id="mot101" type="mot_motorcycle" depart="2203.64" departLane="best" departSpeed="max">
+        <route edges="-46 6 -16 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot102" type="mot_motorcycle" depart="2225.45" departLane="best" departSpeed="max">
+        <route edges="46 -4 7 6 -16"/>
+    </vehicle>
+    <vehicle id="mot103" type="mot_motorcycle" depart="2247.27" departLane="best" departSpeed="max">
+        <route edges="49 7 6 -16 -26 28 27"/>
+    </vehicle>
+    <vehicle id="mot104" type="mot_motorcycle" depart="2269.09" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -21 -41 -51"/>
+    </vehicle>
+    <vehicle id="mot105" type="mot_motorcycle" depart="2290.91" departLane="best" departSpeed="max">
+        <route edges="2 1 17 46"/>
+    </vehicle>
+    <vehicle id="mot106" type="mot_motorcycle" depart="2312.73" departLane="best" departSpeed="max">
+        <route edges="44 43 23 22 21 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot107" type="mot_motorcycle" depart="2334.55" departLane="best" departSpeed="max">
+        <route edges="27 -38 -13 -14 -6 -7 4"/>
+    </vehicle>
+    <vehicle id="mot108" type="mot_motorcycle" depart="2356.36" departLane="best" departSpeed="max">
+        <route edges="-28 -29 -0 -1 49 4 45"/>
+    </vehicle>
+    <vehicle id="mot109" type="mot_motorcycle" depart="2378.18" departLane="best" departSpeed="max">
+        <route edges="0 -26 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot110" type="mot_motorcycle" depart="2400.00" departLane="best" departSpeed="max">
+        <route edges="-16 -0 -1 -50"/>
+    </vehicle>
+    <vehicle id="mot111" type="mot_motorcycle" depart="2421.82" departLane="best" departSpeed="max">
+        <route edges="10 9 8 7 6 33"/>
+    </vehicle>
+    <vehicle id="mot112" type="mot_motorcycle" depart="2443.64" departLane="best" departSpeed="max">
+        <route edges="-6 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="mot113" type="mot_motorcycle" depart="2465.45" departLane="best" departSpeed="max">
+        <route edges="37 -13 -14 -16 -26 -21 -22 -23"/>
+    </vehicle>
+    <vehicle id="mot114" type="mot_motorcycle" depart="2487.27" departLane="best" departSpeed="max">
+        <route edges="-41 -51 22 21 28 27 37"/>
+    </vehicle>
+    <vehicle id="mot115" type="mot_motorcycle" depart="2509.09" departLane="best" departSpeed="max">
+        <route edges="-9 -10 -11 24 23 22 21 28 27"/>
+    </vehicle>
+    <vehicle id="mot116" type="mot_motorcycle" depart="2530.91" departLane="best" departSpeed="max">
+        <route edges="51 41 40 17 -7"/>
+    </vehicle>
+    <vehicle id="mot117" type="mot_motorcycle" depart="2552.73" departLane="best" departSpeed="max">
+        <route edges="51 41 40 17 6 -16"/>
+    </vehicle>
+    <vehicle id="mot118" type="mot_motorcycle" depart="2574.55" departLane="best" departSpeed="max">
+        <route edges="-28 -21 40 0"/>
+    </vehicle>
+    <vehicle id="mot119" type="mot_motorcycle" depart="2596.36" departLane="best" departSpeed="max">
+        <route edges="20 48 -32 -6 -7 -8 -9"/>
+    </vehicle>
+    <vehicle id="mot120" type="mot_motorcycle" depart="2618.18" departLane="best" departSpeed="max">
+        <route edges="41 -22 -23 -24 11 10"/>
+    </vehicle>
+    <vehicle id="mot121" type="mot_motorcycle" depart="2640.00" departLane="best" departSpeed="max">
+        <route edges="-39 -0 -1 -2 -44 -45"/>
+    </vehicle>
+    <vehicle id="mot122" type="mot_motorcycle" depart="2661.82" departLane="best" departSpeed="max">
+        <route edges="41 40 17 46"/>
+    </vehicle>
+    <vehicle id="mot123" type="mot_motorcycle" depart="2683.64" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -21 -22 -23 42"/>
+    </vehicle>
+    <vehicle id="mot124" type="mot_motorcycle" depart="2705.45" departLane="best" departSpeed="max">
+        <route edges="7 46 45 -9"/>
+    </vehicle>
+    <vehicle id="mot125" type="mot_motorcycle" depart="2727.27" departLane="best" departSpeed="max">
+        <route edges="11 10 9 8 7 6 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="mot126" type="mot_motorcycle" depart="2749.09" departLane="best" departSpeed="max">
+        <route edges="0 25 -6 -7 -8"/>
+    </vehicle>
+    <vehicle id="mot127" type="mot_motorcycle" depart="2770.91" departLane="best" departSpeed="max">
+        <route edges="17 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="mot128" type="mot_motorcycle" depart="2792.73" departLane="best" departSpeed="max">
+        <route edges="7 46 45 -9"/>
+    </vehicle>
+    <vehicle id="mot129" type="mot_motorcycle" depart="2814.55" departLane="best" departSpeed="max">
+        <route edges="-47 0 39"/>
+    </vehicle>
+    <vehicle id="mot130" type="mot_motorcycle" depart="2836.36" departLane="best" departSpeed="max">
+        <route edges="11 10 9 8 4 -46 -7"/>
+    </vehicle>
+    <vehicle id="mot131" type="mot_motorcycle" depart="2858.18" departLane="best" departSpeed="max">
+        <route edges="24 23 22 21 28 27 -38 -13 -14"/>
+    </vehicle>
+    <vehicle id="mot132" type="mot_motorcycle" depart="2880.00" departLane="best" departSpeed="max">
+        <route edges="1 0 39 -48"/>
+    </vehicle>
+    <vehicle id="mot133" type="mot_motorcycle" depart="2901.82" departLane="best" departSpeed="max">
+        <route edges="6 15 -19 48"/>
+    </vehicle>
+    <vehicle id="mot134" type="mot_motorcycle" depart="2923.64" departLane="best" departSpeed="max">
+        <route edges="-32 -16 -26 -21 -22 -52"/>
+    </vehicle>
+    <vehicle id="mot135" type="mot_motorcycle" depart="2945.45" departLane="best" departSpeed="max">
+        <route edges="-20 -28 -29 -0 17 -7 -5"/>
+    </vehicle>
+    <vehicle id="mot136" type="mot_motorcycle" depart="2967.27" departLane="best" departSpeed="max">
+        <route edges="-6 46 -4"/>
+    </vehicle>
+    <vehicle id="mot137" type="mot_motorcycle" depart="2989.09" departLane="best" departSpeed="max">
+        <route edges="-26 -30 -48 19"/>
+    </vehicle>
+    <vehicle id="mot138" type="mot_motorcycle" depart="3010.91" departLane="best" departSpeed="max">
+        <route edges="49 7 6 33 -48 -20"/>
+    </vehicle>
+    <vehicle id="mot139" type="mot_motorcycle" depart="3032.73" departLane="best" departSpeed="max">
+        <route edges="35 -27 -28 -29 -0 -1"/>
+    </vehicle>
+    <vehicle id="mot140" type="mot_motorcycle" depart="3054.55" departLane="best" departSpeed="max">
+        <route edges="23 -52 -2 -44 -45 -4"/>
+    </vehicle>
+    <vehicle id="mot141" type="mot_motorcycle" depart="3076.36" departLane="best" departSpeed="max">
+        <route edges="-43 2 1 0 39 -48 19"/>
+    </vehicle>
+    <vehicle id="mot142" type="mot_motorcycle" depart="3098.18" departLane="best" departSpeed="max">
+        <route edges="-19 48 31 28"/>
+    </vehicle>
+    <vehicle id="mot143" type="mot_motorcycle" depart="3120.00" departLane="best" departSpeed="max">
+        <route edges="-45 -46 6 33 -48"/>
+    </vehicle>
+    <vehicle id="mot144" type="mot_motorcycle" depart="3141.82" departLane="best" departSpeed="max">
+        <route edges="-27 -28 -21 -22 -23 -43 2"/>
+    </vehicle>
+    <vehicle id="mot145" type="mot_motorcycle" depart="3163.64" departLane="best" departSpeed="max">
+        <route edges="20 48 31 -21 40 0"/>
+    </vehicle>
+    <vehicle id="mot146" type="mot_motorcycle" depart="3185.45" departLane="best" departSpeed="max">
+        <route edges="42 41 40 17"/>
+    </vehicle>
+    <vehicle id="mot147" type="mot_motorcycle" depart="3207.27" departLane="best" departSpeed="max">
+        <route edges="42 41 21 -29"/>
+    </vehicle>
+    <vehicle id="mot148" type="mot_motorcycle" depart="3229.09" departLane="best" departSpeed="max">
+        <route edges="3 2 1 0 39"/>
+    </vehicle>
+    <vehicle id="mot149" type="mot_motorcycle" depart="3250.91" departLane="best" departSpeed="max">
+        <route edges="-4 7 6 15 -19 48"/>
+    </vehicle>
+    <vehicle id="mot150" type="mot_motorcycle" depart="3272.73" departLane="best" departSpeed="max">
+        <route edges="-28 -21 -22 -23 -24 11 10 9"/>
+    </vehicle>
+    <vehicle id="mot151" type="mot_motorcycle" depart="3294.55" departLane="best" departSpeed="max">
+        <route edges="45 8 7 6 33 -48 -20"/>
+    </vehicle>
+    <vehicle id="mot152" type="mot_motorcycle" depart="3316.36" departLane="best" departSpeed="max">
+        <route edges="-3 -11 24 23 22 21 28"/>
+    </vehicle>
+    <vehicle id="mot153" type="mot_motorcycle" depart="3338.18" departLane="best" departSpeed="max">
+        <route edges="40 0 39 -48"/>
+    </vehicle>
+    <vehicle id="mot154" type="mot_motorcycle" depart="3360.00" departLane="best" departSpeed="max">
+        <route edges="-47 -1 -2 43 23"/>
+    </vehicle>
+    <vehicle id="mot155" type="mot_motorcycle" depart="3381.82" departLane="best" departSpeed="max">
+        <route edges="-1 49 7 6 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="mot156" type="mot_motorcycle" depart="3403.64" departLane="best" departSpeed="max">
+        <route edges="23 22 40 17 46"/>
+    </vehicle>
+    <vehicle id="mot157" type="mot_motorcycle" depart="3425.45" departLane="best" departSpeed="max">
+        <route edges="-8 -45 -46 6 33 31"/>
+    </vehicle>
+    <vehicle id="mot158" type="mot_motorcycle" depart="3447.27" departLane="best" departSpeed="max">
+        <route edges="-8 44 43 23"/>
+    </vehicle>
+    <vehicle id="mot159" type="mot_motorcycle" depart="3469.09" departLane="best" departSpeed="max">
+        <route edges="-19 48 -32 -6 -7 -8 -9 -10"/>
+    </vehicle>
+    <vehicle id="mot160" type="mot_motorcycle" depart="3490.91" departLane="best" departSpeed="max">
+        <route edges="11 3 2 1 0 -26 -21"/>
+    </vehicle>
+    <vehicle id="mot161" type="mot_motorcycle" depart="3512.73" departLane="best" departSpeed="max">
+        <route edges="-24 11 10 9 8 7 6 15 13 35 -27"/>
+    </vehicle>
+    <vehicle id="mot162" type="mot_motorcycle" depart="3534.55" departLane="best" departSpeed="max">
+        <route edges="41 -22 -23 -24 11 10 9"/>
+    </vehicle>
+    <vehicle id="mot163" type="mot_motorcycle" depart="3556.36" departLane="best" departSpeed="max">
+        <route edges="-51 -52 49 7 6 33"/>
+    </vehicle>
+    <vehicle id="mot164" type="mot_motorcycle" depart="3578.18" departLane="best" departSpeed="max">
+        <route edges="3 2 49 7 -47"/>
+    </vehicle>
+</routes>

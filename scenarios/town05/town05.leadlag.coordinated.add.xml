@@ -1,0 +1,316 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <!-- cosim/coordination.py: cycle 155 s; arrivals on green 45 % (all offsets 0: 31 %) -->
+  <tlLogic id="53" type="static" programID="coordinated" offset="145">
+    <phase duration="19.5" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyrrrrrrrGGrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrryyyyrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrrrrrGGGGrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrGGyyrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrGGrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="GGrrrrrrrGGrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="yyrrrrrrryyrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="17" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="14" state="GGGGrrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="yyyyrrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="207" type="static" programID="coordinated" offset="113">
+    <phase duration="22.5" state="rrrrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrrGGrrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrGGrrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrGGrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="18" state="rrrrrrGGGGrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrryyyyrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrrrrrrrGGGGrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrGGyyrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrGGrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rGGrrrrrrrrGGrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrryyrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="15" state="rGGGGrrrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyyyrrrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="838" type="static" programID="coordinated" offset="116">
+    <phase duration="23" state="rGGGGrrrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyyrrrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rGGrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="16" state="rGGrrrrrrrrGGrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrrGGrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrGGrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrrrrrrrGGGGrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrryyyyrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrrGGGGrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrGGyyrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrGGrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrrGGrrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrryyrrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="16" state="rrrrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrrryyyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="979" type="static" programID="coordinated" offset="134">
+    <phase duration="20.5" state="rGGGGrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyyyrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="17" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="15" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrrrrrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrGGyyrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrGGrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rGGrrrrrrrGGrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGrrrrrrryyrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rGGrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1126" type="static" programID="coordinated" offset="125">
+    <phase duration="21" state="rrrrrrGGGGrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrryyyyrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rGGGGrrrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyyrrrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rGGrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rGGrrrrrrrrGGrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrrGGrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrGGrrrrrrrrrrr" name="all red" />
+    <phase duration="16" state="rrrrrrrrrrrGGGGrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrryyyyrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="15" state="rrrrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrrGGrrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrGGrrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrGGrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1292" type="static" programID="coordinated" offset="24">
+    <phase duration="24" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="14" state="rGGGGrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyyrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rGGrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rGGrrrrrrrGGrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrGGrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrGGrrrrrrrrrr" name="all red" />
+    <phase duration="17" state="rrrrrrrrrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrryyyyrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1427" type="static" programID="coordinated" offset="107">
+    <phase duration="23" state="rGGGGrrrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyyrrrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rGGrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="17" state="rGGrrrrrrrrGGrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrrGGrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrGGrrrrrrrrrrr" name="all red" />
+    <phase duration="16" state="rrrrrrrrrrrGGGGrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrryyyyrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrrGGGGrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrGGyyrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrGGrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrrGGrrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrryyrrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="15" state="rrrrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrrryyyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1574" type="static" programID="coordinated" offset="122">
+    <phase duration="23" state="rrrrrrrrrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrryyyyrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="17" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="15" state="rGGGGrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyyrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rGGrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rGGrrrrrrrGGrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrrGGrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrGGrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1722" type="static" programID="coordinated" offset="45">
+    <phase duration="20.5" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="13" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="16" state="rrrrrrrrrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrGGyyrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrGGrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rGGrrrrrrrGGrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGrrrrrrryyrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rGGrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rGGGGrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyyyrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="17" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="1882" type="static" programID="coordinated" offset="11">
+    <phase duration="44" state="rrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrryyyGrrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrGrrrrrrrr" name="all red" />
+    <phase duration="33" state="rrrrrrGGrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrryyrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="33" state="rrrGrrrrrGGGrrr" name="green" />
+    <phase duration="3.5" state="rrryrrrrryyyrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrGGG" name="walk" />
+    <phase duration="17" state="rrrrrrrrrrrruuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrr" name="walk buffer" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="2014" type="static" programID="coordinated" offset="107">
+    <phase duration="55.5" state="rrrGGGGGrrrrrrrr" name="green" />
+    <phase duration="5" state="rrryyyyGrrrrrrrr" name="yellow" />
+    <phase duration="2" state="rrrrrrrGrrrrrrrr" name="all red" />
+    <phase duration="36" state="rrrrrrrGGrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrryyrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="22" state="rrrGGrrrrrGGGGrr" name="green" />
+    <phase duration="5" state="rrryyrrrrryyyyrr" name="yellow" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrru" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrr" name="walk buffer" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="2086" type="static" programID="coordinated" offset="118">
+    <phase duration="22" state="rrrrrrrrrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrrrrrGGyyrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrGGrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrGGrrrrrrrGGrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrGGrrrrrrryyrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrGGrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="15" state="rrrrrGGGGrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrryyyyrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="18" state="rrrrrrrrrrGGGGrrrrrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrrGGyyrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrGGrrrrrrrrrr" name="all red" />
+    <phase duration="14" state="rGGrrrrrrrGGrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyrrrrrrryyrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrrrrGGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrrrrruuuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="14" state="rGGGGrrrrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyyyrrrrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="2240" type="static" programID="coordinated" offset="17">
+    <phase duration="54" state="rGGGrrrGrrrrrrr" name="green" />
+    <phase duration="3.5" state="ryyyrrrGrrrrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrGrrrrrrr" name="all red" />
+    <phase duration="22" state="rrrrrrrGGGGrrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrryyyyrrrr" name="yellow" />
+    <phase duration="3" state="rrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrGGG" name="walk" />
+    <phase duration="17" state="rrrrrrrrrrrruuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="34" state="rrrrrrrrrrGGrrr" name="green" />
+    <phase duration="3.5" state="rrrrrrrrrryyrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="2296" type="static" programID="coordinated" offset="139">
+    <phase duration="96" state="rGGrrGGGrrr" name="green" />
+    <phase duration="3.5" state="ryyrryyyrrr" name="yellow" />
+    <phase duration="2.5" state="rrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrGGG" name="walk" />
+    <phase duration="12" state="rrrrrrrruuu" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrr" name="walk buffer" />
+    <phase duration="27" state="rGGGrrrrrrr" name="green" />
+    <phase duration="3.5" state="rGGyrrrrrrr" name="yellow" />
+    <phase duration="1.5" state="rGGrrrrrrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+  <tlLogic id="2328" type="static" programID="coordinated" offset="22">
+    <phase duration="52.5" state="rrrGGGGrrrrGGrrr" name="green" />
+    <phase duration="5" state="rrryyyyrrrryyrrr" name="yellow" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="7" state="rrrrrrrrrrrrrrrG" name="walk" />
+    <phase duration="12" state="rrrrrrrrrrrrrrru" name="walk clearance" />
+    <phase duration="2" state="rrrrrrrrrrrrrrrr" name="walk buffer" />
+    <phase duration="42" state="GGrrrrrrrrrrrrrr" name="green" />
+    <phase duration="3.5" state="Gyrrrrrrrrrrrrrr" name="yellow" />
+    <phase duration="3" state="Grrrrrrrrrrrrrrr" name="all red" />
+    <phase duration="19" state="GrrrrrrrrrrGGGGr" name="green" />
+    <phase duration="5" state="yrrrrrrrrrrGGyyr" name="yellow" />
+    <phase duration="2" state="rrrrrrrrrrrGGrrr" name="all red" />
+    <param key="cycle" value="155" />
+  </tlLogic>
+</additional>

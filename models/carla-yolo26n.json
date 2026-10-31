@@ -1,0 +1,126 @@
+{
+  "name": "carla-yolo26n",
+  "classes": [
+    "car",
+    "van",
+    "bus",
+    "truck",
+    "ambulance",
+    "ambulance_lights",
+    "police",
+    "police_lights",
+    "pedestrian"
+  ],
+  "base": "yolo26n.pt (Ultralytics COCO weights)",
+  "data": {
+    "root": "out/dataset_carla_full",
+    "totals": {
+      "train": {
+        "images": 588,
+        "objects": {
+          "car": 5689,
+          "police": 270,
+          "ambulance": 511,
+          "truck": 83,
+          "ambulance_lights": 370,
+          "van": 157,
+          "pedestrian": 1163,
+          "police_lights": 64,
+          "bus": 34
+        }
+      },
+      "val": {
+        "images": 192,
+        "objects": {
+          "car": 1532,
+          "police": 126,
+          "ambulance": 187,
+          "truck": 34,
+          "ambulance_lights": 151,
+          "van": 39,
+          "police_lights": 37,
+          "pedestrian": 454,
+          "bus": 12
+        }
+      },
+      "test": {
+        "images": 180,
+        "objects": {
+          "car": 3149,
+          "police_lights": 110,
+          "ambulance": 233,
+          "police": 76,
+          "ambulance_lights": 339
+        }
+      }
+    },
+    "split": {
+      "town10": {
+        "val": [
+          "719"
+        ],
+        "default": "train"
+      },
+      "ingolstadt7": {
+        "val": [
+          "32564122",
+          "gneJ260"
+        ],
+        "default": "train"
+      },
+      "cologne3": {
+        "default": "test"
+      }
+    },
+    "conditions": [
+      [
+        16.0,
+        "clear"
+      ],
+      [
+        12.5,
+        "cloudy"
+      ],
+      [
+        19.8,
+        "clear"
+      ],
+      [
+        22.5,
+        "clear"
+      ],
+      [
+        15.0,
+        "rain"
+      ],
+      [
+        9.0,
+        "haze"
+      ]
+    ]
+  },
+  "training": {
+    "epochs_max": 80,
+    "epochs_run": 78,
+    "patience": 20,
+    "imgsz": 960,
+    "batch": 4,
+    "device": "0",
+    "seed": 0,
+    "seconds": 5676,
+    "resumed_after_epoch": 10,
+    "selection": "best fitness on the val split"
+  },
+  "versions": {
+    "ultralytics": "8.4.177",
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "gpu": "NVIDIA GeForce GTX 1650 with Max-Q Design"
+  },
+  "files": {
+    "pt": "models/carla-yolo26n.pt",
+    "onnx": "models/carla-yolo26n.onnx",
+    "run": "out/detector/carla-yolo26n"
+  },
+  "licence": "AGPL-3.0 (Ultralytics YOLO26 weights and code)"
+}

@@ -1,0 +1,37 @@
+{
+ "junctions": [
+  "1126",
+  "1882",
+  "2296"
+ ],
+ "cameras": 10,
+ "reports": 3910,
+ "period_s": 2.0,
+ "pictures_per_s": 2.0,
+ "simulated_s": 900.0,
+ "scale": 0.5,
+ "seed": 1,
+ "vehicles_true_per_report": 0.58,
+ "vehicles_reported_per_report": 1.06,
+ "share_reported": 1.806,
+ "count_mae_per_camera": 0.55,
+ "queue_mae_per_camera": 0.33,
+ "emergency_reports": {
+  "confirmed_and_true": 11,
+  "missed": 9,
+  "confirmed_but_false": 25
+ },
+ "parked_median_per_camera": {
+  "2296-1": 2,
+  "2296-2": 0,
+  "2296-3": 0,
+  "1882-1": 0,
+  "1882-2": 0,
+  "1882-3": 0,
+  "1126-1": 0,
+  "1126-2": 9,
+  "1126-3": 0,
+  "1126-4": 1
+ },
+ "wall_s": 746
+}

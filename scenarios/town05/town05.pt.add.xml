@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <busStop id="L1_S1" lane="3_3" startPos="17.8" endPos="37.8" name="L1 stop 1" />
+  <busStop id="L1_S2" lane="39_3" startPos="13.2" endPos="33.2" name="L1 stop 2" />
+  <busStop id="L1_S3" lane="-21_3" startPos="16.8" endPos="36.8" name="L1 stop 3" />
+  <busStop id="L1_S4" lane="-44_3" startPos="20.4" endPos="40.4" name="L1 stop 4" />
+  <busStop id="L2_S1" lane="-52_2" startPos="20.5" endPos="40.5" name="L2 stop 1" />
+  <busStop id="L2_S2" lane="44_3" startPos="20.4" endPos="40.4" name="L2 stop 2" />
+  <busStop id="L3_S1" lane="-43_3" startPos="19.2" endPos="39.2" name="L3 stop 1" />
+  <busStop id="L3_S2" lane="6_3" startPos="17.2" endPos="37.2" name="L3 stop 2" />
+  <busStop id="L3_S3" lane="-39_3" startPos="13.2" endPos="33.2" name="L3 stop 3" />
+  <busStop id="L3_S4" lane="-3_3" startPos="17.8" endPos="37.8" name="L3 stop 4" />
+</additional>

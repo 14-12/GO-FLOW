@@ -1,0 +1,13 @@
+# Python 3.11 (CARLA 0.9.16 ships wheels for 3.10-3.12). Pins match what the tests ran with.
+carla==0.9.16
+eclipse-sumo==1.27.1
+traci==1.27.1
+sumolib==1.27.1
+numpy
+pyproj
+lxml
+imageio-ffmpeg
+pillow
+pytest
+ruff
+pygame==2.6.1

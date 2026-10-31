@@ -1,0 +1,261 @@
+"""The free-fly clock drawn over the CARLA window, like a game's HUD (Windows).
+
+CARLA's packaged server cannot be given a widget of our own: a HUD inside Unreal needs the editor
+and a rebuild. So the clock is a borderless window laid exactly over the top-left corner of the
+CARLA picture: everything but the card is see-through (a colour key), mouse clicks go through it
+to CARLA, it never takes the keyboard focus, it follows the CARLA window when that moves, and it
+hides itself when another application is in front.
+
+The window covers the whole CARLA picture (everything but what is drawn is see-through): the clock in
+the top-left corner, the "H inspect" prompt and the camera inspector (cosim/inspector.py).
+
+Its keys are read while the CARLA window has the focus (GetAsyncKeyState), so you keep flying in
+CARLA: F5 pause, F6 / F7 one hour back / forward, F8 next junction, F9 hide or show the clock,
+H inspect the traffic camera you are near, Esc quit. Function keys and H, because CARLA's
+spectator uses the other letters, the arrows, Space and C.
+"""
+
+from __future__ import annotations
+
+import ctypes
+import sys
+from ctypes import wintypes
+
+KEY_COLOUR = (1, 0, 1)  # drawn nowhere in the clock: these pixels are see-through
+
+VK = {"F5": 0x74, "F6": 0x75, "F7": 0x76, "F8": 0x77, "F9": 0x78, "ESC": 0x1B, "H": 0x48}
+
+_GWL_EXSTYLE = -20
+_WS_EX = 0x00080000 | 0x00000020 | 0x00000080 | 0x08000000 | 0x00000008  # LAYERED TRANSPARENT TOOLWINDOW NOACTIVATE TOPMOST
+_LWA_COLORKEY = 0x1
+_HWND_TOPMOST = -1
+_SWP = 0x0001 | 0x0010 | 0x0040  # NOSIZE NOACTIVATE SHOWWINDOW
+_SW_HIDE = 0
+
+
+def dpi_aware() -> None:
+    """Per-monitor DPI awareness, so window positions are in the same pixels as CARLA's."""
+    if sys.platform != "win32":
+        return
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except Exception:  # noqa: BLE001 - older Windows
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+class Overlay:
+    def __init__(self, hwnd: int, margin: int = 0):
+        self.ok = sys.platform == "win32"
+        self.margin = margin
+        self.hwnd = hwnd
+        self.carla: int | None = None
+        self.shown = None
+        self._down: set[str] = set()
+        if not self.ok:
+            return
+        u = ctypes.windll.user32
+        self.u = u
+        LONG_PTR = ctypes.c_ssize_t
+        u.GetWindowLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int]
+        u.GetWindowLongPtrW.restype = LONG_PTR
+        u.SetWindowLongPtrW.argtypes = [wintypes.HWND, ctypes.c_int, LONG_PTR]
+        u.SetWindowLongPtrW.restype = LONG_PTR
+        u.SetLayeredWindowAttributes.argtypes = [wintypes.HWND, wintypes.COLORREF, wintypes.BYTE, wintypes.DWORD]
+        u.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                                   ctypes.c_int, ctypes.c_uint]
+        u.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+        u.GetForegroundWindow.restype = wintypes.HWND
+        u.IsIconic.argtypes = [wintypes.HWND]
+        u.IsWindow.argtypes = [wintypes.HWND]
+        u.IsWindowVisible.argtypes = [wintypes.HWND]
+        u.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+        u.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        u.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        u.GetAsyncKeyState.argtypes = [ctypes.c_int]
+        u.GetAsyncKeyState.restype = ctypes.c_short
+        # The quick questions asked every loop (keys, the window in front, where it is), without letting go of
+        # Python's lock: a ctypes call through windll lets go and then has to win the lock back from the
+        # viewer's other threads, which with SUMO, the poses and the camera busy took ~1-5 ms a call (the
+        # profile showed 15-20 % of the main loop in pressed(), 7 key checks).
+        q = ctypes.PyDLL("user32")
+        q.GetAsyncKeyState.argtypes = [ctypes.c_int]
+        q.GetAsyncKeyState.restype = ctypes.c_short
+        q.GetForegroundWindow.restype = wintypes.HWND
+        q.IsIconic.argtypes = [wintypes.HWND]
+        q.IsWindow.argtypes = [wintypes.HWND]
+        q.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+        q.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
+        self.q = q
+        if hwnd:  # 0: keys only (cosim/arrow_proc.py has no window of its own)
+            self.restyle(hwnd)
+
+    def restyle(self, hwnd: int) -> None:
+        """See-through, click-through, never focused, on top (again after the window was resized)."""
+        if not self.ok:
+            return
+        self.hwnd = hwnd
+        u = self.u
+        style = u.GetWindowLongPtrW(hwnd, _GWL_EXSTYLE)
+        u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, style | _WS_EX)
+        r, g, b = KEY_COLOUR
+        u.SetLayeredWindowAttributes(hwnd, r | (g << 8) | (b << 16), 0, _LWA_COLORKEY)
+        self.shown = None
+
+    def fullscreen_carla(self) -> bool:
+        """Makes the CARLA window borderless and as large as its monitor (borderless full screen: the
+        overlay still shows over it, which exclusive full screen would not allow). Unreal follows the
+        window size with its picture. True once done."""
+        if not self.ok:
+            return False
+        if not self.carla or not self.q.IsWindow(self.carla):
+            self.carla = self._find_carla()
+        if not self.carla:
+            return False
+
+        class MONITORINFO(ctypes.Structure):
+            _fields_ = [("cbSize", wintypes.DWORD), ("rcMonitor", wintypes.RECT), ("rcWork", wintypes.RECT),
+                        ("dwFlags", wintypes.DWORD)]
+
+        u = self.u
+        u.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+        u.MonitorFromWindow.restype = wintypes.HMONITOR
+        u.GetMonitorInfoW.argtypes = [wintypes.HMONITOR, ctypes.POINTER(MONITORINFO)]
+        mi = MONITORINFO()
+        mi.cbSize = ctypes.sizeof(MONITORINFO)
+        if not u.GetMonitorInfoW(u.MonitorFromWindow(self.carla, 2), ctypes.byref(mi)):  # 2: nearest monitor
+            return False
+        style = u.GetWindowLongPtrW(self.carla, -16)  # GWL_STYLE
+        frame = 0x00C00000 | 0x00040000 | 0x00020000 | 0x00010000 | 0x00080000  # caption, sizing frame, buttons, menu
+        u.SetWindowLongPtrW(self.carla, -16, style & ~frame)
+        r = mi.rcMonitor
+        u.SetWindowPos(self.carla, wintypes.HWND(0), r.left, r.top, r.right - r.left, r.bottom - r.top,
+                       0x0020 | 0x0040)  # FRAMECHANGED SHOWWINDOW
+        return True
+
+    def client_size(self) -> tuple[int, int] | None:
+        """Size of the CARLA picture in pixels, once the CARLA window is found."""
+        if not self.ok:
+            return None
+        if not self.carla or not self.q.IsWindow(self.carla):
+            self.carla = self._find_carla()
+        if not self.carla:
+            return None
+        rect = wintypes.RECT()
+        self.q.GetClientRect(self.carla, ctypes.byref(rect))
+        return (rect.right, rect.bottom) if rect.right > 100 and rect.bottom > 100 else None
+
+    def _find_carla(self) -> int | None:
+        found = []
+
+        @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def cb(h, _):
+            cls = ctypes.create_unicode_buffer(64)
+            self.u.GetClassNameW(h, cls, 64)
+            if cls.value == "UnrealWindow" and self.u.IsWindowVisible(h):
+                found.append(h)
+                return False
+            return True
+
+        self.u.EnumWindows(cb, 0)
+        return found[0] if found else None
+
+    def carla_in_front(self) -> bool:
+        if not self.ok or not self.carla:
+            return False
+        fg = self.q.GetForegroundWindow()
+        return fg in (self.carla, self.hwnd)
+
+    def follow(self, visible: bool = True, need_front: bool = True) -> None:
+        """Lays the clock over the CARLA picture's top-left corner, or hides it (CARLA not found,
+        minimised or, with need_front, not in front; or the clock switched off)."""
+        if not self.ok:
+            return
+        if not self.carla or not self.q.IsWindow(self.carla):
+            self.carla = self._find_carla()
+        show = bool(visible and self.carla and not self.q.IsIconic(self.carla)
+                    and (self.carla_in_front() or not need_front))
+        if show:
+            pt = wintypes.POINT(0, 0)
+            self.q.ClientToScreen(self.carla, ctypes.byref(pt))
+            self.u.SetWindowPos(self.hwnd, wintypes.HWND(_HWND_TOPMOST), pt.x + self.margin, pt.y + self.margin,
+                                0, 0, _SWP)
+        elif self.shown is not False:
+            self.u.ShowWindow(self.hwnd, _SW_HIDE)
+        self.shown = show
+
+    ARROWS = {"LEFT": 0x25, "UP": 0x26, "RIGHT": 0x27, "DOWN": 0x28}
+    # CARLA's spectator turns only with the mouse (right button held): no key or input axis turns it (measured,
+    # tools/probe_keys.py). So the arrows turn it the same way: right button down, relative mouse moves,
+    # right button up, given to CARLA as input. Measured: 360 px -> 26.5 deg yaw, 26.0 deg pitch, and Z
+    # still moves the full 20.4 m while it turns. (The other way, cosim/flycam.ArrowTurn, is
+    # `--arrows tick`.)
+    DEG_PER_PX = 26.5 / 360.0
+    _MOVE, _RDOWN, _RUP, _VK_RBUTTON = 0x0001, 0x0008, 0x0010, 0x02
+    _rmb = False
+    _acc = (0.0, 0.0)
+
+    def look(self, yaw_deg: float, pitch_deg: float) -> None:
+        """Turn CARLA's view by these degrees (pitch up positive), as the mouse would."""
+        if not self.ok:
+            return
+        if not self._rmb:
+            if self.q.GetAsyncKeyState(self._VK_RBUTTON) & 0x8000:
+                pass  # you are holding the right button yourself: just move
+            else:
+                self._cursor_on_carla()
+                self.u.mouse_event(self._RDOWN, 0, 0, 0, 0)
+                self._rmb = True
+                self._acc = (0.0, 0.0)
+                return  # let CARLA take the mouse first
+        ax = self._acc[0] + yaw_deg / self.DEG_PER_PX
+        ay = self._acc[1] - pitch_deg / self.DEG_PER_PX
+        ix, iy = int(ax), int(ay)
+        self._acc = (ax - ix, ay - iy)
+        if ix or iy:
+            self.u.mouse_event(self._MOVE, ix, iy, 0, 0)
+
+    def _cursor_on_carla(self) -> None:
+        """The button goes to the window under the cursor: put the cursor in the middle of CARLA's picture
+        first if it is elsewhere (a click on the taskbar or another window must not happen)."""
+        pt = wintypes.POINT()
+        self.u.GetCursorPos(ctypes.byref(pt))
+        rect = wintypes.RECT()
+        self.u.GetWindowRect(wintypes.HWND(self.carla), ctypes.byref(rect))
+        if not (rect.left < pt.x < rect.right and rect.top < pt.y < rect.bottom):
+            self.u.SetCursorPos((rect.left + rect.right) // 2, (rect.top + rect.bottom) // 2)
+
+    def look_end(self) -> None:
+        if self.ok and self._rmb:
+            self.u.mouse_event(self._RUP, 0, 0, 0, 0)
+        self._rmb = False
+
+    def held(self) -> set[str]:
+        """Arrow keys held down now, only while CARLA (or the overlay) is in front."""
+        if not self.ok or not self.carla_in_front():
+            return set()
+        return {name for name, vk in self.ARROWS.items() if self.q.GetAsyncKeyState(vk) & 0x8000}
+
+    def pressed(self) -> set[str]:
+        """Keys pressed since the last call, only while CARLA (or the clock) is in front."""
+        if not self.ok:
+            return set()
+        if not self.carla_in_front():
+            for vk in VK.values():  # clears bit 0, so Esc pressed in another window does not quit later
+                self.q.GetAsyncKeyState(vk)
+            self._down.clear()
+            return set()
+        # held now, or pressed and let go since the last look (bit 0): a quick tap between two loops of the
+        # viewer was missed and the key had to be pressed again
+        now, tapped = set(), set()
+        for name, vk in VK.items():
+            st = self.q.GetAsyncKeyState(vk)
+            if st & 0x8000:
+                now.add(name)
+            elif st & 0x0001:
+                tapped.add(name)
+        new = (now - self._down) | (tapped - self._down)
+        self._down = now
+        return new

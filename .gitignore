@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local installs, kept on this PC only (see README: setup)
+carla/
+carla_backup/
+.cache/
+
+# Generated results, logs and scratch (rebuilt by the tools)
+out/*
+# ...except the Town05 camera layout the junction agents and cameras read at run time
+!out/town05_cameras/
+out/town05_cameras/previews/
+maps/
+runs/
+tools/logs/
+*.log
+
+# Secrets (API keys for the LLM brief: copy config/env.example to .env)
+.env
+
+# Media and archives
+*.mp4
+*.avi
+*.zip
+
+# Other projects cloned into this folder
+GO-FLOW/
+
+# OS and editors
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/

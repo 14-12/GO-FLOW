@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Vehicle and person types for the twin's "extras" scenario variant (ADR 0009):
+  ambulances and police cars, each on an emergency run or not, and
+  pedestrians. The RESCO benchmark runs never load this file.
+
+  The "_run" types are on an emergency run (blue lights and siren on). They use SUMO's
+  junction-model parameters for driving through red: jmDriveAfterRedTime lets the vehicle
+  enter a junction against red, jmDriveRedSpeed caps it at 20 km/h while doing so. SUMO
+  still keeps it from driving into a foe vehicle. They also drive faster than the limit
+  (speedFactor 1.3).
+
+  SUMO's bluelight device would add a rescue lane on top, but SUMO 1.27.1 crashes
+  (segfault) when a device-equipped vehicle passes pedestrians on Ingolstadt7, with either
+  pedestrian model. Without pedestrians it runs the full hour. So the device is not used;
+  the rescue lane is the part given up (ADR 0009).
+
+  Whether the lights are on is the twin's ground truth, taken from the vType, not from
+  SUMO's blue-light signal bit: SUMO 1.27 toggles that bit every step for every
+  vClass="emergency" vehicle, on a run or not, and never sets it for vClass="authority"
+  (measured, see ADR 0009).
+
+  Dimensions are typical German vehicles: a Mercedes Sprinter RTW (Rettungswagen) and a
+  VW Passat police car.
+-->
+<additional>
+    <vType id="twin_ambulance_run" vClass="emergency" guiShape="emergency"
+           length="6.9" width="2.2" height="2.9" maxSpeed="22" speedFactor="1.3" minGap="2.0"
+           jmDriveAfterRedTime="300" jmDriveRedSpeed="5.56" impatience="1"/>
+    <vType id="twin_ambulance" vClass="emergency" guiShape="emergency"
+           length="6.9" width="2.2" height="2.9" maxSpeed="22" minGap="2.5"/>
+    <vType id="twin_police_run" vClass="authority" guiShape="police"
+           length="4.9" width="1.85" height="1.5" speedFactor="1.3" minGap="2.0"
+           jmDriveAfterRedTime="300" jmDriveRedSpeed="5.56" impatience="1"/>
+    <vType id="twin_police" vClass="authority" guiShape="police"
+           length="4.9" width="1.85" height="1.5" minGap="2.5"/>
+    <vType id="twin_pedestrian" vClass="pedestrian" speedDev="0.15"/>
+</additional>

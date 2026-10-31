@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<configuration>
+  <input>
+    <net-file value="town05.net.xml" />
+    <route-files value="town05.passenger.rou.xml,town05.delivery.rou.xml,town05.truck.rou.xml,town05.bus.rou.xml,town05.motorcycle.rou.xml" />
+  </input>
+  <time>
+    <begin value="0" />
+    <end value="3600" />
+    <step-length value="0.5" />
+  </time>
+</configuration>

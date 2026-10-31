@@ -1,0 +1,1292 @@
+{
+ "vehicle.audi.a2": {
+  "extent": [
+   1.8527,
+   0.8943,
+   0.7745
+  ],
+  "centre": [
+   -0.0,
+   0.0003,
+   0.7818
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.7687,
+    0.0115,
+    0.8802,
+    0.0,
+    0.0,
+    0.7716
+   ],
+   "front": [
+    1.8532,
+    0.015,
+    0.5852,
+    -0.38,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.audi.etron": {
+  "extent": [
+   2.4279,
+   1.0164,
+   0.8247
+  ],
+  "centre": [
+   -0.0036,
+   -0.0,
+   0.8205
+  ],
+  "base_type": "car",
+  "special_type": "electric",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.2722,
+    -0.0019,
+    0.9225,
+    8.89,
+    0.0,
+    1.0
+   ],
+   "front": [
+    2.4336,
+    0.0019,
+    0.5479,
+    2.08,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.audi.tt": {
+  "extent": [
+   2.0906,
+   0.9971,
+   0.6926
+  ],
+  "centre": [
+   -0.0004,
+   -0.0,
+   0.6927
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.0238,
+    -0.0035,
+    0.6641,
+    -7.13,
+    0.0,
+    0.875
+   ],
+   "front": [
+    2.0041,
+    0.0037,
+    0.5121,
+    -12.0,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.bh.crossbike": {
+  "extent": [
+   0.7547,
+   0.433,
+   0.8062
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   0.8082
+  ],
+  "base_type": "bicycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1"
+ },
+ "vehicle.bmw.grandtourer": {
+  "extent": [
+   2.3055,
+   1.1209,
+   0.8336
+  ],
+  "centre": [
+   0.0,
+   -0.0005,
+   0.7651
+  ],
+  "base_type": "",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "front": [
+    2.292,
+    0.0057,
+    0.2555,
+    1.48,
+    180.0,
+    0.8654
+   ],
+   "rear": [
+    -2.2022,
+    0.0,
+    0.84,
+    -1.56,
+    0.0,
+    1.0
+   ]
+  }
+ },
+ "vehicle.carlamotors.carlacola": {
+  "extent": [
+   2.6019,
+   1.3135,
+   1.2337
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   1.2337
+  ],
+  "base_type": "truck",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.5209,
+    -0.0058,
+    1.1301,
+    0.29,
+    0.0,
+    0.9525
+   ],
+   "front": [
+    2.6134,
+    -0.0,
+    0.4148,
+    -1.64,
+    180.0,
+    0.7908
+   ]
+  }
+ },
+ "vehicle.carlamotors.european_hgv": {
+  "extent": [
+   3.9679,
+   1.4455,
+   1.731
+  ],
+  "centre": [
+   0.0127,
+   0.0053,
+   1.7306
+  ],
+  "base_type": "truck",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -3.9659,
+    0.0019,
+    0.7104,
+    -0.43,
+    0.0,
+    0.8014
+   ],
+   "front": [
+    3.9817,
+    0.0,
+    0.71,
+    -0.03,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.carlamotors.firetruck": {
+  "extent": [
+   4.234,
+   1.4455,
+   1.9137
+  ],
+  "centre": [
+   -0.2534,
+   0.0053,
+   1.9134
+  ],
+  "base_type": "truck",
+  "special_type": "emergency",
+  "has_lights": true,
+  "generation": "2"
+ },
+ "vehicle.chevrolet.impala": {
+  "extent": [
+   2.6787,
+   1.0166,
+   0.7053
+  ],
+  "centre": [
+   0.0001,
+   0.0018,
+   0.7015
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.5241,
+    0.0,
+    0.6884,
+    -0.0,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.6702,
+    0.0056,
+    0.3147,
+    5.7,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.citroen.c3": {
+  "extent": [
+   1.9938,
+   0.9254,
+   0.8086
+  ],
+  "centre": [
+   -0.0,
+   0.0024,
+   0.7619
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.8944,
+    0.0019,
+    0.8025,
+    -1.59,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.0019,
+    0.0094,
+    0.5192,
+    -2.04,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.diamondback.century": {
+  "extent": [
+   0.8281,
+   0.2912,
+   0.8099
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   0.8157
+  ],
+  "base_type": "bicycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1"
+ },
+ "vehicle.dodge.charger_2020": {
+  "extent": [
+   2.5039,
+   0.9408,
+   0.7674
+  ],
+  "centre": [
+   -0.0054,
+   0.0,
+   0.7656
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.4886,
+    -0.0033,
+    0.6189,
+    -12.0,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.5105,
+    0.0018,
+    0.497,
+    -0.17,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.dodge.charger_police": {
+  "extent": [
+   2.4871,
+   1.0192,
+   0.7711
+  ],
+  "centre": [
+   0.0236,
+   0.0006,
+   0.7927
+  ],
+  "base_type": "car",
+  "special_type": "emergency",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.4276,
+    -0.0056,
+    0.5924,
+    -0.0,
+    0.0,
+    0.8577
+   ],
+   "front": [
+    2.4663,
+    0.0,
+    0.45,
+    -3.6,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.dodge.charger_police_2020": {
+  "extent": [
+   2.6188,
+   0.9649,
+   0.8192
+  ],
+  "centre": [
+   0.1095,
+   0.0,
+   0.8174
+  ],
+  "base_type": "car",
+  "special_type": "emergency",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.4889,
+    -0.0002,
+    0.6215,
+    -12.0,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.5048,
+    0.0,
+    0.49,
+    0.04,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.ford.ambulance": {
+  "extent": [
+   3.1828,
+   1.1756,
+   1.2157
+  ],
+  "centre": [
+   -0.2886,
+   0.0019,
+   1.2156
+  ],
+  "base_type": "van",
+  "special_type": "emergency",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -3.1996,
+    -0.0041,
+    0.5182,
+    -0.79,
+    0.0,
+    0.7702
+   ],
+   "front": [
+    2.906,
+    0.0019,
+    0.5161,
+    -0.58,
+    180.0,
+    0.7593
+   ]
+  }
+ },
+ "vehicle.ford.crown": {
+  "extent": [
+   2.6828,
+   0.9004,
+   0.7875
+  ],
+  "centre": [
+   0.1854,
+   0.0,
+   0.7684
+  ],
+  "base_type": "car",
+  "special_type": "taxi",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.3816,
+    -0.0,
+    0.7436,
+    -1.68,
+    0.0,
+    0.8653
+   ],
+   "front": [
+    2.879,
+    0.0019,
+    0.4363,
+    2.42,
+    180.0,
+    0.8639
+   ]
+  }
+ },
+ "vehicle.ford.mustang": {
+  "extent": [
+   2.3588,
+   0.9474,
+   0.6505
+  ],
+  "centre": [
+   0.0321,
+   0.0,
+   0.6505
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.2068,
+    -0.0078,
+    0.4116,
+    -0.0,
+    0.0,
+    0.8011
+   ],
+   "front": [
+    2.249,
+    -0.0026,
+    0.3406,
+    0.0,
+    180.0,
+    0.7626
+   ]
+  }
+ },
+ "vehicle.gazelle.omafiets": {
+  "extent": [
+   0.9217,
+   0.3295,
+   0.8879
+  ],
+  "centre": [
+   -0.01,
+   0.0,
+   0.8946
+  ],
+  "base_type": "bicycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1"
+ },
+ "vehicle.harley-davidson.low_rider": {
+  "extent": [
+   1.1751,
+   0.3831,
+   0.8247
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   0.8246
+  ],
+  "base_type": "motorcycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.1001,
+    0.0149,
+    0.6015,
+    -0.0,
+    0.0,
+    0.5437
+   ]
+  }
+ },
+ "vehicle.jeep.wrangler_rubicon": {
+  "extent": [
+   1.9331,
+   0.9526,
+   0.939
+  ],
+  "centre": [
+   0.0002,
+   0.001,
+   0.9323
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.6001,
+    -0.5926,
+    0.7296,
+    -0.18,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    1.7374,
+    0.0,
+    0.4913,
+    -0.25,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.kawasaki.ninja": {
+  "extent": [
+   1.0218,
+   0.3985,
+   0.7616
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   0.7689
+  ],
+  "base_type": "motorcycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -0.95,
+    0.003,
+    0.8152,
+    -0.0,
+    0.0,
+    0.5769
+   ]
+  }
+ },
+ "vehicle.lincoln.mkz_2017": {
+  "extent": [
+   2.4508,
+   1.0642,
+   0.7554
+  ],
+  "centre": [
+   0.004,
+   0.0,
+   0.7189
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.4403,
+    -0.0019,
+    0.509,
+    7.22,
+    0.0,
+    0.8045
+   ],
+   "front": [
+    2.4669,
+    0.0019,
+    0.4596,
+    0.06,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.lincoln.mkz_2020": {
+  "extent": [
+   2.4462,
+   0.9184,
+   0.7451
+  ],
+  "centre": [
+   -0.0063,
+   -0.0,
+   0.7488
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.436,
+    -0.0019,
+    0.5023,
+    0.54,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.4406,
+    0.0019,
+    0.496,
+    -6.21,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.mercedes.coupe": {
+  "extent": [
+   2.5134,
+   1.0758,
+   0.8253
+  ],
+  "centre": [
+   0.0,
+   -0.0008,
+   0.6668
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.5095,
+    -0.0019,
+    0.5244,
+    -3.28,
+    0.0,
+    1.0
+   ],
+   "front": [
+    2.5206,
+    0.0003,
+    0.377,
+    6.82,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.mercedes.coupe_2020": {
+  "extent": [
+   2.3368,
+   0.9059,
+   0.721
+  ],
+  "centre": [
+   -0.0026,
+   -0.0,
+   0.7204
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.3168,
+    -0.0019,
+    0.562,
+    -5.31,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.3437,
+    0.0019,
+    0.4646,
+    4.53,
+    180.0,
+    0.7601
+   ]
+  }
+ },
+ "vehicle.mercedes.sprinter": {
+  "extent": [
+   2.9576,
+   0.9942,
+   1.2803
+  ],
+  "centre": [
+   -0.0105,
+   0.0041,
+   1.2882
+  ],
+  "base_type": "van",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.9391,
+    -0.3272,
+    0.6858,
+    1.04,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.9362,
+    -0.0019,
+    0.4033,
+    0.0,
+    180.0,
+    0.7663
+   ]
+  }
+ },
+ "vehicle.micro.microlino": {
+  "extent": [
+   1.1036,
+   0.7405,
+   0.688
+  ],
+  "centre": [
+   0.0,
+   -0.0001,
+   0.6771
+  ],
+  "base_type": "car",
+  "special_type": "electric",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.0923,
+    -0.0019,
+    0.3596,
+    0.0,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    1.0991,
+    -0.0,
+    0.2626,
+    12.0,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.mini.cooper_s": {
+  "extent": [
+   1.9029,
+   0.9851,
+   0.7375
+  ],
+  "centre": [
+   0.0,
+   -0.0001,
+   0.693
+  ],
+  "base_type": "",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.7999,
+    0.0002,
+    0.7899,
+    -12.0,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    1.8733,
+    -0.0114,
+    0.4949,
+    -11.59,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.mini.cooper_s_2021": {
+  "extent": [
+   2.2763,
+   1.0485,
+   0.8836
+  ],
+  "centre": [
+   -0.0312,
+   -0.0,
+   0.891
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.1707,
+    -0.0019,
+    0.9145,
+    -4.34,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.2252,
+    0.0037,
+    0.3033,
+    -1.25,
+    180.0,
+    0.7568
+   ]
+  }
+ },
+ "vehicle.mitsubishi.fusorosa": {
+  "extent": [
+   5.1363,
+   1.9721,
+   2.1264
+  ],
+  "centre": [
+   -0.4452,
+   -0.1209,
+   2.1273
+  ],
+  "base_type": "Bus",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -5.592,
+    0.0,
+    0.74,
+    -0.0,
+    0.0,
+    1.0
+   ],
+   "front": [
+    4.702,
+    0.0,
+    0.63,
+    0.0,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.nissan.micra": {
+  "extent": [
+   1.8167,
+   0.9226,
+   0.7506
+  ],
+  "centre": [
+   -0.0,
+   0.001,
+   0.7812
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.8203,
+    0.0094,
+    0.5569,
+    -1.27,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    1.8274,
+    0.0037,
+    0.4566,
+    -0.73,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.nissan.patrol": {
+  "extent": [
+   2.3023,
+   0.9658,
+   0.9274
+  ],
+  "centre": [
+   -0.0574,
+   0.0002,
+   0.9351
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.0948,
+    -0.5346,
+    0.913,
+    -5.41,
+    0.0,
+    0.9905
+   ],
+   "front": [
+    2.252,
+    0.0205,
+    0.7314,
+    2.72,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.nissan.patrol_2021": {
+  "extent": [
+   2.7829,
+   1.075,
+   1.0226
+  ],
+  "centre": [
+   0.0284,
+   0.0,
+   1.0167
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.668,
+    -0.002,
+    1.1168,
+    -4.42,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.8074,
+    0.0019,
+    0.67,
+    -1.44,
+    180.0,
+    0.7632
+   ]
+  }
+ },
+ "vehicle.seat.leon": {
+  "extent": [
+   2.0964,
+   0.9081,
+   0.7369
+  ],
+  "centre": [
+   -0.0002,
+   -0.0016,
+   0.7396
+  ],
+  "base_type": "car",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.0779,
+    -0.004,
+    0.5479,
+    -10.63,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.0947,
+    0.0001,
+    0.4453,
+    10.21,
+    180.0,
+    0.7308
+   ]
+  }
+ },
+ "vehicle.tesla.cybertruck": {
+  "extent": [
+   3.1368,
+   1.1948,
+   1.0491
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   1.0491
+  ],
+  "base_type": "truck",
+  "special_type": "electric",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -3.1086,
+    -0.0019,
+    0.7065,
+    -7.19,
+    0.0,
+    1.0
+   ],
+   "front": [
+    3.121,
+    -0.0,
+    0.701,
+    -0.14,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.tesla.model3": {
+  "extent": [
+   2.3959,
+   1.0817,
+   0.7438
+  ],
+  "centre": [
+   0.0292,
+   0.0,
+   0.7359
+  ],
+  "base_type": "car",
+  "special_type": "electric",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.3251,
+    0.0001,
+    0.7896,
+    -10.88,
+    0.0,
+    0.9514
+   ],
+   "front": [
+    2.4371,
+    0.0019,
+    0.3274,
+    0.01,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.toyota.prius": {
+  "extent": [
+   2.2568,
+   1.0034,
+   0.7624
+  ],
+  "centre": [
+   0.002,
+   -0.0004,
+   0.7242
+  ],
+  "base_type": "car",
+  "special_type": "electric",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.1404,
+    -0.002,
+    0.8234,
+    -12.0,
+    0.0,
+    0.7908
+   ],
+   "front": [
+    2.2608,
+    0.0001,
+    0.4245,
+    9.59,
+    180.0,
+    0.7936
+   ]
+  }
+ },
+ "vehicle.vespa.zx125": {
+  "extent": [
+   0.9086,
+   0.433,
+   0.795
+  ],
+  "centre": [
+   0.01,
+   0.0,
+   0.7946
+  ],
+  "base_type": "motorcycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -0.8236,
+    0.0,
+    0.51,
+    -5.96,
+    0.0,
+    0.5769
+   ]
+  }
+ },
+ "vehicle.volkswagen.t2": {
+  "extent": [
+   2.2402,
+   1.0347,
+   1.0189
+  ],
+  "centre": [
+   0.0013,
+   -0.0005,
+   1.0145
+  ],
+  "base_type": "van",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -2.1683,
+    -0.0019,
+    0.762,
+    -3.32,
+    0.0,
+    1.0
+   ],
+   "front": [
+    2.253,
+    0.0019,
+    0.466,
+    0.5,
+    180.0,
+    0.8654
+   ]
+  }
+ },
+ "vehicle.volkswagen.t2_2021": {
+  "extent": [
+   2.2211,
+   0.8873,
+   0.9936
+  ],
+  "centre": [
+   0.1167,
+   -0.0004,
+   0.9912
+  ],
+  "base_type": "van",
+  "special_type": "",
+  "has_lights": true,
+  "generation": "2",
+  "plates": {
+   "rear": [
+    -2.0675,
+    -0.0018,
+    0.7318,
+    1.6,
+    0.0,
+    0.7692
+   ],
+   "front": [
+    2.347,
+    0.0019,
+    0.4145,
+    -5.6,
+    180.0,
+    0.7601
+   ]
+  }
+ },
+ "vehicle.yamaha.yzf": {
+  "extent": [
+   1.0954,
+   0.433,
+   0.7652
+  ],
+  "centre": [
+   0.0,
+   0.0,
+   0.7746
+  ],
+  "base_type": "motorcycle",
+  "special_type": "",
+  "has_lights": false,
+  "generation": "1",
+  "plates": {
+   "rear": [
+    -1.0813,
+    -0.004,
+    0.9117,
+    -0.95,
+    0.0,
+    0.5769
+   ]
+  }
+ }
+}
