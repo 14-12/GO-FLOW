@@ -28,18 +28,18 @@ CARLA only draws what SUMO decided, so every picture shows a state the simulatio
 
 ## 1. System requirements
 
-These are the minimum requirements for running the viewer smoothly, measured on the machine in the right-hand column.
+Minimum requirements to run the viewer smoothly:
 
-| | Minimum | Tested on |
-| --- | --- | --- |
-| **OS** | Windows 10 or 11, 64-bit | Windows 11 |
-| **GPU** | NVIDIA GeForce GTX 1650, 4 GB VRAM, DirectX 12 | GTX 1650 Max-Q, 4 GB (laptop) |
-| **CPU** | 8 cores / 16 threads (Intel Core i7 11th gen H, AMD Ryzen 7 5800H or better) | Intel Core i7-11800H |
-| **RAM** | 16 GB | |
-| **Disk** | 40 GB free while installing, 35 GB after; an SSD | |
-| **Display** | 1280 x 720 or larger | 1920 x 1080 |
-| **Software** | Python 3.11 (64-bit), Git, a recent NVIDIA driver | Python 3.11, SUMO 1.27.1 (from pip) |
-| **Network** | About 11 GB to download once (CARLA 7.8 GB; PyTorch about 2.5 GB if you want the detector) | |
+| | Minimum |
+| --- | --- |
+| **OS** | Windows 10 or 11, 64-bit |
+| **GPU** | NVIDIA GeForce GTX 1650, 4 GB VRAM, DirectX 12 |
+| **CPU** | 8 cores / 16 threads (Intel Core i7 11th gen H, AMD Ryzen 7 5800H or better) |
+| **RAM** | 16 GB |
+| **Disk** | 40 GB free while installing, 35 GB after; an SSD |
+| **Display** | 1280 x 720 or larger |
+| **Software** | Python 3.11 (64-bit), Git, a recent NVIDIA driver |
+| **Network** | About 11 GB to download once (CARLA 7.8 GB; PyTorch about 2.5 GB if you want the detector) |
 
 Why these numbers:
 * **GPU.** CARLA uses 2.7 to 3.1 GB of video memory on Town05 at the default render profile, so 4 GB is the floor.
@@ -277,7 +277,7 @@ Three ideas shape the design.
    (`cosim/carla_side.py`). CARLA's own traffic lights are frozen and set from SUMO's signal states. CARLA's
    autopilot is never used.
 2. **CARLA runs asynchronously and draws straight to its own window.** No picture is ever copied to Python. That
-   is what makes 30+ pictures a second possible on a 4 GB laptop GPU.
+   is what makes 30+ pictures a second possible on a 4 GB GPU.
 3. **Nothing slow sits on the path to the next picture.** Each slow job lives in its own thread or process,
    connected by queues:
    * the SUMO step;
@@ -442,7 +442,7 @@ Not in the repository (`.gitignore`), and created on your PC by the steps above:
 | CARLA asks for the DirectX runtime | `tools\install_directx.bat` |
 | `CARLA did not answer` | Another CARLA or a firewall is holding port 2000. Run `tools\stop_freefly.bat` and try again; `tools\fresh_carla.bat` restarts the server cleanly |
 | The camera shakes or drifts while you move | CARLA's own key movement is still on (a custom `DefaultInput.ini`). `python tools\carla_keys.py status` says why; `install` fixes a stock file |
-| Low frame rate | Use the default profile (not `epic`), close other GPU programs, keep the laptop on mains power. `set FREEFLY_ARGS=--pedestrians-per-km 8` draws fewer walkers, which cost the most |
+| Low frame rate | Use the default profile (not `epic`), close other GPU programs, keep a laptop plugged in. `set FREEFLY_ARGS=--pedestrians-per-km 8` draws fewer walkers, which cost the most |
 | H shows an error | Run `tools\setup_ml.bat` (PyTorch and Ultralytics) |
 | The viewer window closed with an error | Read `tools\logs\freefly_town05.log` |
 | Number plates look wrong after another CARLA project | `.venv\Scripts\python tools\plates\install_plates.py restore` puts CARLA's files back; the next start installs ours again |
