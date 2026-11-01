@@ -2,7 +2,6 @@
 
 from cosim.controllers import (
     all_red_state,
-    greens,
     program_moves,
     program_timing,
     transition_state,

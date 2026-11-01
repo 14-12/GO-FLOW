@@ -41,7 +41,7 @@ POST_BEHIND_M = 4.0                 # the officer's post: between his car (8 m b
 GLASS = ("static.prop.brokentile01", "static.prop.brokentile02", "static.prop.brokentile03", "static.prop.brokentile04")
 BITS = ("static.prop.garbage05", "static.prop.garbage06", "static.prop.garbage02")
 FLUID = ("static.prop.dirtdebris01", "static.prop.dirtdebris02", "static.prop.dirtdebris03")
-STATUS_COLOUR = {"ACCIDENT": "crash", "POLICE ON THE WAY": "police en route", "POLICE ARRIVING": "police en route",
+STATUS_COLOUR = {"ACCIDENT": "crash", "BREAKDOWN": "crash", "POLICE ON THE WAY": "police en route", "POLICE ARRIVING": "police en route",
                  "POLICE ON SCENE": "secured", "TOW TRUCK ON THE WAY": "recovery", "LOADING THE WRECK": "recovery",
                  "CLEARING": "clearing"}
 
@@ -160,6 +160,8 @@ class IncidentScene:
                                               "at_post": None, "drivers": {}, "towing": {}, "workers": {},
                                               "rng": random.Random(inc["id"] * 7919), "phase": None}
                 self._crash(inc, st, now, vehicles)
+            else:
+                self._joined(inc, st, now)
             self._step(inc, st, now, vehicles)
             markers.append(self._marker(inc, st, now))
         self._decks(snapshot)
@@ -208,14 +210,32 @@ class IncidentScene:
         for w in inc["wrecks"]:
             if w["vid"] not in self.dmg:
                 self.dmg[w["vid"]] = dict(w["damage"], t0=now)
-        pts = [self._carla(w["x"], w["y"], w["angle"], w["length"]) for w in inc["wrecks"]]
+        if inc["kind"] == "breakdown":  # (31 Oct) nothing hit anything: no debris
+            return
+        self._debris(inc, st, inc["wrecks"])
+
+    def _joined(self, inc: dict, st: dict, now: float) -> None:
+        """Cars that ran into the wrecks later (a pile-up, 31 Oct; before, they stood there undamaged), or into a
+        stalled car: their damage, and debris where they hit."""
+        new = [w for w in inc["wrecks"] if w["vid"] not in self.dmg and not w["removed"]]
+        for w in new:
+            self.dmg[w["vid"]] = dict(w["damage"], t0=now)
+        if inc["kind"] == "breakdown":
+            return
+        if not st["debris"]:
+            self._debris(inc, st, inc["wrecks"])
+        elif new:
+            self._debris(inc, st, new)
+
+    def _debris(self, inc: dict, st: dict, wrecks: list) -> None:
+        pts = [self._carla(w["x"], w["y"], w["angle"], w["length"]) for w in wrecks]
         if not pts:
             return
         # the debris: where the cars met (between them), glass and plastic, oil for the harder crashes
         cx = sum(p[0] for p in pts) / len(pts)
         cy = sum(p[1] for p in pts) / len(pts)
         cz = min(p[2] for p in pts)
-        k = max(w["damage"].get("severity", 0.3) for w in inc["wrecks"])
+        k = max(w["damage"].get("severity", 0.3) for w in wrecks)
         r = st["rng"]
         props = []
         n_glass, n_bits, n_fluid = 3 + int(9 * k), 1 + int(4 * k), (1 if k > 0.35 else 0) + (1 if k > 0.75 else 0)
@@ -610,7 +630,7 @@ class IncidentScene:
     def status(self, inc: dict, st: dict, now: float) -> str:
         phase = inc["phase"]
         if phase == "crash":
-            return "ACCIDENT"
+            return "BREAKDOWN" if inc["kind"] == "breakdown" else "ACCIDENT"
         if phase == "police en route":
             return "POLICE ON THE WAY"
         if phase in ("clearing", "closed"):

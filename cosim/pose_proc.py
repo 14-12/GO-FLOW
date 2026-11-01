@@ -314,6 +314,7 @@ class Driver:
         self.drivers_free: list[int] = []         # driver walkers not seated
         self.driver_in: dict[int, int] = {}       # car actor -> its driver walker
         self.doors_open: set[int] = set()         # cars whose driver got out (a door open at an accident scene)
+        self.eyes: list = []                      # other cameras (x, y): a red-light camera site (cosim/enforcement)
 
     def receive(self, msg) -> None:
         kind = msg[0]
@@ -326,6 +327,8 @@ class Driver:
                 self.pending.append(seg)
         elif kind == "plates":
             self.plates.update(msg[1])
+        elif kind == "eyes":  # (31 Oct) [(x, y)]: plates and every picture's poses near these cameras too
+            self.eyes = [tuple(e) for e in msg[1]]
         elif kind == "tow":  # (wreck actor, truck actor, plan): cosim/incident_scene.py
             _, wa, ta, plan = msg
             self.tows[wa] = TowPlan(wa, ta, plan, self.last_tf.get(ta), self.last_tf.get(wa))
@@ -467,7 +470,8 @@ class Driver:
                 pl = self.plates.get(a)
                 if not pl:
                     continue
-                if eye is None or (tf.location.x - eye[0]) ** 2 + (tf.location.y - eye[1]) ** 2 <= near2:
+                if eye is None or any((tf.location.x - e[0]) ** 2 + (tf.location.y - e[1]) ** 2 <= near2
+                                      for e in [eye] + self.eyes):
                     shown.add(a)
                     for pa, rel in pl:
                         vs.append((pa, compose(tf, rel)))
@@ -482,10 +486,14 @@ class Driver:
             ex, ey = eye
             near2, far2 = NEAR_M * NEAR_M, FAR_M * FAR_M
 
+            eyes = self.eyes
+
             def due(a, tf):
                 d2 = (tf.location.x - ex) ** 2 + (tf.location.y - ey) ** 2
                 if d2 <= near2:
                     return True
+                if any((tf.location.x - e[0]) ** 2 + (tf.location.y - e[1]) ** 2 <= near2 for e in eyes):
+                    return True  # (a red-light camera's view: every picture)
                 return (a + k) % (2 if d2 <= far2 else 4) == 0
 
             vs_send = [(a, tf) for a, tf in vs if due(a, tf)]

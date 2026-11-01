@@ -31,6 +31,15 @@ EDGE_MAX_M = 250.0  # off screen: the edge marker only this close (25 Oct: flown
 SHOWN_MAX_M = 900.0  # on screen: only this close
 
 
+def describe(m: dict) -> str:
+    """The marker's second line: what happened (31 Oct: breakdowns and pile-ups too)."""
+    if m["kind"] == "breakdown":
+        return "breakdown, 1 car" if m["cars"] == 1 else f"breakdown, {m['cars']} cars"
+    if m["kind"] == "pile-up":
+        return f"{m['label']} pile-up, {m['cars']} cars, {m['kmh']} km/h"
+    return f"{m['label']} {m['kind']} crash, {m['cars']} cars, {m['kmh']} km/h"
+
+
 class MarkerHud:
     def __init__(self, fov_deg: float = 90.0):
         self.fov = fov_deg
@@ -95,7 +104,7 @@ class MarkerHud:
                 self._at[m.get("id")] = (sx, sy, on)
             dist = f"{d:.0f} m" if d < 100 else (f"{round(d, -1):.0f} m" if d < 1000 else f"{d / 1000:.1f} km")
             title = f"{m['status']}  ·  {dist}"
-            sub = f"{m['label']} {m['kind']} crash, {m['cars']} cars, {m['kmh']} km/h"
+            sub = describe(m)
             if plates and d < NEAR_PLATES_M:
                 names = [plates.get(v) for v in m.get("plate_ids", []) if plates.get(v)]
                 if names:

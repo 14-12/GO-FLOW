@@ -155,6 +155,7 @@ def test_no_accident_at_a_depot_on_a_tiny_road_or_beside_one_under_way():
     im.net, im._pairs, im.role, im.incidents, im.distracted = net, set(), {}, [], {}
     im.stats = {"collisions": 0, "near_misses": 0, "person_hits": 0}
     im.max_active, im.cooldown_s, im.now, im.last_t = 2, 0.0, 100.0, -1e9
+    im.late_for, im.near_why = {}, {}  # (31 Oct: cars late to react behind a crash on the ring road)
     im.depot_edges = {"49"}
     im.depot_junctions = set()
     halted = []

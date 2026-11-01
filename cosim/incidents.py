@@ -34,6 +34,22 @@ collision (--collision.action warn --collision.check-junctions); then:
 At most MAX_ACTIVE incidents at a time and one new every COOLDOWN_S at most: while that is reached nobody looks
 away (and a collision then is a near miss: the car that hit brakes and the two part). An accident is never removed for being far away:
 its cars are always drawn (FreeFly), and its vehicles are never taken off the road or given new trips.
+
+More kinds (31 Oct), so that an incident is not always two cars that met:
+* breakdown: now and then a car (not one in a junction, on a road of MIN_CRASH_ROAD_M and more) puts its hazard
+  lights on and rolls to a stop in its lane (BREAKDOWN_DECEL); the same response follows (police, the lane
+  closed, a recovery truck), with no damage and no debris. Incident.kind "breakdown", severity 0.
+* speeding drivers: SPEEDER_SHARE of the new cars drive 25-50 % over the limit (SUMO's speed factor) and are
+  SPEEDER_CARELESS times as likely to be careless: their crashes are harder. Wreck / snapshot field "speeding".
+* pile-up: after a crash on the ring road (or in a junction it leads into), each of the next few cars behind it in its lane may react late
+  (PILEUP_LATE_P, PILEUP_LATE_S: it keeps its speed that long, then brakes as hard as it can); whoever cannot stop
+  in time runs into the wrecks and joins the incident (up to PILEUP_MAX_WRECKS cars). From three cars on, its kind
+  is "pile-up". Whether anyone hits is again SUMO's traffic alone.
+  Pile-ups start from any crash there, and from a car that brakes hard all of a sudden (RING_BRAKE_MEAN_S: something
+  on the road, a near miss, a driver who changed their mind): the cars behind it may react late in the same way.
+* look-alikes, not incidents (`Lookalike`): a delivery van stopping in its lane with its hazards on for 1-3 minutes
+  ("double-parked"), a line bus standing at its stop well past its dwell ("bus-long-stop"). Nobody responds; they are
+  logged (lookalike_snapshot) so that an incident detector can be shown what it must not report.
 """
 
 from __future__ import annotations
@@ -90,6 +106,31 @@ UNBLOCK_S = 20.0             # a truck waiting this long for its way back to cle
 DEPOT_STUCK_S = 60.0         # a depot's vehicle standing this long on its way, out of sight: it goes back, one put on
                              # the road comes instead
 NEVER_CARELESS = ("emergency", "authority", "bus", "coach")
+# 31 Oct: more kinds of incident (module doc)
+BREAKDOWN_MEAN_S = 2400.0    # one car breaks down about this often (simulated s) while a new incident may start
+BREAKDOWN_DECEL = 2.5        # it rolls to a stop at this (m/s2)
+BREAKDOWN_RING_P = 0.3       # on the ring road this often (its long roads would otherwise take nearly all of them)
+SPEEDER_SHARE = 0.08         # of new cars: drive SPEEDER_FACTOR times the limit
+SPEEDER_FACTOR = (1.25, 1.5)
+SPEEDER_CARELESS = 3.0       # a speeder is this many times as likely to be careless
+RING_CARELESS = 3.0          # the ring road's own cars (cosim/highway.py) are this many times as often careless
+RING_BRAKE_MEAN_S = 400.0    # a car on the ring road brakes hard for no reason the others see, about this often
+RING_BRAKE_TO_MS = 0.0       # ... down to this, over RING_BRAKE_S (about 9 m/s2: an emergency stop)
+RING_BRAKE_S = 2.4
+RING_BRAKE_GAP_M = 15.0      # ... only with a car close behind it (tailgating), that then reacts late
+RING_BRAKE_LATE_S = (1.2, 2.2)
+PILEUP_MAX_WRECKS = 6        # an incident on the ring road takes up to this many cars (elsewhere 3)
+PILEUP_LATE_P = (0.7, 0.6, 0.45, 0.3)  # the 1st, 2nd ... car behind a crash on the ring: chance it reacts late
+PILEUP_LATE_S = (0.8, 1.8)   # ... this late (it keeps its speed, then brakes)
+PILEUP_REACH_M = 90.0        # only cars this close behind, and faster than PILEUP_MIN_MS
+PILEUP_MIN_MS = 8.0
+LOOKALIKE_MAX = 2            # at a time
+DOUBLE_PARK_MEAN_S = 240.0   # a delivery van stops in its lane about this often (simulated s)
+DOUBLE_PARK_S = (60.0, 180.0)
+BUS_LONG_P = 0.03            # of a line bus's stops: it stands there BUS_LONG_S instead of its dwell
+BUS_LONG_S = (70.0, 150.0)
+TOW_GIVE_UP_S = 240.0        # a recovery truck waiting this long ahead of its wreck goes back (_tow_gives_up)
+LC_DEFAULT = 1621            # SUMO's default lane change mode
 
 
 def severity_label(v: float) -> str:
@@ -112,6 +153,7 @@ class Wreck:
     removed: bool = False           # off the road (loaded onto a recovery truck)
     tow: str | None = None
     exit: dict | None = None        # its driver getting out: when, to where on the pavement (SUMO x, y), crossing?
+    speeding: bool = False          # a speeder (31 Oct)
 
 
 MIN_ENTRY_M = 10.0  # room left at the start of a short closed lane: who still comes onto it moves over there
@@ -175,6 +217,22 @@ class Incident:
         log.info("incident %d at %.0f s (+%.0f s): %s", self.id, self.t0, t - self.t0, text)
 
 
+@dataclass
+class Lookalike:
+    """Something that looks like an incident to a camera and is not one (module doc): logged, nobody responds."""
+    id: int
+    kind: str                       # double-parked | bus-long-stop
+    vid: str
+    lane: str
+    t_told: float
+    seconds: float                  # how long it was told to stand
+    t0: float | None = None         # standing from
+    t1: float | None = None         # moving again
+    x: float = 0.0                  # SUMO, where it stands
+    y: float = 0.0
+    stop: str | None = None         # the bus stop
+
+
 class Distraction:
     """A careless driver looking away (see the module doc)."""
 
@@ -187,7 +245,9 @@ class IncidentManager:
     draws."""
 
     def __init__(self, conn, net_file, typer=None, seed: int = 11, walk=None, share: float = CARELESS_SHARE,
-                 max_active: int = MAX_ACTIVE, cooldown_s: float = COOLDOWN_S, visible=None, sinks=None):
+                 max_active: int = MAX_ACTIVE, cooldown_s: float = COOLDOWN_S, visible=None, sinks=None,
+                 breakdown_mean_s: float = BREAKDOWN_MEAN_S, speeder_share: float = SPEEDER_SHARE,
+                 pileups: bool = True, lookalikes: bool = True, ring_brake_mean_s: float = RING_BRAKE_MEAN_S):
         import sumolib
 
         self.conn = conn
@@ -227,6 +287,36 @@ class IncidentManager:
         self.standing: dict[str, float] = {}
         self.halted: dict[str, float] = {}
         self.jammed: dict[str, float] = {}
+        # 31 Oct: breakdowns, speeding drivers, pile-ups on the ring road, look-alikes (module doc)
+        self.breakdown_mean_s = breakdown_mean_s
+        self.speeder_share = speeder_share
+        self.pileups = pileups
+        self.ring_brake_mean_s = ring_brake_mean_s
+        self.lookalikes_on = lookalikes
+        self.speeders: dict[str, float] = {}       # vid -> its speed factor
+        self._speed_pending: dict[str, tuple] = {}  # vid -> (factor, made at): set once it is on the road
+        self.breaking: dict[str, dict] = {}        # vid -> {t, v0}: rolling to a stop (a breakdown)
+        self.lookalikes: list[Lookalike] = []
+        self.lookalikes_done: list[Lookalike] = []
+        self.n_look = 0
+        self._bus_at: dict[str, str] = {}          # bus -> the stop it was last seen standing at
+        self.late_for: dict[str, int | None] = {}  # vid -> the incident it reacts late to (_late_chain; None: a car
+                                                   # braking hard ahead of it)
+        self._late_t: dict[str, float] = {}
+        self._hard: dict[str, float] = {}           # vid -> until when it brakes past its normal deceleration
+        self.near_why: dict[str, int] = {}         # near misses by reason
+        try:
+            from cosim.highway import find_loops
+
+            from cosim.highway import PREFIX
+
+            self.ring = {e for lp in find_loops(self.net) for e in lp}
+            self._ring_prefix = PREFIX
+        except Exception:  # noqa: BLE001
+            self.ring, self._ring_prefix = set(), None
+        for k in ("breakdowns", "speeders_made", "pileup_late", "pileups", "double_parked", "bus_long_stops",
+                  "sudden_brakes"):
+            self.stats[k] = 0
 
     # ------------------------------------------------------------------ who may be careless
     def allowed(self) -> bool:
@@ -238,7 +328,16 @@ class IncidentManager:
         for a share of the cars while new incidents are allowed."""
         careful = self.typer.type_for(vid, base) if self.typer is not None else base
         vclass = self.typer.base.get(base, "passenger") if self.typer is not None else "passenger"
-        if vclass == "passenger" and self.allowed() and self.rng.random() < self.share:
+        share = self.share
+        if vclass == "passenger" and self.speeder_share > 0 and self.rng.random() < self.speeder_share:
+            f = round(self.rng.uniform(*SPEEDER_FACTOR), 2)
+            self.speeders[vid] = f
+            self._speed_pending[vid] = (f, self.now)
+            self.stats["speeders_made"] += 1
+            share = min(share * SPEEDER_CARELESS, 0.6)
+        if self.pileups and self._ring_prefix and vid.startswith(self._ring_prefix):
+            share = min(share * RING_CARELESS, 0.6)
+        if vclass == "passenger" and self.allowed() and self.rng.random() < share:
             self.careless[vid] = careful
             self.stats["careless_made"] += 1
         return careful
@@ -251,6 +350,10 @@ class IncidentManager:
         for vid in [v for v in self.careless if v not in vehicles]:
             self.careless.pop(vid, None)
             self.distracted.pop(vid, None)
+        for vid in [v for v in self.late_for if v not in vehicles or now - self._late_t.get(v, now) > 10.0
+                    or v not in self.distracted and v not in self.halted and vehicles[v].speed < 0.1]:
+            self.late_for.pop(vid, None)  # (gone, stopped in time, or long past)
+            self._late_t.pop(vid, None)
         for vid, t in list(self.halted.items()):
             if now >= t:
                 self.halted.pop(vid, None)
@@ -259,7 +362,13 @@ class IncidentManager:
                         c.vehicle.setSpeed(vid, -1)
                     except Exception:  # noqa: BLE001
                         pass
+        self._speeding(now, vehicles)
         self._distractions(now, vehicles, tls or {})
+        self._breakdowns(now, vehicles)
+        if self.pileups:
+            self._ring_brake(now, vehicles)
+        if self.lookalikes_on:
+            self._lookalikes(now, vehicles)
         if int(now * 2) % 4 == 1:  # every 2 s
             self._unsqueeze(now, vehicles)
         try:
@@ -279,8 +388,9 @@ class IncidentManager:
             for vid in [v for v, r in self.role.items() if r[0] == inc.id]:
                 self.role.pop(vid, None)
         if not self.allowed():  # nobody looks away while no new incident may start
-            for vid in list(self.distracted):
-                self._calm(vid)
+            for vid, d in list(self.distracted.items()):
+                if d.kind != "late":  # (the cars behind a crash on the ring: they react late to it, see _pileup)
+                    self._calm(vid)
 
     def unjam(self, now: float, vehicles: dict, after_s: float = UNJAM_S) -> int:
         """Knots undone, whether you watch or not (24 Oct: before, a knot in sight stayed until you looked away).
@@ -381,6 +491,352 @@ class IncidentManager:
         self.stats["unjammed"] = self.stats.get("unjammed", 0) + n
         return n
 
+    # ------------------------------------------------------------------ 31 Oct: speeders, breakdowns, look-alikes
+    def _speeding(self, now: float, vehicles: dict) -> None:
+        """The speeders' factor, set once they are on the road (type_for runs before they are added)."""
+        for vid, (f, t) in list(self._speed_pending.items()):
+            if vid in vehicles:
+                try:
+                    self.conn.vehicle.setSpeedFactor(vid, f)
+                except Exception:  # noqa: BLE001
+                    pass
+                self._speed_pending.pop(vid, None)
+            elif now - t > 120.0:  # never came
+                self._speed_pending.pop(vid, None)
+                self.speeders.pop(vid, None)
+        if int(now * 2) % 120 == 3:  # every minute: those gone
+            for vid in [v for v in self.speeders if v not in vehicles and v not in self._speed_pending]:
+                self.speeders.pop(vid, None)
+
+    def _place_ok(self, lane: str, x: float, y: float) -> bool:
+        """Where an incident may start: a road (not a junction) of MIN_CRASH_ROAD_M or more, not at a depot, not
+        within NEAR_OTHER_M of another incident under way."""
+        if not lane or lane.startswith(":"):
+            return False
+        try:
+            if self.net.getLane(lane).getLength() < MIN_CRASH_ROAD_M:
+                return False
+        except Exception:  # noqa: BLE001
+            return False
+        if lane.rsplit("_", 1)[0] in getattr(self, "depot_edges", set()):
+            return False
+        return not any(i.phase != "closed" and math.hypot(i.x - x, i.y - y) < NEAR_OTHER_M for i in self.incidents)
+
+    def _look_vids(self) -> set:
+        return {lk.vid for lk in self.lookalikes}
+
+    def _breakdowns(self, now: float, vehicles: dict) -> None:
+        """A car breaks down (module doc): hazards on, it rolls to a stop in its lane, then it is an incident."""
+        c = self.conn
+        for vid, b in list(self.breaking.items()):
+            v = vehicles.get(vid)
+            if v is None:
+                self.breaking.pop(vid, None)
+                continue
+            left = 1.0 - (now - b["t"]) / b["T"]
+            if left > 0.0 and v.speed > 0.1:
+                try:
+                    c.vehicle.setSpeed(vid, max(0.0, b["v0"] * left))
+                except Exception:  # noqa: BLE001
+                    self.breaking.pop(vid, None)
+                continue
+            try:
+                c.vehicle.setSpeed(vid, 0.0)
+            except Exception:  # noqa: BLE001
+                pass
+            if v.speed > 0.1 and now - b["t"] < b["T"] + 6.0:
+                continue  # (still rolling: a car ahead slowed it less than asked)
+            self.breaking.pop(vid, None)
+            self._broken_down(now, vid, v)
+        if self.breaking or self.breakdown_mean_s <= 0 or not self.allowed():
+            return
+        if self.rng.random() >= 0.5 / self.breakdown_mean_s:
+            return
+        busy = set(self.role) | set(self.distracted) | self._look_vids()
+        cands = sorted(vid for vid, v in vehicles.items() if v.vclass == "passenger" and v.speed > 5.0
+                       and vid not in busy and not vid.startswith("pt_"))
+        self.rng.shuffle(cands)
+        on_ring = self.rng.random() < BREAKDOWN_RING_P
+        for vid in cands[:40]:
+            v = vehicles[vid]
+            try:
+                lane = c.vehicle.getLaneID(vid)
+                pos = c.vehicle.getLanePosition(vid)
+            except Exception:  # noqa: BLE001
+                continue
+            if (lane.rsplit("_", 1)[0] in self.ring) != on_ring or not self._place_ok(lane, v.x, v.y):
+                continue
+            # it stops on this road, short of its end: the rest of the road at least its rolling distance and 15 m
+            T = max(2.0, v.speed / BREAKDOWN_DECEL)
+            if self.net.getLane(lane).getLength() - pos < v.speed * T / 2.0 + 15.0:
+                continue
+            try:
+                c.vehicle.setLaneChangeMode(vid, 0)
+            except Exception:  # noqa: BLE001
+                continue
+            self.breaking[vid] = {"t": now, "v0": v.speed, "lane": lane, "T": T}
+            self.careless.pop(vid, None)
+            log.info("breakdown: %s slowing to a stop on %s (%.0f km/h)", vid, lane, v.speed * 3.6)
+            return
+
+    def _broken_down(self, now: float, vid: str, v) -> None:
+        c = self.conn
+        try:
+            lane = c.vehicle.getLaneID(vid)
+        except Exception:  # noqa: BLE001
+            return
+        if not self.allowed() or not self._place_ok(lane, v.x, v.y):  # (rolled into a junction, or another came)
+            try:
+                c.vehicle.setSpeed(vid, -1)
+                c.vehicle.setLaneChangeMode(vid, LC_DEFAULT)
+            except Exception:  # noqa: BLE001
+                pass
+            log.info("breakdown of %s called off (%s)", vid, lane)
+            return
+        self.n += 1
+        inc = Incident(self.n, now, "breakdown", 0.0, "breakdown", lane.rsplit("_", 1)[0], lane, v.x, v.y)
+        self._freeze(vid)
+        w = self._wreck(vid, v, "stalled")
+        w.damage = {"yaw": 0.0, "roll": 0.0, "pitch": 0.0, "dz": 0.0, "dx": 0.0, "rollover": False, "ramp_s": 0.25,
+                    "severity": 0.0, "breakdown": True}
+        inc.wrecks.append(w)
+        self.role[vid] = (inc.id, "wreck")
+        self._fit_in_lane(w)
+        self._close_lanes(inc)
+        self._divert(inc)
+        self._skip_stops(inc)
+        self._plan_exits(inc, now)
+        self.incidents.append(inc)
+        self.last_t = now
+        self.stats["incidents"] += 1
+        self.stats["breakdowns"] += 1
+        inc.log(now, f"breakdown: {vid} stalled on {lane}" + (" (speeding)" if vid in self.speeders else ""))
+        self.careless.pop(vid, None)
+        self.distracted.pop(vid, None)
+
+    def _lookalikes(self, now: float, vehicles: dict) -> None:
+        """Delivery vans stopping in their lane, buses standing long at their stop (module doc)."""
+        c = self.conn
+        for lk in list(self.lookalikes):
+            v = vehicles.get(lk.vid)
+            if v is None:
+                lk.t1 = lk.t1 or now
+            elif lk.t0 is None:
+                if v.speed < 0.1:
+                    try:
+                        stopped = c.vehicle.isStopped(lk.vid)
+                    except Exception:  # noqa: BLE001
+                        stopped = False
+                    if stopped:
+                        lk.t0, lk.x, lk.y = now, v.x, v.y
+                        try:
+                            lk.lane = c.vehicle.getLaneID(lk.vid)
+                        except Exception:  # noqa: BLE001
+                            pass
+                        log.info("look-alike %d: %s %s standing on %s", lk.id, lk.kind, lk.vid, lk.lane)
+                elif now - lk.t_told > 60.0:  # never got to its stop
+                    lk.t1 = now
+            elif v.speed > 0.5 and lk.t1 is None:
+                lk.t1 = now
+            if lk.t1 is not None:
+                if lk.kind == "double-parked":
+                    try:
+                        c.vehicle.setLaneChangeMode(lk.vid, LC_DEFAULT)
+                    except Exception:  # noqa: BLE001
+                        pass
+                self.lookalikes.remove(lk)
+                if lk.t0 is not None:
+                    self.lookalikes_done.append(lk)
+        # line buses: one stop now and then far longer than its dwell
+        if int(now * 2) % 2 == 0:  # every second
+            for vid in [v for v in vehicles if v.startswith("pt_")]:
+                try:
+                    at = c.vehicle.isAtBusStop(vid)
+                except Exception:  # noqa: BLE001
+                    continue
+                if not at:
+                    self._bus_at.pop(vid, None)
+                    continue
+                try:
+                    stop = c.vehicle.getStops(vid, 1)[0]
+                except Exception:  # noqa: BLE001
+                    continue
+                key = f"{stop.stoppingPlaceID}@{stop.arrival:.0f}"
+                if self._bus_at.get(vid) == key:
+                    continue
+                self._bus_at[vid] = key
+                if len(self.lookalikes) >= LOOKALIKE_MAX or self.rng.random() >= BUS_LONG_P:
+                    continue
+                s = round(self.rng.uniform(*BUS_LONG_S))
+                try:
+                    c.vehicle.setStopParameter(vid, 0, "duration", str(s))
+                except Exception as e:  # noqa: BLE001
+                    log.debug("bus stop %s: %s", vid, e)
+                    continue
+                self.n_look += 1
+                v = vehicles[vid]
+                lk = Lookalike(self.n_look, "bus-long-stop", vid, stop.lane, now, s, t0=now, x=v.x, y=v.y,
+                               stop=stop.stoppingPlaceID)
+                self.lookalikes.append(lk)
+                self.stats["bus_long_stops"] += 1
+                log.info("look-alike %d: %s stands %d s at %s", lk.id, vid, s, lk.stop)
+        if len(self.lookalikes) >= LOOKALIKE_MAX or self.rng.random() >= 0.5 / DOUBLE_PARK_MEAN_S:
+            return
+        busy = set(self.role) | set(self.distracted) | set(self.breaking) | self._look_vids()
+        cands = sorted(vid for vid, v in vehicles.items() if v.vclass == "delivery" and v.speed > 3.0 and vid not in busy)
+        self.rng.shuffle(cands)
+        for vid in cands[:10]:
+            v = vehicles[vid]
+            try:
+                lane = c.vehicle.getLaneID(vid)
+                pos = c.vehicle.getLanePosition(vid)
+            except Exception:  # noqa: BLE001
+                continue
+            if not self._place_ok(lane, v.x, v.y) or lane.rsplit("_", 1)[0] in self.ring:
+                continue
+            ln = self.net.getLane(lane)
+            if sum(1 for x in ln.getEdge().getLanes() if x.allows("passenger")) < 2:
+                continue  # (a single lane: nobody could pass)
+            at = pos + v.speed * v.speed / 6.0 + 4.0  # where it can stop gently
+            if at > ln.getLength() - 25.0:
+                continue
+            s = round(self.rng.uniform(*DOUBLE_PARK_S))
+            try:
+                c.vehicle.setLaneChangeMode(vid, 0)
+                c.vehicle.setStop(vid, ln.getEdge().getID(), pos=at, laneIndex=ln.getIndex(), duration=s)
+            except Exception as e:  # noqa: BLE001
+                log.debug("double-park %s: %s", vid, e)
+                try:
+                    c.vehicle.setLaneChangeMode(vid, LC_DEFAULT)
+                except Exception:  # noqa: BLE001
+                    pass
+                continue
+            self.n_look += 1
+            self.lookalikes.append(Lookalike(self.n_look, "double-parked", vid, lane, now, s))
+            self.stats["double_parked"] += 1
+            log.info("look-alike %d: %s to stop on %s for %d s", self.n_look, vid, lane, s)
+            return
+
+    def _ring_brake(self, now: float, vehicles: dict) -> None:
+        """A car on the ring road brakes hard all of a sudden; the cars behind it may react late (module doc)."""
+        for vid, until in list(self._hard.items()):
+            if now >= until or vid not in vehicles or vid in self.role:
+                self._hard.pop(vid, None)
+                if vid in vehicles and vid not in self.role:
+                    try:
+                        self.conn.vehicle.setSpeedMode(vid, 31)
+                        self.conn.vehicle.setSpeed(vid, -1)
+                    except Exception:  # noqa: BLE001
+                        pass
+        if not self.ring or self.ring_brake_mean_s <= 0 or not self.allowed() or \
+                self.rng.random() >= 0.5 / self.ring_brake_mean_s:
+            return
+        c = self.conn
+        busy = set(self.role) | set(self.distracted) | set(self.breaking) | self._look_vids()
+        cands = sorted(vid for vid, v in vehicles.items() if v.speed > 18.0 and vid not in busy
+                       and v.vclass not in NEVER_CARELESS and not vid.startswith("pt_"))
+        self.rng.shuffle(cands)
+        for vid in cands[:40]:
+            try:
+                lane = c.vehicle.getLaneID(vid)
+                f = c.vehicle.getFollower(vid, RING_BRAKE_GAP_M)
+            except Exception:  # noqa: BLE001
+                continue
+            if lane.startswith(":") or lane.rsplit("_", 1)[0] not in self.ring or not f or not f[0] \
+                    or f[0] not in vehicles or vehicles[f[0]].speed < 18.0:
+                continue
+            try:
+                c.vehicle.setSpeedMode(vid, 31 & ~4)  # past its normal deceleration: an emergency stop
+                c.vehicle.slowDown(vid, RING_BRAKE_TO_MS, RING_BRAKE_S)
+            except Exception:  # noqa: BLE001
+                continue
+            self._hard[vid] = now + RING_BRAKE_S + 2.0
+            self.stats["sudden_brakes"] += 1
+            log.info("ring: %s brakes hard on %s (%.0f km/h), %s behind it", vid, lane, vehicles[vid].speed * 3.6, f[0])
+            self._late_chain(vid, vehicles, None, 0, f"{vid} braking hard", late_s=RING_BRAKE_LATE_S)
+            return
+
+    def _late_chain(self, start: str, vehicles: dict, inc_id: int | None, k0: int, why: str,
+                    inc: Incident | None = None, late_s: tuple = PILEUP_LATE_S) -> None:
+        """The cars behind `start` in its lane: the k-th may react late (PILEUP_LATE_P[k], from k0 on)."""
+        c = self.conn
+        cur, back = start, 0.0
+        for k, p in list(enumerate(PILEUP_LATE_P))[k0:]:
+            try:
+                f = c.vehicle.getFollower(cur, PILEUP_REACH_M)
+            except Exception:  # noqa: BLE001
+                return
+            if not f or not f[0] or f[0] not in vehicles:
+                return
+            fid, gap = f
+            back += gap
+            v = vehicles[fid]
+            if back > PILEUP_REACH_M or fid in self.role or v.vclass in NEVER_CARELESS or fid.startswith("pt_"):
+                return
+            cur = fid
+            if fid in self.distracted or v.speed < PILEUP_MIN_MS or self.rng.random() >= p:
+                continue
+            try:
+                c.vehicle.setSpeedMode(fid, 0)
+                c.vehicle.setSpeed(fid, v.speed)
+            except Exception:  # noqa: BLE001
+                continue
+            self.distracted[fid] = Distraction(fid, "late", self.now + self.rng.uniform(*late_s), v.speed)
+            self.late_for[fid] = inc_id
+            self._late_t[fid] = self.now
+            self.stats["pileup_late"] += 1
+            text = f"{fid} ({k + 1}. behind, {v.speed * 3.6:.0f} km/h) late to react to {why}"
+            if inc is not None:
+                inc.log(self.now, text)
+            else:
+                log.info(text)
+
+    def _pileup(self, inc: Incident, vehicles: dict, start: str | None = None, k0: int = 0) -> None:
+        """A crash on the ring road: the cars coming up behind it in its lane may react late (module doc). From the
+        rear-most wreck in its lane, or (start) from a car that has just run into the wrecks: the chance for the k-th
+        car behind the first crash is PILEUP_LATE_P[k]."""
+        if start is None:
+            same = [w for w in inc.wrecks if w.lane == inc.lane] or inc.wrecks
+            start = min(same, key=lambda w: w.pos).vid
+        self._late_chain(start, vehicles, inc.id, k0, "the crash", inc)
+
+    def _on_ring(self, lane: str) -> bool:
+        """On the ring road: one of its roads, or a junction a ring road leads into (where its queues stand)."""
+        if not lane:
+            return False
+        if lane.startswith(":"):
+            frm = self._via.get(lane, (None, None))[0]
+            return bool(frm) and frm.rsplit("_", 1)[0] in self.ring
+        return lane.rsplit("_", 1)[0] in self.ring
+
+    def _behind(self, vid: str, n: int = 4) -> list:
+        out, cur = [], vid
+        for _ in range(n):
+            try:
+                f = self.conn.vehicle.getFollower(cur, PILEUP_REACH_M)
+            except Exception:  # noqa: BLE001
+                break
+            if not f or not f[0]:
+                break
+            out.append(f[0])
+            cur = f[0]
+        return out
+
+    def _veh(self, vid: str):
+        """A small stand-in for sumo_side.Vehicle (vclass, speed) of a vehicle on the road now, or None."""
+        c = self.conn
+        try:
+            from types import SimpleNamespace
+
+            return SimpleNamespace(vclass=c.vehicle.getVehicleClass(vid), speed=c.vehicle.getSpeed(vid))
+        except Exception:  # noqa: BLE001
+            return None
+
+    def lookalike_snapshot(self) -> list[dict]:
+        return [{"id": lk.id, "kind": lk.kind, "vid": lk.vid, "lane": lk.lane, "x": lk.x, "y": lk.y, "t_told": lk.t_told,
+                 "t0": lk.t0, "t1": lk.t1, "seconds": lk.seconds, "stop": lk.stop}
+                for lk in self.lookalikes_done + self.lookalikes if lk.t0 is not None]
+
     def _calm(self, vid: str) -> None:
         if self.distracted.pop(vid, None) is not None:
             try:
@@ -449,31 +905,37 @@ class IncidentManager:
         ra, rb = self.role.get(a), self.role.get(b)
         if ra and rb:
             return  # already part of an incident (the wrecks touch)
-        if ra or rb:  # someone ran into a wreck (or the wreck into nobody): a pile-up, if it is an ordinary car
-            inc_id = (ra or rb)[0]
-            other = b if ra else a
+        late = next((self.late_for[x] for x in (a, b) if self.late_for.get(x) is not None), None)
+        if ra or rb or late is not None:
+            # someone ran into a wreck (or the wreck into nobody), or a car late to react behind a crash on the ring
+            # hit the car ahead of it: a pile-up, if they are ordinary cars
+            inc_id = (ra or rb)[0] if (ra or rb) else late
             inc = next((i for i in self.incidents if i.id == inc_id), None)
-            ov = vehicles[other]
-            if (inc is None or inc.phase not in ("crash", "police en route") or len(inc.wrecks) >= 3
-                    or ov.vclass in NEVER_CARELESS or other in self.role):
-                self._halt(other, 2.5)
+            new = [x for x in (a, b) if x not in self.role]
+            cap = PILEUP_MAX_WRECKS if self.pileups and inc is not None and self._on_ring(inc.lane) else 3
+            if (inc is None or inc.phase not in ("crash", "police en route") or len(inc.wrecks) + len(new) > cap
+                    or any(vehicles[x].vclass in NEVER_CARELESS or x.startswith("pt_") for x in new)):
+                for x in new:
+                    self._halt(x, 2.5)
                 self.stats["near_misses"] += 1
+                self.near_why['join refused'] = self.near_why.get('join refused', 0) + 1
                 return
-            self._freeze(other)
-            w = self._wreck(other, ov, "collider" if other == a else "victim")
-            w.damage = self._damage(inc.severity * 0.6, "rear-end", w, inc)
-            self._fit_in_lane(w)
-            inc.wrecks.append(w)
-            self._plan_exits(inc, now, [w])
-            self.role[other] = (inc.id, "wreck")
-            inc.log(now, f"{other} ran into the wreck")
-            self.stats["joined"] += 1
+            sev_j = abs(col.colliderSpeed - col.victimSpeed)
+            if sev_j < 1.0:  # a touch at walking pace (a car creeping up to the one ahead): no crash
+                for x in new:
+                    self._halt(x, 2.5)
+                self.stats["near_misses"] += 1
+                self.near_why['touch'] = self.near_why.get('touch', 0) + 1
+                return
+            for x in new:
+                self._join(inc, x, vehicles[x], "collider" if x == a else "victim", sev_j, now)
             return
         va, vb = vehicles[a], vehicles[b]
         if (va.vclass in NEVER_CARELESS or vb.vclass in NEVER_CARELESS or a.startswith("pt_") or b.startswith("pt_")
                 or not self.allowed()):
             self._halt(a, 2.0)
             self.stats["near_misses"] += 1
+            self.near_why['not allowed'] = self.near_why.get('not allowed', 0) + 1
             return
         kind = {"collision": "rear-end", "frontal": "frontal", "junction": "junction", "side": "side"}.get(col.type,
                                                                                                              col.type)
@@ -501,6 +963,7 @@ class IncidentManager:
         if at_depot or short or near:
             self._halt(a, 2.0)
             self.stats["near_misses"] += 1
+            self.near_why['place'] = self.near_why.get('place', 0) + 1
             return
         self.n += 1
         inc = Incident(self.n, now, kind, round(sev, 1), severity_label(sev), edge, lane,
@@ -525,11 +988,48 @@ class IncidentManager:
         self.last_t = now
         self.stats["incidents"] += 1
         d = self.distracted.get(a)
+        inc.cause = d.kind if d else None
+        if a in self.late_for or b in self.late_for:
+            inc.cause = "late to react to a car braking hard"
+        fast = [x for x in (a, b) if x in self.speeders]
         inc.log(now, f"{kind} crash, {inc.label} ({sev * 3.6:.0f} km/h): {a} into {b}"
-                     + (f" ({d.kind})" if d else ""))
+                     + (f" ({d.kind})" if d else "") + (f" (speeding: {', '.join(fast)})" if fast else ""))
         for vid in (a, b):
             self.careless.pop(vid, None)
             self.distracted.pop(vid, None)
+        if self.pileups and self._on_ring(lane):
+            self._pileup(inc, vehicles)
+
+    def _join(self, inc: Incident, vid: str, v, role: str, sev: float, now: float) -> None:
+        """A car that ran into an incident's wrecks (or, late to react, into the car ahead of it) becomes one of its
+        wrecks: a pile-up from three cars on."""
+        self._freeze(vid)
+        w = self._wreck(vid, v, role)
+        w.damage = self._damage(sev, "rear-end", w, inc)
+        self._fit_in_lane(w)
+        inc.wrecks.append(w)
+        self._plan_exits(inc, now, [w])
+        self.role[vid] = (inc.id, "wreck")
+        self.distracted.pop(vid, None)
+        self.careless.pop(vid, None)
+        late = self.late_for.pop(vid, None) is not None
+        inc.log(now, f"{vid} ran into the wreck ({sev * 3.6:.0f} km/h"
+                     + (", late to react" if late else "")
+                     + (", speeding" if vid in self.speeders else "") + ")")
+        self.stats["joined"] += 1
+        if inc.kind == "breakdown":  # someone ran into the stalled car: now a crash
+            inc.kind, inc.severity, inc.label = "rear-end", round(sev, 1), severity_label(sev)
+            inc.cause = "ran into a stalled car"
+        elif len(inc.wrecks) >= 3 and inc.kind != "pile-up":
+            inc.kind = "pile-up"
+            self.stats["pileups"] += 1
+        if sev > inc.severity:
+            inc.severity, inc.label = round(sev, 1), severity_label(sev)
+        if inc.closed and w.lane and not w.lane.startswith(":") and w.lane not in {cl for cl, _ in inc.closed}:
+            inc.log(now, f"{vid} stands on {w.lane}, beside the closed lane")
+        if self.pileups and self._on_ring(inc.lane) and len(inc.wrecks) < PILEUP_MAX_WRECKS:
+            vehicles = {x: v for x, v in ((x, self._veh(x)) for x in self._behind(vid)) if v is not None}
+            self._pileup(inc, vehicles, start=vid, k0=len(inc.wrecks) - 1)  # the car behind it sees it stop at once
 
     def _keep_lane(self, vid: str, near_end: float | None = None) -> bool:
         """A vehicle standing on a lane that does not lead to the next road of its route takes a road its lane leads to
@@ -624,7 +1124,8 @@ class IncidentManager:
             lane, pos = "", 0.0
         from cosim import vmodels
 
-        return Wreck(vid, vmodels.model_of(v.type_id), role, lane, pos, v.x, v.y, v.angle, v.length, v.speed)
+        return Wreck(vid, vmodels.model_of(v.type_id), role, lane, pos, v.x, v.y, v.angle, v.length, v.speed,
+                     speeding=vid in self.speeders)
 
     def _touching(self, inc: Incident) -> None:
         """Rear-end: SUMO noticed the crash a step late, the follower partly inside the leader; it is put back to
@@ -2077,6 +2578,9 @@ class IncidentManager:
                     t.state, t.t_there = "there", now
                     inc.phase = "recovery"
                     inc.log(now, f"recovery truck {t.vid} ahead of {t.wreck}")
+            if t.state == "there" and now - (t.t_there or now) > TOW_GIVE_UP_S:
+                self._tow_gives_up(inc, t, now)
+                continue
             if t.state in ("there", "backing"):
                 self._back_in(inc, t, now)
             elif t.state == "loading" and now - t.t_load >= t.tl["total"]:
@@ -2138,6 +2642,35 @@ class IncidentManager:
             inc.phase = "clearing"
             inc.clear_t = now
             inc.log(now, "all wrecks gone; clearing up")
+
+    def _tow_gives_up(self, inc: Incident, t: Tow, now: float) -> None:
+        """A truck that has waited TOW_GIVE_UP_S ahead of its wreck without getting to back in (31 Oct: a second wreck
+        in a junction, its truck behind it for 50 minutes, seed 41) goes back; the next truck comes another way, and
+        if that one cannot either, the wreck is lifted off where it stands (a crane truck from the side)."""
+        w = next(w for w in inc.wrecks if w.vid == t.wreck)
+        try:
+            self.conn.vehicle.replaceStop(t.vid, 0, "")
+        except Exception:  # noqa: BLE001
+            pass
+        self._go(t.vid)
+        self._home(t.vid, "tow")
+        self.role.pop(t.vid, None)
+        t.state = "gone"
+        w.tow = None
+        w.tries = getattr(w, "tries", 0) + 1
+        if w.tries >= 2:
+            try:
+                self._remove(w.vid)
+            except Exception:  # noqa: BLE001
+                pass
+            w.removed = True
+            self.role.pop(w.vid, None)
+            inc.log(now, f"{t.vid} could not get to {w.vid} either: lifted off where it stands")
+        else:
+            inc.direct_tries = getattr(inc, "direct_tries", 0) + 1
+            inc.next_tow_t = now + 5.0
+            inc.log(now, f"{t.vid} could not get to {w.vid} in {TOW_GIVE_UP_S:.0f} s: another truck comes")
+        self.stats["tow_gave_up"] = self.stats.get("tow_gave_up", 0) + 1
 
     def _past(self, inc: Incident, t: Tow) -> bool:
         """The truck is ahead of its wreck's front (on the wreck's road, or past it)."""
@@ -2793,7 +3326,8 @@ class IncidentManager:
     def protected(self, vid: str) -> bool:
         """Never taken off the road for the day's curve, never given a new trip."""
         return vid in self.role or any(vid == t.vid for i in self.incidents for t in i.tows) or \
-            (self.depots is not None and self.depots.owns(vid))
+            (self.depots is not None and self.depots.owns(vid)) or vid in self.breaking or \
+            any(vid == lk.vid for lk in self.lookalikes)
 
     def blocked_roads(self) -> set:
         """The roads of the accidents under way (their wrecks' and the closed lanes')."""
@@ -2821,6 +3355,9 @@ class IncidentManager:
         """Extra light bits (carla.VehicleLightState values) for incident vehicles: wrecks' hazards, police beacons,
         the trucks' hazards while stopped. None: not an incident vehicle."""
         r = self.role.get(vid)
+        if r is None and (vid in self.breaking or any(vid == lk.vid and lk.kind == "double-parked" and lk.t1 is None
+                                                       for lk in self.lookalikes)):
+            return 0x10 | 0x20  # hazards: a car breaking down, a van stopped in its lane
         if r is None:
             for i in self.incidents:
                 for t in i.tows:
@@ -2846,6 +3383,7 @@ class IncidentManager:
         for i in self.incidents:
             out.append({
                 "id": i.id, "phase": i.phase, "kind": i.kind, "label": i.label, "severity": i.severity, "t0": i.t0,
+                "cause": getattr(i, "cause", None), "speeding": [w.vid for w in i.wrecks if w.speeding],
                 "x": i.x, "y": i.y, "edge": i.edge, "lane": i.lane, "open_lane": i.open_lane,
                 "closed": [ln for ln, _ in i.closed], "police": i.police, "police_t": i.police_t,
                 "police_at": getattr(i, "police_at", None),
