@@ -112,6 +112,8 @@ class TrafficCameras:
         self._det = threading.Thread(target=self._detect_loop, daemon=True)
         self._det.start()
         self._mark_t = 0.0
+        self.hide_near: list[tuple[float, float, float]] = []   # (x, y, radius): no marker there (an enforcement
+        # camera's view: a debug drawing is seen by every camera, and no real street has these markers)
 
     # ------------------------------------------------------------ the detector
     def _start_detector(self) -> None:
@@ -225,6 +227,8 @@ class TrafficCameras:
         self._mark_t = time.time()
         dbg = self.world.debug
         for i, c in enumerate(self.cams):
+            if any(math.hypot(c.x - hx, c.y - hy) < hr for hx, hy, hr in self.hide_near):
+                continue
             a = math.radians(c.yaw)
             bx, by = c.x - 0.8 * math.cos(a), c.y - 0.8 * math.sin(a)
             dbg.draw_line(carla.Location(bx, by, self.ground[i]), carla.Location(bx, by, c.z - 0.2),

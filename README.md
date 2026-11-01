@@ -195,10 +195,18 @@ town05_freefly.bat
 | `--clock-speed` | 60 | Town seconds per real second |
 | `--accidents / --no-accidents` | on | Careless drivers crash; the police and recovery trucks respond |
 | `--careless-share` | 0.10 | Share of new cars driven carelessly |
+| `--breakdowns / --no-breakdowns`, `--breakdown-every` | on, 2400 | Cars that break down and stop in their lane; seconds between breakdowns on average |
+| `--speeders` | 0.08 | Share of new cars driven 25 to 50 % over the limit (three times as often careless) |
+| `--pileups / --no-pileups`, `--ring-brake-every` | on, 400 | Pile-ups on the ring road; seconds between sudden hard brakings there on average |
+| `--lookalikes / --no-lookalikes` | on | Look-alikes that are not incidents: double-parked delivery vans, buses standing long at a stop |
 | `--emergency-every` | 45 | Seconds between ambulance / police runs |
 | `--pedestrians-per-km` | 20 | Pedestrians per km of pavement |
 | `--no-bus-lines`, `--no-cameras`, `--no-depots`, `--no-plates` | | Leave those parts out |
 | `--radius` | 500 | Draw vehicles within this many metres of you |
+| `--red-runners` | 0.10 | Share of private cars that may go on through the end of the amber (and so sometimes reach the line on red) |
+| `--enforce SIGNAL:ROAD` | | A red-light camera site on that road into that junction (section 5.7), e.g. `1574:-29` |
+| `--enforce-agent / --no-enforce-agent` | on | With `--enforce`: the red-light agent watches the site live and files its cases |
+| `--enforce-record SECONDS` | 0 | With `--enforce`: record both cameras for that long, then quit |
 | `--seed` | 42 | SUMO's random seed |
 | `--windowed` | | Keep CARLA in a window (set by `CARLA_RES`) |
 
@@ -222,7 +230,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 
 | What | Scripts | Needs CARLA |
 | --- | --- | --- |
-| Unattended viewer checks with screenshots | `town05_freefly_demo.bat`, `freefly_incident_demo.bat`, `freefly_signals_demo.bat`, `freefly_agents_demo.bat`, `freefly_highway_demo.bat`, `freefly_depots_demo.bat`, `freefly_drivers_demo.bat`, `freefly_poles_demo.bat`, `freefly_demo_cctv.bat` | yes |
+| Unattended viewer checks with screenshots | `town05_freefly_demo.bat`, `freefly_incident_demo.bat`, `freefly_breakdown_demo.bat`, `freefly_pileup_demo.bat`, `freefly_signals_demo.bat`, `freefly_agents_demo.bat`, `freefly_highway_demo.bat`, `freefly_depots_demo.bat`, `freefly_drivers_demo.bat`, `freefly_poles_demo.bat`, `freefly_demo_cctv.bat` | yes |
 | Close the viewer from outside | `stop_freefly.bat` | |
 | Render benchmark | `town05_fps_test.bat`, `town05_fps_dx12.bat` | yes |
 | Signal controllers compared, SUMO only (step 1) | `eval_town05_baseline.bat` | no |
@@ -230,8 +238,13 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Real camera reports against SUMO's truth (step 2) | `town05_cameras_plan.bat`, `town05_cameras_live.bat`, `town05_cameras_sim.bat` | live: yes |
 | Detector: dataset, fine-tuning, evaluation | `make_dataset_town05.bat`, `train_detector_town05.bat`, `eval_town05_detector.py` | dataset: yes |
 | Labelled traffic-camera video clips | `record_incident_clips.bat`, `record_city_crash_clips.bat`, `record_v2_training.bat` | yes |
+| Red-light camera: record a site (both cameras, the controller's log, the simulation's own record), live agent on | `record_enforcement.bat` | yes |
+| Red-light camera: grade the agent on a recording | `eval_redlight.bat out\enforcement\<recording>` | no |
+| Police office: review the cases, issue the notices | `police_office.bat` | no |
+| The detector as ONNX (for running the agent without PyTorch) | `export_detector_onnx.bat` | no |
 | Rebuild the SUMO scenario from CARLA's map | `build_town05.bat` | no |
 | Checks on signals, junction stops, pedestrians, overlaps, accidents | `audit_town05_signals.py`, `check_*.py` | no |
+| Every kind of incident, SUMO only, with the ring road and the bus lines | `.venv\Scripts\python tools\check_accidents.py --ring --buses --minutes 60` | no |
 
 `run_cosim.bat` and `python -m cosim.run --help` run the co-simulation as a recorder, in synchronous mode with
 camera sensors, instead of the free-fly viewer.
@@ -366,7 +379,20 @@ Three ideas shape the design.
 
 * **Why accidents happen.** SUMO's drivers never crash, so a share of drivers is *careless*
   (`cosim/incidents.py`). Now and then one looks away for 1.5 to 3 s, on the phone or through a red light. A
-  crash then happens or not depending on the traffic around it.
+  crash then happens or not depending on the traffic around it. Nothing is staged.
+* **The kinds of incident:**
+
+  | Kind | How it happens |
+  | --- | --- |
+  | Rear-end, side, junction crash | A careless driver looks away (on the phone, or through a red light) |
+  | Breakdown | A car puts its hazard lights on and rolls to a stop in its lane; no damage, no debris |
+  | Pile-up (3 to 6 cars) | On the ring road, the cars behind a crash, or behind a car that brakes hard all of a sudden, may react late and run into it |
+  | Speeding | Some drivers go 25 to 50 % over the limit and are more often careless, so their crashes are harder |
+
+  A car that runs into a stalled car turns the breakdown into a crash.
+* **Look-alikes, which are not incidents.** A delivery van stops in its lane with its hazard lights on for 1 to 3
+  minutes, or a bus stands at its stop far longer than usual. Nobody responds to them; they are logged so that an
+  incident detector can be shown what it must not report.
 * **The scene** (`cosim/incident_scene.py`):
   * damage and hazard lights;
   * the lanes blocked in SUMO, so traffic queues and goes round;
@@ -375,9 +401,46 @@ Three ideas shape the design.
 * **The depots.** The police, ambulances and recovery trucks leave from and return to a hospital, a police
   station and a recovery yard (`cosim/depots.py`).
 * `cosim/clip_recorder.py` can film chosen cameras to MP4 with every accident labelled on the simulation's clock
-  (the `--record-*` options).
+  (the `--record-*` options). Its `incidents.json` gives each incident's kind, cause, cars and speeders, and the
+  look-alikes with the seconds each camera has them in its picture.
 
-### 5.7 Town life
+### 5.7 Red-light camera and the police office
+
+A red-light enforcement site as real ones are built, at one approach of a signalised junction (`--enforce`,
+`tools\record_enforcement.bat` uses junction 1574, road -29). The agent decides from **the pictures and the
+controller's signal log only**; SUMO's knowledge of who ran the red is written beside each recording to grade it and
+is never given to the agent.
+
+```
+ overview camera ─┐                                   ┌─> case folder ──> police office ──> notice (fictional keeper)
+ plate camera ────┼─> detector ─> tracker ─> rule ────┤      photos A/B with data bar, clip, plate crop,
+ signal log ──────┘   (YOLO26n)   (road     (red ≥    │      case.json with SHA-256 of every file
+ (controller)                      metres)  0.5 s)    └─> plate reader (both cameras, voted) ─> vehicle register
+```
+
+| Part | What it does | Source |
+| --- | --- | --- |
+| Site | Two cameras on one pole 24 m before the stop line, 7 m up: the overview (30°, the road from 9 m before the line into the junction) and a narrow plate camera (17°, the last metres before the line, about twice the pixels on a plate) | `cosim/enforcement.py` |
+| Clock | Each picture is timed on SUMO's clock (the step it shows); the signal log is SUMO's controller state per step | `cosim/enforcement.py` |
+| Detection and tracking | The Town05 YOLO26n detector; each box's back edge placed on the road (metres from the stop line, lane) by the camera's geometry; boxes followed from picture to picture | `cosim/redlight.py` |
+| Rule | Front over the line (interpolated between the pictures either side) with the lane's signal red for at least 0.5 s; the vehicle then seen going on (its back 3 m past the line within 5 s, not one stopping just over it); an ambulance or police car with its lights on is exempt | `cosim/redlight.py` |
+| Plate | Classic number-plate reading for the Tunisian plate: plate found (character rows, plate-shaped blobs), its panel outlined and straightened, each digit group read with the plate font's own digits; read on several views (the plate camera's pictures of the vehicle, found from where the overview camera has it on the road, and the overview's own), voted; unsure readings never vote | `cosim/anpr.py`, `cosim/redlight.py` |
+| Evidence | Photo A (before the line, on red) and B (in the junction) with the data bar real cameras print, a 5 s clip, the vehicle and plate crops, `case.json` with the signal log around it and each file's SHA-256 | `cosim/redlight.py` |
+| Register | Every car in town with its plate, make, model, colour and a **fictional** keeper (names, ID numbers and addresses are invented and marked so) | `cosim/register.py` |
+| Police office | A desktop window: each case's photos, clip, plate readings and the register's entry; the officer checks the plate, accepts or rejects; a notice (HTML) for the registered keeper; tampered files are flagged | `tools/police_office.py` |
+| Grading | The agent run on a recording against SUMO's record: crossings found and their timing, violations caught, missed and falsely accused, plates read right and wrong | `tools/eval_redlight.py` |
+
+Measured on a 40-minute recording with both cameras (`docs/WORKLOG.md`, 1 Nov): both cars that entered on red caught,
+no false accusation, the crossing timed within 0.1 s; of the 31 crossing cars found, 22 plates read right, 1 wrong
+(an unsure reading, which does not count), 8 unread. A plate is kept only when it has the size and the place the
+cameras' calibration expects for that vehicle (a fragment, or another vehicle's plate, is dropped). A reading is
+still a proposal: the officer confirms the plate against the photo before a notice is issued.
+
+Drivers who run the end of the amber are `cosim/red_runners.py`: a share of private cars that, when the amber
+shows with the line a few seconds ahead, may keep going, and a few that see a fresh red too late. Nothing is placed
+or timed: whether they reach the line on amber or red depends only on where they were when it changed.
+
+### 5.8 Town life
 
 | Part | Source |
 | --- | --- |
@@ -390,7 +453,7 @@ Three ideas shape the design.
 | Drivers seated in the cars you are close to | `cosim/drivers.py` |
 | CARLA blueprint for each SUMO vehicle type | `cosim/vmodels.py`, `blueprints.py`, `config/vehicle_models.json` |
 
-### 5.8 Repository map
+### 5.9 Repository map
 
 ```
 Urban Traffic CARLA/
@@ -404,6 +467,7 @@ Urban Traffic CARLA/
 │  ├─ controllers.py  coordination.py  signal_plan.py  signal_heads.py  ped_lights.py  signal_audit.py
 │  ├─ agents_actuated.py  agents.py  camera_reports.py  perception.py  inspector.py  cctv.py
 │  ├─ incidents.py  incident_scene.py  towing.py  depots.py  highway.py  drivers.py  extras.py
+│  ├─ enforcement.py  redlight.py  redlight_proc.py  anpr.py  register.py  red_runners.py   red-light camera
 │  ├─ daily.py  solar.py  interp.py  vmodels.py  blueprints.py  plates.py  clip_recorder.py  llm.py
 │  └─ town.py  opendrive.py  tlcomplete.py  tlmap.py  convert.py  scenario.py  run.py  live.py   builders, recorder
 ├─ scenarios/

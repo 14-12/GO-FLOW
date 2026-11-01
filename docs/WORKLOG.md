@@ -1168,3 +1168,130 @@ four heads, and its lamps' look is in the Unreal asset. The texture API (`apply_
 one texture on every material of every mesh of an object (CARLA 0.9.16 `ApplyTextureToActor`), not on one lens.
 Arrow lenses would need new traffic-light blueprints made in the Unreal Editor (a CARLA source build), one head per
 direction; with those the T-junctions could get their arrows back.
+
+## More kinds of incident: breakdowns, speeders, pile-ups on the ring road, look-alikes (31 Oct)
+
+Until today every incident was two cars that met: a careless driver on the phone (rear-end) or through a red light
+(side impact). Added in `cosim/incidents.py` (module doc), each with its own option in the viewer:
+
+* **Breakdowns** (`--breakdowns`, `--breakdown-every`, default one every 2400 s of simulated time on average while a
+  new incident may start). A car puts its hazards on and rolls to a stop in its lane at 2.5 m/s2, never in a junction
+  and never on a road shorter than 20 m; 30 % of them on the ring road (its long roads otherwise took nearly all). The
+  usual response follows. No damage, no debris; the marker reads BREAKDOWN and "breakdown, 1 car". A car that runs
+  into the stalled one turns it into a rear-end crash; a touch under 1 m/s is a near miss.
+* **Speeders** (`--speeders`, 8 % of new cars): SUMO speed factor 1.25-1.5, three times as often careless. Wrecks carry
+  `speeding`; the log names them.
+* **Pile-ups on the ring road** (`--pileups`, `--ring-brake-every`, default 400 s). After a crash on the ring (or in a
+  junction a ring road leads into), the next cars behind it in its lane may react late: the k-th with chance
+  0.7 / 0.6 / 0.45 / 0.3, keeping their speed 0.8-1.8 s, then braking as hard as they can; whoever cannot stop joins
+  the incident (up to 6 cars). Each car that joins is in turn watched by the one behind it. From three cars the kind
+  is "pile-up". Ring crashes were nearly absent (none in 8 h of SUMO alone), so a ring car now and then brakes hard
+  all of a sudden (an emergency stop past its normal deceleration), only with a car 15 m or less behind it, which
+  then reacts late (1.2-2.2 s). The ring road's own cars are also three times as often careless.
+* **Look-alikes, not incidents** (`--lookalikes`): a delivery van stops in its lane with hazards on for 60-180 s
+  (multi-lane town roads only, at most 2 at a time), a line bus stands 70-150 s at 3 % of its stops. Logged
+  (`IncidentManager.lookalike_snapshot`), nobody responds; the recorder writes them and the seconds each camera has
+  them in its picture into `incidents.json` (`lookalikes`, `lookalikes_visible`).
+* **CARLA side** (`cosim/incident_scene.py`): cars that join an incident later now get their damage and their own
+  debris (before, a third car stood there undamaged); no debris for a breakdown.
+* **Fix, all incidents**: a recovery truck waiting 240 s ahead of its wreck without getting in goes back and another
+  comes another way; if that one cannot either, the wreck is lifted off where it stands. Seed 41 had a second wreck
+  in junction 1930 whose truck waited behind it for 50 minutes, with 47 cars standing over 2 minutes; now cleared
+  at 822 s.
+
+**Measured, SUMO alone** (`tools/check_accidents.py --ring --buses --minutes 60`, evening rush, 8 seeds each, before
+with `--no-new`):
+
+| | before | after |
+|---|---|---|
+| incidents in 8 h | 11 (8 rear-end, 3 junction) | 38 (15 rear-end, 5 junction, 8 pile-ups, 10 breakdowns) |
+| mean crash speed | 40 km/h | 45 km/h |
+| look-alikes in 8 h | 0 | 25 double-parked vans, 73 long bus stops (then 0.05 a stop; now 0.03) |
+| vehicles stopped over 2 min, not in an incident, per run | 7.4 | 13.1 (more incidents) |
+
+Forced ring crashes (a car stopping dead, 4 seeds x 40 min): 3 of 7, 0 of 3, 1 of 2 and 3 of 7 became 3-car
+pile-ups. Hard braking forced every step (4 seeds x 40 min, 638 brakings): 62 crashes, 10 of them pile-ups of 3-5
+cars. The incident step costs 1.6 ms per SUMO step instead of 0.8 (SUMO alone, 10 min).
+
+**In the viewer** (`tools/freefly_breakdown_demo.bat`, `tools/freefly_pileup_demo.bat`; screenshots kept in
+`out/_demo_31oct_breakdown/` and `out/_demo_31oct_ring_crash/`): a breakdown on -39_3, hazards, BREAKDOWN marker,
+officer, cones, driver on the pavement, cleared after 384 s; a rear-end crash on the ring road at 48 km/h after a
+hard braking, cleared. `tools/town05_freefly_demo.bat`: 20.6 FPS with the new kinds and 20.7 with all of them off
+(`out/_bak_31oct_incidents/`), so the new code does not cost frames; the PC itself gave 32.9 in the same demo that
+morning (three CARLA runs had just ended). `tools\test.bat`: 202 passed.
+
+## A red-light camera, its plate reader and the police office (31 Oct - 1 Nov)
+
+**What was asked.** An agent that watches a camera at a signalised junction, catches the cars that cross on red,
+reads their plates, looks the plate up in the town's vehicle register (owner and car) and sends the case to the
+town's police office, where an officer reviews it and issues the fine notice; "like in real life, not synthetic".
+
+**The rule kept throughout: the agent sees only what a real one would.** The pictures and the junction controller's
+signal log. SUMO's own record of who entered on red (`cosim/red_runners.RedLightTruth`, with each car's real plate)
+is written beside each recording and used only to grade the agent (`tools/eval_redlight.py`).
+
+**Parts** (README section 5.7):
+* `cosim/enforcement.py`: the site (stop line, lanes, the controller's links), the cameras, each picture timed on
+  SUMO's clock (the step it shows), the signal log, the recording (video + picture times + log + record).
+* `cosim/redlight.py`: detector (the Town05 YOLO26n, through Ultralytics on the GPU or ONNX), boxes placed on the
+  road by the camera's geometry, tracker, the rule (front over the line with the lane red at least 0.5 s, then seen
+  going on; emergency vehicles with lights on exempt), plate reading voted over views, the evidence (photos A/B with
+  a data bar, clip, crops, case.json with SHA-256 of each file). `cosim/redlight_proc.py` runs it beside the viewer.
+* `cosim/anpr.py`: classic number-plate reading for the Tunisian plate: candidates (rows of character strokes,
+  plate-shaped blobs, bright bands), the plate's panel outlined and straightened (perspective), the series and the
+  number found from the plate's layout (series at the left edge, number at the right edge, the word تونس between) and
+  read by laying the plate font's own digits along each group (best-matching sequence, so digits run together are
+  still read); a confidence from the match and its margin.
+* `cosim/register.py`: every car with plates, make, model, colour and a fictional keeper.
+* `tools/police_office.py`: the officer's window: photos, clip, readings, register entry; accept (with the plate as
+  the officer reads it) or reject; a notice (HTML) for the keeper; files checked against their SHA-256.
+* `cosim/red_runners.py`: drivers who go on through the end of the amber (dilemma zone) or see a fresh red too late.
+
+**What the recordings showed, and what changed because of them** (all at junction 1574, road -29, evening rush;
+`tools/record_enforcement.bat`):
+
+| Recording | Camera | Truth on red | Agent | Plates |
+| --- | --- | --- | --- | --- |
+| 3 (30 min, red-runner share 0.6), graded offline with the final rule | one camera 18 m back, 6 m up, -11 deg | 1 | 1 caught, 0 false; 34 of 41 crossings found, crossing time median -0.04 s (p10 -0.98, p90 +0.29) | 6 right, 2 wrong, 26 unread of 34 crossing cars |
+| 4 (40 min, share 1.0), live | one camera 24 m back, 7 m up, -17 deg | 2 | 2 caught, 0 false; crossing time and time into red within 0.03 s of SUMO's | 0 of 2 read (characters about 10 px high) |
+| 5 (40 min, share 1.0), live | overview + plate camera (17 deg) on the same pole | 2 | 2 caught, 0 false (same drivers: the run is deterministic); 31 of 37 crossings found, crossing time median -0.07 s (p10 -0.50, p90 0.00) | live: 1 of 2 read (259 TU 7712, 1.00); offline with the final reader: both right (259 TU 7712, 255 TU 8086, 1.00); of the 31 crossing cars found, 22 right, 1 wrong (unsure: 0.19, not counted), 8 unread |
+
+* Recording 3's camera saw a car only once its front was over the line: the crossing could only be timed by
+  extrapolation. The pole went to 24 m back and the view down to -17 deg: the road from 9 m before the line.
+* The overview camera's plates were too small to read (recording 4). Real installations have a separate plate
+  camera; so does the site now: same pole, 17 deg instead of 30, aimed at the last metres before the line (both
+  lanes), about twice the pixels on a plate. The agent finds a vehicle in its pictures from where the overview camera
+  has it on the road at that moment (both cameras' poses are known), and reads several of them; the overview's own
+  views still vote.
+* The plate reader was first built and tested on the plate design alone (synthetic renders). On real CARLA crops it
+  found almost nothing: the plate's characters run into its border at small sizes, plates are tilted and slanted,
+  the panel is mid-grey in evening light, and at small sizes the word تونس is nearly as tall as the digits. Each was
+  fixed on real crops (recording 2's 105 vehicle crops, recordings 4 and 5's red-runners): on recording 2's crops,
+  4 then 6 right readings instead of 0, the only sure wrong one being a car on a tow truck whose real plate is not in
+  the list compared against, and one misread digit (below).
+* The traffic-camera markers (debug drawings: every camera sees them) showed as white poles in the enforcement
+  picture; they are no longer drawn near an enforcement site.
+* Recording 5 first gave three wrong readings: a partial plate read as a whole one ("8 TU 34" for 248 TU 3451,
+  confidence 0.89), an emergency vehicle given another vehicle's plate (1.00), and an unsure one (0.19, not counted).
+  Both sure ones are now caught by the cameras' calibration, as a real system would: where the vehicle is on the road
+  says how wide its plate must look (0.52 m at that distance) and where in the picture it can be. Measured on the 191
+  right readings: widths 0.93-1.23 of the expected, centres within 1.23 plate widths across and 0.79 up or down; the
+  fragment was 0.67 wide, the other vehicle's plate 3.15 plate widths too high. A reading outside 0.85-1.35 wide, 1.3
+  across or 1.2 up or down is dropped (`PLATE_SIZE_OK`, `PLATE_WHERE_OK` in `cosim/redlight.py`). Afterwards: 22
+  right, 1 wrong (the unsure one), 8 unread; both cases unchanged. What this cannot catch is a misread digit on the
+  right plate (on recording 2's crops: 4199 read 4491 at 0.66): the reading is voted over several views, and the
+  officer confirms the plate against the photo before a notice.
+* A case's id is the site and the crossing time; a later run at the same time (the simulation is deterministic)
+  overwrote recording 4's cases. Such a case now gets a suffix (`-2`).
+
+**The police office on real cases.** Recording 4's two cases, the plates entered by the officer as read on the
+photos: integrity checked on every file, the register's entry found (case 1: Mercedes Coupe 2020, dark red, as in
+the photos), notices SIM-2026-00001 and -00002 written, marked as a simulation with a fictional keeper.
+
+**Cost.** With both cameras and the live agent, CARLA ran at 20.2 FPS on average in the viewer (recording 5's log,
+239 readings); the agent handled 78 % of the overview's pictures (18,590, 5,242 skipped while it was busy), the
+plate camera's are only kept until a plate is read.
+
+**Not done yet.** Handing an unread car over to the next junction's camera (the user's idea, 1 Nov): the first
+camera would send a description (class, colour, appearance, exit, expected arrival) and the next would re-identify
+the car and read its plate, with the officer confirming the match.

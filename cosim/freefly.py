@@ -28,6 +28,7 @@ closes it), Esc quit (the time is saved).
 from __future__ import annotations
 
 import argparse
+import collections
 import dataclasses
 import json
 import queue
@@ -199,6 +200,40 @@ def parse_args(argv=None):
     ap.add_argument("--careless-share", type=float, default=None,
                     help="share of new cars whose drivers are careless (cosim/incidents.py CARELESS_SHARE, 0.10): "
                          "more, accidents come sooner")
+    # 31 Oct: more kinds of incident (cosim/incidents.py, module doc)
+    ap.add_argument("--breakdowns", action=argparse.BooleanOptionalAction, default=True,
+                    help="now and then a car breaks down and stops in its lane, hazards on; the police and a recovery "
+                         "truck come (default on)")
+    ap.add_argument("--breakdown-every", type=float, default=None,
+                    help="simulated seconds between breakdowns on average (cosim/incidents.py BREAKDOWN_MEAN_S, 2400)")
+    ap.add_argument("--speeders", type=float, default=None,
+                    help="share of new cars driven 25-50 %% over the limit, three times as often careless "
+                         "(cosim/incidents.py SPEEDER_SHARE, 0.08; 0: none)")
+    ap.add_argument("--pileups", action=argparse.BooleanOptionalAction, default=True,
+                    help="on the ring road, cars behind a crash or a hard braking may react late and run into it "
+                         "(default on)")
+    ap.add_argument("--red-runners", type=float, default=None,
+                    help="share of private cars whose drivers go on through the end of the amber when stopping would "
+                         "mean braking hard, and so sometimes reach the line on red (cosim/red_runners.py "
+                         "GAMBLER_SHARE, 0.10; 0: none)")
+    ap.add_argument("--enforce", default=None,
+                    help="SIGNAL:ROAD, e.g. 1292:6: a red-light enforcement camera on that road into that junction "
+                         "(cosim/enforcement.py), its controller log and the simulation's own record of who entered "
+                         "on red, written to out/enforcement/<site>_<time>/")
+    ap.add_argument("--enforce-agent", action=argparse.BooleanOptionalAction, default=True,
+                    help="with --enforce: the red-light agent watches the site's camera (cosim/redlight.py, in a "
+                         "process of its own) and writes its cases to out/enforcement/cases/ for the police office "
+                         "(tools/police_office.bat); the town's vehicle register to out/enforcement/register.json "
+                         "(default on)")
+    ap.add_argument("--enforce-record", type=float, default=0.0,
+                    help="with --enforce: record the site's camera (video and the picture times) for this many "
+                         "seconds, then quit (the data to build and grade the agent)")
+    ap.add_argument("--ring-brake-every", type=float, default=None,
+                    help="simulated seconds between hard brakings on the ring road on average, where pile-ups start "
+                         "(cosim/incidents.py RING_BRAKE_MEAN_S, 400)")
+    ap.add_argument("--lookalikes", action=argparse.BooleanOptionalAction, default=True,
+                    help="things that look like incidents and are not: delivery vans stopping in their lane with "
+                         "hazards on, buses standing long at a stop (logged, nobody responds; default on)")
     ap.add_argument("--demo-flight-only", action="store_true",
                     help="--demo: quit after the scripted flight (no crosswalk wait, close-ups or camera check)")
     ap.add_argument("--profile", action="store_true",
@@ -804,12 +839,19 @@ class FrameFeeder(threading.Thread):
         # the lights that changed go with the poses, in the pose process's one call a picture: a call of their own
         # each step put the poses a picture late (the server handles about one batch a picture)
         seg["lights"] = self.ff.cs.light_changes(pk.lights)
+        t_k = getattr(getattr(pk, "cur", None), "time", None)
+        if t_k is not None:  # (31 Oct) the time each picture shows: FreeFly.depicted_at
+            seg["t"] = t_k
+            if getattr(self.ff, "shown_log", None) is not None:
+                self.ff.shown_log.append((start, t_k))
         self.q.put(("seg", seg, now))
         self.segments += 1
         return seg
 
     def resend(self, seg: dict, start: float, now: bool) -> None:
         """A segment sent before, again with a new start (after a pause; its parks went the first time)."""
+        if "t" in seg and getattr(self.ff, "shown_log", None) is not None:
+            self.ff.shown_log.append((start, seg["t"]))
         self.q.put(("seg", dict(seg, start=start, park_v=[], park_w=[]), now))
 
     def run(self) -> None:
@@ -1011,18 +1053,45 @@ class FreeFly:
         self.agents = None
         self.agents_xy: dict = {}
         self.sim_now = 0.0
+        self.shown_log: collections.deque = collections.deque(maxlen=64)  # (segment start, its SUMO time): depicted_at
         self.incidents = None
         self._wire_agents(a)
         if a.accidents:
+            from cosim import incidents as incidents_mod
             from cosim.incidents import IncidentManager
 
             frame_ = scen.frame
             self.incidents = IncidentManager(self.sumo.conn, scen.net_file, self.typer, seed=a.seed + 2,
                                              walk=self.sumo.walk, sinks=self.sinks,
                                              visible=lambda x, y: self.in_view(*frame_.to_carla_xy(x, y)),
+                                             breakdown_mean_s=(0.0 if not a.breakdowns else
+                                                               a.breakdown_every or incidents_mod.BREAKDOWN_MEAN_S),
+                                             speeder_share=(incidents_mod.SPEEDER_SHARE if a.speeders is None
+                                                            else a.speeders),
+                                             pileups=a.pileups, lookalikes=a.lookalikes,
+                                             ring_brake_mean_s=(a.ring_brake_every or incidents_mod.RING_BRAKE_MEAN_S),
                                              **({} if a.careless_share is None else {"share": a.careless_share}))
             self.pop.type_for = self.incidents.type_for
         self.pop.start_ok = lambda edge: not self.in_view(*self.edge_start.get(edge, (1e9, 1e9)))
+        # (31 Oct) drivers who go on through the end of the amber (cosim/red_runners.py), and a red-light camera
+        self.red_runners = None
+        from cosim import red_runners as rr_mod
+
+        rr_share = rr_mod.GAMBLER_SHARE if a.red_runners is None else a.red_runners
+        if rr_share > 0:
+            im_ = self.incidents
+            self.red_runners = rr_mod.RedRunners(
+                self.sumo.conn, share=rr_share, seed=a.seed + 7,
+                busy=lambda vid: im_ is not None and (vid in im_.role or vid in im_.distracted or vid in im_.breaking))
+        self.enf = None
+        if a.enforce:
+            from cosim import enforcement as enf_mod
+
+            tls_, edge_ = a.enforce.split(":", 1)
+            site = enf_mod.plan_site(net, scen.frame, tls_, edge_)
+            stamp_ = time.strftime("%Y%m%d_%H%M%S")
+            self.enf = enf_mod.SiteRun(site, self.sumo.conn, ROOT / "out" / "enforcement" / f"{site.name}_{stamp_}",
+                                       record=a.enforce_record > 0, on_run=self.sumo.on_run)
         self.highway = None
         if a.highway_cars != 0:
             self._wire_highway(a, net, pool, base, curve)
@@ -1164,6 +1233,9 @@ class FreeFly:
             if a.cctv_width is not None:
                 self.cams.native_width = a.cctv_width
             self.cams.view_fov = a.cctv_fov
+            if getattr(self, "enf", None) is not None:   # the enforcement camera sees no inspector markers
+                c_ = self.enf.site.cam
+                self.cams.hide_near.append((float(c_["x"]), float(c_["y"]), 120.0))
         self.stage = "Choosing the camera views"
         self.choose_views(net)
         self._spectator_id = self.spectator.id
@@ -1545,6 +1617,20 @@ class FreeFly:
         if a is not None:
             self.view_tf = a.get_transform()
 
+    def depicted_at(self, wall: float) -> float | None:
+        """The SUMO time a picture taken at wall time `wall` shows (cosim/enforcement.py module doc): the step shown
+        then (FrameFeeder: started at `start`) moves its vehicles from step k-1 to step k over one step."""
+        log_ = list(self.shown_log)
+        cur = None
+        for start, t in log_:
+            if start <= wall:
+                cur = (start, t)
+        if cur is None:
+            return None
+        start, t = cur
+        step = self.sumo.step_length
+        return t - step + min(max(wall - start, 0.0), step)
+
     def view_transform(self):
         """Where CARLA's view is, from the last picture. spectator.get_transform() is a call that waits for
         the server's next picture: made on every SUMO step and every pass of the main loop, it held both up
@@ -1785,6 +1871,10 @@ class FreeFly:
                               set(self.sumo.conn.simulation.getPendingVehicles()))
         lap("pop.step")
         im = self.incidents
+        if self.red_runners is not None:
+            self.red_runners.step(cur.time, cur.vehicles, cur.tls)
+        if self.enf is not None:
+            self.enf.sumo_step(cur)
         if im is not None:
             im.step(cur.time, cur.vehicles, cur.tls)
             if self._k % 10 == 0:  # every 5 s: a knot out of sight undone (IncidentManager.unjam)
@@ -2718,6 +2808,181 @@ RECORD_CRASH_MAX_M = 60.0  # the crash clip's wrecks at most this far from the c
                            # junction behind a truck, was hard to make out: 30 Oct, second run)
 
 
+def enforce_lookups(ff):
+    """(plate_of(vid), car_of(vid)) for the site's records: the plate the car carries (cosim/plate_proc.py), its
+    CARLA model and paint colour."""
+    def plate_of(vid):
+        aid = ff.cs.actors.get(vid)
+        return ff.plate_text.get(aid) if aid is not None else None
+
+    def car_of(vid):
+        aid = ff.cs.actors.get(vid)
+        if aid is None:
+            return None
+        cache = ff.__dict__.setdefault("_car_info", {})
+        if aid not in cache:
+            try:
+                a = ff.world.get_actor(aid)
+                cache[aid] = {"model": a.type_id, "color": a.attributes.get("color")} if a is not None else None
+            except Exception:  # noqa: BLE001
+                cache[aid] = None
+        return cache[aid]
+
+    return plate_of, car_of
+
+
+def enforce_step(ff, st: dict, args) -> bool:
+    """--enforce, once per pass of the main loop: the site's camera started once the town is loaded and the first
+    steps shown, its records written every second; True when --enforce-record's time is up."""
+    run = ff.enf
+    now = time.time()
+    if "t0" not in st:
+        if not ff.shown_log or now - ff.shown_log[0][0] < 3.0:
+            return False
+        cam = run.site.cam
+        z, _ = ff.cs.ground(cam["x"], cam["y"], cam["yaw"])
+        consumer = plate_consumer = None
+        if args.enforce_agent:
+            consumer, plate_consumer = start_agent(ff, run, z, st)
+        run.start(ff.world, ff.depicted_at, z, consumer=consumer, plate_consumer=plate_consumer)
+        st.update(t0=now, last=0.0)
+        # the cars it sees posed every picture, with their plates (the pose process), and nobody appearing, vanishing
+        # or ending a trip in its view (as in the viewer's own)
+        q = getattr(ff, "pose_q", None)
+        if q is not None:
+            q.put(("eyes", [(cam["x"] + 30.0 * math.cos(math.radians(cam["yaw"])),
+                             cam["y"] + 30.0 * math.sin(math.radians(cam["yaw"])))]))
+        from cosim.clip_recorder import near_view
+        from types import SimpleNamespace
+
+        spec = SimpleNamespace(x=cam["x"], y=cam["y"], yaw=cam["yaw"])
+        orig = ff.in_view
+        ff.in_view = lambda x, y: orig(x, y) or near_view(spec, cam["fov"], x, y, reach_m=160.0)
+        print(f"red-light camera at {run.site.name}: {run.out}", flush=True)
+        return False
+    if now - st["last"] >= 1.0:
+        st["last"] = now
+        run.tick(*enforce_lookups(ff))
+        agent_news(ff, st)
+        register_fleet(ff, st)
+    return args.enforce_record > 0 and now - st["t0"] >= args.enforce_record
+
+
+def start_agent(ff, run, ground_z: float, st: dict):
+    """The red-light agent's process (cosim/redlight_proc.py) and the cameras' hand-over to it: each picture as JPEG
+    on a short queue (dropped when the agent is busy), the plate camera's on a queue of its own (the agent only keeps
+    them until it needs one). Returns the two cameras' consumers (overview, plate)."""
+    import multiprocessing as mp
+
+    import cv2
+
+    from cosim import redlight_proc
+
+    ctx = mp.get_context("spawn")
+    q_ctl, q_frames, q_out, q_plates = ctx.Queue(), ctx.Queue(maxsize=6), ctx.Queue(), ctx.Queue(maxsize=40)
+    site_json = dict(run.site.to_json())
+    for key in ("cam", "plate_cam"):
+        if site_json.get(key):
+            site_json[key] = dict(site_json[key], z=ground_z + site_json[key].get("height_m", 6.0), ground_z=ground_z)
+    cases = ROOT / "out" / "enforcement" / "cases"
+    model = ROOT / "models" / "carla-yolo26n-t05.pt"
+    proc = ctx.Process(target=redlight_proc.run, args=(q_ctl, q_frames, q_out, site_json, str(model), str(cases),
+                                                      q_plates), daemon=True)
+    proc.start()
+    with run._lock:
+        for t, s_ in zip(run.signals.times, run.signals.states, strict=False):  # the log so far
+            q_ctl.put(("signal", t, s_))
+        run.agent_q = q_ctl
+    st.update(agent=proc, agent_out=q_out, agent_ctl=q_ctl, sent=0, dropped=0, cases=0)
+
+    def consumer(k, t, rgb):
+        ok, buf = cv2.imencode(".jpg", rgb[:, :, ::-1], [cv2.IMWRITE_JPEG_QUALITY, 92])
+        if not ok:
+            return
+        try:
+            q_frames.put_nowait(("frame", k, t, buf.tobytes()))
+            st["sent"] += 1
+        except Exception:  # noqa: BLE001 - queue full: the agent is busy, this picture is skipped
+            st["dropped"] += 1
+
+    def plate_consumer(k, t, rgb):
+        ok, buf = cv2.imencode(".jpg", rgb[:, :, ::-1], [cv2.IMWRITE_JPEG_QUALITY, 93])
+        if not ok:
+            return
+        try:
+            q_plates.put_nowait(("plate", k, t, buf.tobytes()))
+        except Exception:  # noqa: BLE001 - full
+            st["plate_dropped"] = st.get("plate_dropped", 0) + 1
+
+    log.info("red-light agent started for %s (cases in %s)", run.site.name, cases)
+    return consumer, plate_consumer
+
+
+def agent_news(ff, st: dict) -> None:
+    """The agent's messages: ready, a new case (a note on screen), an error (logged); and the town's clock for its
+    evidence."""
+    q = st.get("agent_out")
+    if q is None:
+        return
+    clock = getattr(ff, "clock", None)
+    if clock is not None and st.get("agent_ctl") is not None:
+        try:
+            st["agent_ctl"].put(("clock", ff.sim_now, clock.seconds_of_day, getattr(clock, "speed", 60.0),
+                                 getattr(clock, "weekday", "")))
+        except Exception:  # noqa: BLE001
+            pass
+    while True:
+        try:
+            m = q.get_nowait()
+        except Exception:  # noqa: BLE001 - empty
+            break
+        if m[0] == "ready":
+            log.info("red-light agent ready (%s)", m[1])
+        elif m[0] == "error":
+            log.error("red-light agent failed:\n%s", m[1])
+        elif m[0] == "case":
+            c = m[1]
+            st["cases"] += 1
+            log.info("red-light case %s: plate %s (%.2f), %.2f s into red", c["id"], c["plate"], c["conf"], c["red_s"])
+            ff.enf_note = (f"RED LIGHT at {ff.enf.site.name}: {c['plate'] or 'plate not read'} -> police office",
+                           time.time() + 6.0)
+    if st.get("sent", 0) and int(time.time()) % 30 == 0:
+        log.info("red-light agent: %d pictures sent, %d skipped (busy), %d cases", st["sent"], st["dropped"],
+                 st["cases"])
+
+
+def register_fleet(ff, st: dict) -> None:
+    """The town's vehicle register (cosim/register.py): every car with plates, its model and colour, a fictional
+    keeper; written to out/enforcement/register.json (the police office reads it)."""
+    from cosim.register import Register
+
+    reg = st.get("register")
+    if reg is None:
+        reg = st["register"] = Register(ROOT / "out" / "enforcement" / "register.json")
+        st["registered"] = set()
+    _, car_of = enforce_lookups(ff)
+    by_actor = {aid: vid for vid, aid in ff.cs.actors.items()}
+    n = 0
+    for aid, text in list(getattr(ff, "plate_text", {}).items()):
+        if aid in st["registered"] or n >= 25:
+            continue
+        cache = ff.__dict__.setdefault("_car_info", {})
+        if aid not in cache:
+            try:
+                a = ff.world.get_actor(aid)
+                cache[aid] = {"model": a.type_id, "color": a.attributes.get("color")} if a is not None else None
+            except Exception:  # noqa: BLE001
+                cache[aid] = None
+        info = cache.get(aid)
+        if info is not None:
+            reg.add(text, info["model"], info["color"])
+        st["registered"].add(aid)
+        n += 1
+    if n:
+        reg.save()
+    del by_actor
+
+
 def demo_record_clips(ff, st: dict, args, clock) -> bool:
     """--record-clips, once per pass of the main loop: record --record-cams to MP4 (cosim/clip_recorder.py) until
     there is a normal-traffic stretch and a crash in a recorded picture (with RECORD_PRE_S before and RECORD_POST_S
@@ -2791,6 +3056,10 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
                      info["seen_by_at_crash"] or info.get("dynamic_camera") or "no camera")
         info["events"] = [[round(inc.t0 + t, 1), e] for t, e in inc.events]
         info["phase"] = inc.phase
+        # (31 Oct) a breakdown hit by a car becomes a crash, a crash with a third car a pile-up
+        info.update(kind=inc.kind, label=inc.label, severity_ms=inc.severity, severity_kmh=round(inc.severity * 3.6),
+                    cause=getattr(inc, "cause", None), cars=len(inc.wrecks),
+                    speeding=[w.vid for w in inc.wrecks if w.speeding])
         for w in inc.wrecks:  # the seconds each recorded camera has a wreck in its picture
             if w.removed:
                 continue
@@ -2800,9 +3069,25 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
                 span[1] = sim
                 key = (rec.lay.names[i], inc.id)
                 st.setdefault("dist", {})[key] = min(st.get("dist", {}).get(key, 1e9), d_)
+    # (31 Oct) the look-alikes: a van stopped in its lane, a bus standing long at its stop; not incidents, the seconds
+    # each recorded camera has one in its picture
+    live = [i for i, r in rec.recs.items() if not r.stopped]
+    for lk in im.lookalikes:
+        if lk.t0 is None:
+            continue
+        lx, ly = frame.to_carla_xy(lk.x, lk.y)
+        for i, _d in rec.seen_by(lx, ly, cams=live):
+            span = st.setdefault("lseen", {}).setdefault((rec.lay.names[i], lk.id), [sim, sim])
+            span[1] = sim
+    looks = [dict(lk, carla_xy=[round(v, 1) for v in frame.to_carla_xy(lk["x"], lk["y"])])
+             for lk in im.lookalike_snapshot() if lk["t0"] is not None and lk["t0"] >= st["sim0"] - 5.0]
     cr.write_json(out / "incidents.json", {"incidents": list(st["incs"].values()),
                                            "visible": [{"camera": c, "incident": k, "from_sim_s": round(a, 1),
-                                                        "to_sim_s": round(b, 1)} for (c, k), (a, b) in st["seen"].items()]})
+                                                        "to_sim_s": round(b, 1)} for (c, k), (a, b) in st["seen"].items()],
+                                           "lookalikes": looks,
+                                           "lookalikes_visible": [{"camera": c, "lookalike": k, "from_sim_s": round(a, 1),
+                                                                   "to_sim_s": round(b, 1)}
+                                                                  for (c, k), (a, b) in st.get("lseen", {}).items()]})
 
     def normal_span(r):
         """The first RECORD_NORMAL_S stretch of recording r with no wreck in its picture (30 s margin)."""
@@ -3451,6 +3736,7 @@ def main(argv=None) -> int:
     t0 = time.time()
     inc_demo: dict = {}
     clip_st: dict = {}
+    enf_st: dict = {}
     agents_demo: dict = {}
     hw_demo: dict = {}
     dep_demo: dict = {}
@@ -3611,6 +3897,17 @@ def main(argv=None) -> int:
                                                                                        encoding="utf-8")
                     demo = None
                     quit_ = True
+            if ff.enf is not None:  # (31 Oct) the red-light camera site (cosim/enforcement.py)
+                try:
+                    if enforce_step(ff, enf_st, args):
+                        quit_ = True
+                    n_ = ff.__dict__.pop("enf_note", None)
+                    if n_:
+                        note, note_until = n_
+                except Exception:  # noqa: BLE001 - reported, the viewer goes on
+                    log.exception("enforcement site failed")
+                    ff.enf.stop()
+                    ff.enf = None
             if demo is not None and args.record_clips > 0:
                 demo_seg_ref[0] = None
                 try:
@@ -3791,6 +4088,17 @@ def main(argv=None) -> int:
     finally:
         if clip_st.get("rec") is not None:  # --record-clips stopped early (Esc, an error): the MP4s closed properly
             clip_st["rec"].close()
+        if getattr(ff, "enf", None) is not None:  # the site's video closed properly, its last records written
+            try:
+                ff.enf.stop()
+                ff.enf.tick(*enforce_lookups(ff))
+                if enf_st.get("agent_ctl") is not None:  # the agent writes its last cases and stops
+                    enf_st["agent_ctl"].put(("stop",))
+                    enf_st["agent"].join(timeout=10.0)
+                    if enf_st["agent"].is_alive():
+                        enf_st["agent"].terminate()
+            except Exception:  # noqa: BLE001
+                log.exception("closing the enforcement site")
         mover.stop = True
         mover.join(timeout=2.0)
         if plate_proc is not None:
