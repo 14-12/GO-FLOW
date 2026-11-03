@@ -212,6 +212,10 @@ def parse_args(argv=None):
     ap.add_argument("--pileups", action=argparse.BooleanOptionalAction, default=True,
                     help="on the ring road, cars behind a crash or a hard braking may react late and run into it "
                          "(default on)")
+    ap.add_argument("--police-delay", default=None, metavar="MEDIAN[:SPREAD]",
+                    help="seconds from a crash to the police car being sent: the median, and the spread (sigma of a "
+                         "log-normal; 0: always the median). Default 240:0.5 (cosim/incidents.py POLICE_MEDIAN_S, "
+                         "POLICE_SPREAD, 3 Nov); 6:0 is the response before 3 Nov (on scene 15-45 s after the crash)")
     ap.add_argument("--red-runners", type=float, default=None,
                     help="share of private cars whose drivers go on through the end of the amber when stopping would "
                          "mean braking hard, and so sometimes reach the line on red (cosim/red_runners.py "
@@ -1070,6 +1074,7 @@ class FreeFly:
                                                             else a.speeders),
                                              pileups=a.pileups, lookalikes=a.lookalikes,
                                              ring_brake_mean_s=(a.ring_brake_every or incidents_mod.RING_BRAKE_MEAN_S),
+                                             **incidents_mod.police_delay_args(a.police_delay),
                                              **({} if a.careless_share is None else {"share": a.careless_share}))
             self.pop.type_for = self.incidents.type_for
         self.pop.start_ok = lambda edge: not self.in_view(*self.edge_start.get(edge, (1e9, 1e9)))
@@ -1875,8 +1880,16 @@ class FreeFly:
             self.red_runners.step(cur.time, cur.vehicles, cur.tls)
         if self.enf is not None:
             self.enf.sumo_step(cur)
+        self._unhit = {}
         if im is not None:
             im.step(cur.time, cur.vehicles, cur.tls)
+            # (3 Nov) cars that crashed in this step are drawn stopping where they touched (IncidentManager._to_contact),
+            # not inside each other where SUMO found them; the step before still runs on towards where SUMO had them
+            for vid, (x, y, ang) in im.hit_poses(cur.time).items():
+                v = cur.vehicles.get(vid)
+                if v is not None:
+                    self._unhit[vid] = v
+                    cur.vehicles[vid] = dataclasses.replace(v, x=x, y=y, angle=ang)
             if self._k % 10 == 0:  # every 5 s: a knot out of sight undone (IncidentManager.unjam)
                 im.unjam(cur.time, cur.vehicles)
             lap("incidents")
@@ -1977,7 +1990,7 @@ class FreeFly:
         held, self._held = getattr(self, "_held", None), pk
         if held is None:
             return self.produce()
-        held.poser.nxt = cur.vehicles
+        held.poser.nxt = {**cur.vehicles, **self._unhit} if self._unhit else cur.vehicles
         return held
 
     def preempt(self, vehicles: dict) -> None:
@@ -3059,7 +3072,10 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
         # (31 Oct) a breakdown hit by a car becomes a crash, a crash with a third car a pile-up
         info.update(kind=inc.kind, label=inc.label, severity_ms=inc.severity, severity_kmh=round(inc.severity * 3.6),
                     cause=getattr(inc, "cause", None), cars=len(inc.wrecks),
-                    speeding=[w.vid for w in inc.wrecks if w.speeding])
+                    speeding=[w.vid for w in inc.wrecks if w.speeding],
+                    # (3 Nov) the moment the cars touched, as drawn (t0 is the SUMO step that saw it, up to 0.5 s later),
+                    # and the police: when they were due, sent, on scene (None: not yet / never), and how they got there
+                    t_contact=inc.t_contact, police=dict(inc.police_record))
         for w in inc.wrecks:  # the seconds each recorded camera has a wreck in its picture
             if w.removed:
                 continue
@@ -3175,6 +3191,8 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
         inc = st["incs"][k]
         a, b = st["seen"][(r.name, k)]
         c["incident"] = dict(inc, crash_at_clip_s=round(inc["t0"] - s, 1),
+                             contact_at_clip_s=(None if inc.get("t_contact") is None
+                                                else round(inc["t_contact"] - s, 2)),
                              wreck_distance_m=round(st.get("dist", {}).get((r.name, k), -1.0), 1),
                              wreck_in_picture_clip_s=[round(max(a, s) - s, 1), round(min(b, s + c["duration_s"]) - s, 1)],
                              events_clip_s=[[round(t - s, 1), e] for t, e in inc.get("events", [])

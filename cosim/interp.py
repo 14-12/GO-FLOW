@@ -190,8 +190,12 @@ class Timed:
 
     N = 8
 
-    def __init__(self, p0, p1, p2, p3):
+    def __init__(self, p0, p1, p2, p3, stop_at: float | None = None):
+        """stop_at (3 Nov): a crash. The vehicle goes on at an even speed from p1 and stops dead at p2 (where it hit)
+        at that fraction of the step, and stands there for the rest of it: no easing into the stop, which made a
+        crash look like hard braking (tools/measure_impact.py)."""
         self.p = (p0, p1, p2, p3)
+        self.stop_at = None if stop_at is None else min(max(stop_at, 0.02), 1.0)
         chord = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
         self.still = chord < 1e-3
         if self.still:
@@ -210,7 +214,10 @@ class Timed:
     def at(self, s: float) -> tuple[float, float]:
         if self.still:
             return self.p[1]
-        f = ease_profile(self.m0, self.m1, s)
+        if self.stop_at is not None:
+            f = min(max(s, 0.0) / self.stop_at, 1.0)
+        else:
+            f = ease_profile(self.m0, self.m1, s)
         cum = self.cum
         i = 1
         while i < self.N and cum[i] < f:

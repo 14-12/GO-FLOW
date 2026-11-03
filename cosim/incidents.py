@@ -9,15 +9,18 @@ away for 1.5-3 s (`Distraction`):
   queues, it runs into it: a rear-end crash, at the speed difference it had.
 * "red light": near a signal that is red for it (not during the pedestrians' walk), it drives on through the red,
   still keeping its distance to the car ahead but ignoring who has the right of way: a side impact in the
-  junction if crossing traffic is there, nothing if not.
+  junction if crossing traffic is there, nothing if not. Once in the junction it goes on at its speed and brakes for
+  nobody until it is out (3 Nov, RED_THROUGH_MAX_S).
 Whether anything happens depends only on the traffic around: nothing is placed or timed. SUMO detects the
 collision (--collision.action warn --collision.check-junctions); then:
 
 1. crash: both cars stop where they are, for good (speed and lane-change control taken over), hazard lights on;
    severity from the impact speed (rear-end: the speed difference; side: both speeds combined). The CARLA side
    shows the damage (cosim/incident_scene.py). Later cars that hit the wrecks join the same incident.
-2. +6 s: a police car is sent from 250-700 m away on a run (beacons, through red lights, signals turned for it),
-   to stop 8 m behind the wrecks in their lane.
+2. after a dispatch delay (3 Nov: minutes, drawn per incident, `police_delay_s` / `police_spread`; before, a fixed
+   6 s): a police car is sent from 250-700 m away on a run (beacons, through red lights, signals turned for it),
+   to stop 8 m behind the wrecks in their lane. Each incident records when the police were due, sent and on scene,
+   and how they got there (`Incident.police_record`).
 3. police there: cones and a warning sign go out (CARLA side), the officer guides the traffic past on the open lane.
    The wrecks' lane is closed from the crash on: SUMO lets only emergency and authority vehicles use it where that
    strands nobody, nobody may change into it near the scene, and drivers still on it behind the wrecks are told to
@@ -66,10 +69,26 @@ CARELESS_SUFFIX = "~careless"
 TOW_SUFFIX = "~tow"
 CARELESS_SHARE = 0.10       # of new cars
 DISTRACT_PER_S = 1 / 8.0    # a careless driver looks away about every 8 s of driving at speed
+# 3 Nov: a red-light runner braked inside the junction (for who crossed it, its mode keeping a safe gap; or back to
+# SUMO's careful driver when its lapse ran out there), at 4-4.5 m/s2 for 2-3.5 s, and was then hit nearly standing: on
+# camera a car braking to a stop, then a soft crash (tools/measure_impact.py: 4 of 5 junction crashes). Now, once in the
+# junction, it goes on at the speed it entered with, and its lapse lasts until it is out, at most this much longer: a
+# crash there happens at the speeds the two had.
+RED_THROUGH_MAX_S = 4.0
 LAPSE_AHEAD = 10.0          # ... ten times as often when the car ahead is slower and close, or the light is red
 MAX_ACTIVE = 2
 COOLDOWN_S = 60.0           # simulated seconds between two new incidents at least
-POLICE_DELAY_S = 6.0
+POLICE_DELAY_S = 6.0          # (before 3 Nov: every police car was sent this soon; `police_delay_s=6, police_spread=0`)
+# 3 Nov: the police are sent minutes after the crash, not seconds. With 6 s they were on scene 15-45 s after it, and the
+# GO-FLOW team's accident detector (v2) learnt "stopped police lights = crash": slow on crashes, false alarms on any
+# stopped police car. The dispatch delay is drawn per incident from a log-normal: median POLICE_MEDIAN_S, spread
+# POLICE_SPREAD (sigma of its log), kept within POLICE_BOUNDS x the median. The drive there comes on top: the car
+# starts out of sight close by (_send_police), so it is usually on scene within a minute of being sent.
+POLICE_MEDIAN_S = 240.0
+POLICE_SPREAD = 0.5           # 5-95 %: about 105-545 s
+POLICE_BOUNDS = (0.25, 3.75)  # x the median: 60-900 s by default
+STEP_S = 0.5                  # SUMO's step in the viewer (the per-step rates here assume it too)
+HAZARDS_AFTER_S = 2.0         # a wreck's hazard lights go on this long after the hit (its driver switches them on)
 TOW_DELAY_S = 10.0
 LEAVE_AFTER_LOAD_S = 1.5     # the wreck strapped down -> the truck drives off
 PASS_KMH = 30.0              # the open lanes beside an accident
@@ -137,6 +156,65 @@ def severity_label(v: float) -> str:
     return next(name for limit, name in SEVERITY if v < limit)
 
 
+def police_delay(rng: random.Random, median_s: float, spread: float) -> float:
+    """Seconds from a crash to the police car being sent (module doc): log-normal around median_s, within
+    POLICE_BOUNDS x median_s. spread 0: always median_s."""
+    if spread <= 0.0 or median_s <= 0.0:
+        return max(median_s, 0.0)
+    lo, hi = POLICE_BOUNDS
+    return min(max(median_s * math.exp(rng.gauss(0.0, spread)), lo * median_s), hi * median_s)
+
+
+def police_delay_args(spec: str | None) -> dict:
+    """--police-delay "MEDIAN[:SPREAD]" (cosim/freefly.py, tools/check_accidents.py) -> IncidentManager keywords."""
+    if spec is None or str(spec).strip() == "":
+        return {}
+    parts = str(spec).split(":")
+    out = {"police_delay_s": float(parts[0])}
+    if len(parts) > 1 and parts[1] != "":
+        out["police_spread"] = float(parts[1])
+    if out["police_delay_s"] < 0 or out.get("police_spread", 0.0) < 0:
+        raise ValueError(f"--police-delay {spec}: negative")
+    return out
+
+
+def body_box(x: float, y: float, angle: float, length: float, width: float) -> tuple:
+    """A vehicle's body (centre x, y, heading unit vector, half length, half width) from SUMO's front position and
+    angle (degrees, 0 north, clockwise)."""
+    hx, hy = math.sin(math.radians(angle)), math.cos(math.radians(angle))
+    return (x - hx * length / 2.0, y - hy * length / 2.0, hx, hy, length / 2.0, width / 2.0)
+
+
+def boxes_touch(a: tuple, b: tuple) -> bool:
+    """Two body_box()es overlap (separating axis test)."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    for ux, uy in ((a[2], a[3]), (-a[3], a[2]), (b[2], b[3]), (-b[3], b[2])):
+        ra = a[4] * abs(a[2] * ux + a[3] * uy) + a[5] * abs(-a[3] * ux + a[2] * uy)
+        rb = b[4] * abs(b[2] * ux + b[3] * uy) + b[5] * abs(-b[3] * ux + b[2] * uy)
+        if abs(dx * ux + dy * uy) > ra + rb:
+            return False
+    return True
+
+
+def contact_fraction(a0: tuple, a1: tuple, b0: tuple, b1: tuple, size_a: tuple, size_b: tuple, n: int = 50) -> float:
+    """When in a step two vehicles first touched: a0, a1 (b0, b1) their (x, y, angle) at the step's start and end
+    (SUMO front position), size_* (length, width). -> fraction of the step, 0..1 (1: they never overlap on the way, as
+    far as these boxes go; 0: already at its start).
+
+    SUMO sees a collision at the end of the step it happened in, the cars already inside each other by up to a step's
+    travel (3 Nov, tools/measure_impact.py: up to 5.5 m). The cars are put back to where they touched (_to_contact),
+    and the viewer draws them stopping there, at that moment (cosim/pose_proc.Poser.vehicles)."""
+    def at(p, q, f):
+        d = (q[2] - p[2] + 180.0) % 360.0 - 180.0
+        return p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f, p[2] + d * f
+
+    for i in range(n + 1):
+        f = i / n
+        if boxes_touch(body_box(*at(a0, a1, f), *size_a), body_box(*at(b0, b1, f), *size_b)):
+            return f
+    return 1.0
+
+
 @dataclass
 class Wreck:
     vid: str
@@ -154,6 +232,7 @@ class Wreck:
     tow: str | None = None
     exit: dict | None = None        # its driver getting out: when, to where on the pavement (SUMO x, y), crossing?
     speeding: bool = False          # a speeder (31 Oct)
+    t_hit: float | None = None      # (3 Nov) SUMO time of the hit, within the step SUMO saw it (contact_fraction)
 
 
 MIN_ENTRY_M = 10.0  # room left at the start of a short closed lane: who still comes onto it moves over there
@@ -202,6 +281,9 @@ class Incident:
     police: str | None = None
     police_t: float | None = None
     police_stuck_s: float = 0.0
+    police_due: float | None = None  # (3 Nov) when the police are (next) to be sent
+    police_record: dict = field(default_factory=dict)  # due, sent, on_scene (SUMO s), how, cars sent
+    t_contact: float | None = None   # (3 Nov) the first hit, within the step SUMO saw it (t0 is that step)
     tows: list = field(default_factory=list)
     closed: list = field(default_factory=list)  # (lane, disallowed before)
     open_lane: str | None = None    # the lane traffic passes on (the officer points to it)
@@ -238,6 +320,7 @@ class Distraction:
 
     def __init__(self, vid: str, kind: str, until: float, speed: float):
         self.vid, self.kind, self.until, self.speed = vid, kind, until, speed
+        self.blind = False  # (red light) in the junction, going on without braking for who crosses (3 Nov)
 
 
 class IncidentManager:
@@ -247,7 +330,8 @@ class IncidentManager:
     def __init__(self, conn, net_file, typer=None, seed: int = 11, walk=None, share: float = CARELESS_SHARE,
                  max_active: int = MAX_ACTIVE, cooldown_s: float = COOLDOWN_S, visible=None, sinks=None,
                  breakdown_mean_s: float = BREAKDOWN_MEAN_S, speeder_share: float = SPEEDER_SHARE,
-                 pileups: bool = True, lookalikes: bool = True, ring_brake_mean_s: float = RING_BRAKE_MEAN_S):
+                 pileups: bool = True, lookalikes: bool = True, ring_brake_mean_s: float = RING_BRAKE_MEAN_S,
+                 police_delay_s: float = POLICE_MEDIAN_S, police_spread: float = POLICE_SPREAD):
         import sumolib
 
         self.conn = conn
@@ -293,6 +377,13 @@ class IncidentManager:
         self.pileups = pileups
         self.ring_brake_mean_s = ring_brake_mean_s
         self.lookalikes_on = lookalikes
+        # 3 Nov: the police dispatch delay (module doc), from its own generator (the town's draws stay as they were)
+        self.police_delay_s = police_delay_s
+        self.police_spread = police_spread
+        self.police_rng = random.Random(seed * 7919 + 17)
+        self._before: dict = {}   # the step before's vehicles (where the cars that crash came from: _to_contact)
+        self._last: dict = {}
+        self._moved: dict = {}    # vid -> SUMO (x, y, angle) once put back to where it touched
         self.speeders: dict[str, float] = {}       # vid -> its speed factor
         self._speed_pending: dict[str, tuple] = {}  # vid -> (factor, made at): set once it is on the road
         self.breaking: dict[str, dict] = {}        # vid -> {t, v0}: rolling to a stop (a breakdown)
@@ -346,6 +437,7 @@ class IncidentManager:
     def step(self, now: float, vehicles: dict, tls: dict | None = None) -> None:
         """After a SUMO step. vehicles: id -> sumo_side.Vehicle (all of them); tls: signal states."""
         self.now = now
+        self._before, self._last = self._last, vehicles
         c = self.conn
         for vid in [v for v in self.careless if v not in vehicles]:
             self.careless.pop(vid, None)
@@ -837,6 +929,12 @@ class IncidentManager:
                  "t0": lk.t0, "t1": lk.t1, "seconds": lk.seconds, "stop": lk.stop}
                 for lk in self.lookalikes_done + self.lookalikes if lk.t0 is not None]
 
+    def _in_junction(self, vid: str) -> bool:
+        try:
+            return self.conn.vehicle.getLaneID(vid).startswith(":")
+        except Exception:  # noqa: BLE001 - gone
+            return False
+
     def _calm(self, vid: str) -> None:
         if self.distracted.pop(vid, None) is not None:
             try:
@@ -848,7 +946,18 @@ class IncidentManager:
     def _distractions(self, now: float, vehicles: dict, tls: dict) -> None:
         c = self.conn
         for vid, d in list(self.distracted.items()):
+            if d.kind == "red light" and not getattr(d, "blind", False) and vid in vehicles and self._in_junction(vid):
+                # (3 Nov) in the junction it does not brake for who crosses (its safe-gap mode did: 4.5 m/s2 for 2-3 s
+                # before the hit, tools/measure_impact.py): it goes on as it entered
+                try:
+                    c.vehicle.setSpeedMode(vid, 0)
+                    c.vehicle.setSpeed(vid, vehicles[vid].speed)
+                    d.blind = True
+                except Exception:  # noqa: BLE001 - gone
+                    pass
             if now >= d.until:
+                if d.kind == "red light" and now < d.until + RED_THROUGH_MAX_S and self._in_junction(vid):
+                    continue  # (3 Nov) looks up only once through the junction: see RED_THROUGH_MAX_S
                 self._calm(vid)
         if not self.allowed():
             return
@@ -927,8 +1036,10 @@ class IncidentManager:
                 self.stats["near_misses"] += 1
                 self.near_why['touch'] = self.near_why.get('touch', 0) + 1
                 return
+            f = self._to_contact(a, b, vehicles)
             for x in new:
-                self._join(inc, x, vehicles[x], "collider" if x == a else "victim", sev_j, now)
+                self._join(inc, x, vehicles[x], "collider" if x == a else "victim", sev_j, now,
+                           t_hit=round(now - (1.0 - f) * STEP_S, 3))
             return
         va, vb = vehicles[a], vehicles[b]
         if (va.vclass in NEVER_CARELESS or vb.vclass in NEVER_CARELESS or a.startswith("pt_") or b.startswith("pt_")
@@ -966,11 +1077,16 @@ class IncidentManager:
             self.near_why['place'] = self.near_why.get('place', 0) + 1
             return
         self.n += 1
+        f = self._to_contact(a, b, vehicles)
         inc = Incident(self.n, now, kind, round(sev, 1), severity_label(sev), edge, lane,
                        (va.x + vb.x) / 2, (va.y + vb.y) / 2)
+        inc.t_contact = round(now - (1.0 - f) * STEP_S, 3)
+        inc.police_due = now + police_delay(self.police_rng, self.police_delay_s, self.police_spread)
+        inc.police_record = {"due": round(inc.police_due, 1), "sent": None, "on_scene": None, "how": None, "cars": 0}
         for vid, v, role in ((a, va, "collider"), (b, vb, "victim")):
             self._freeze(vid)
             w = self._wreck(vid, v, role)
+            w.t_hit = inc.t_contact
             inc.wrecks.append(w)
             self.role[vid] = (inc.id, "wreck")
         if kind == "rear-end":
@@ -1000,11 +1116,12 @@ class IncidentManager:
         if self.pileups and self._on_ring(lane):
             self._pileup(inc, vehicles)
 
-    def _join(self, inc: Incident, vid: str, v, role: str, sev: float, now: float) -> None:
+    def _join(self, inc: Incident, vid: str, v, role: str, sev: float, now: float, t_hit: float | None = None) -> None:
         """A car that ran into an incident's wrecks (or, late to react, into the car ahead of it) becomes one of its
         wrecks: a pile-up from three cars on."""
         self._freeze(vid)
         w = self._wreck(vid, v, role)
+        w.t_hit = now if t_hit is None else t_hit
         w.damage = self._damage(sev, "rear-end", w, inc)
         self._fit_in_lane(w)
         inc.wrecks.append(w)
@@ -1124,8 +1241,61 @@ class IncidentManager:
             lane, pos = "", 0.0
         from cosim import vmodels
 
-        return Wreck(vid, vmodels.model_of(v.type_id), role, lane, pos, v.x, v.y, v.angle, v.length, v.speed,
+        x, y, ang, pos = self._moved.pop(vid, (v.x, v.y, v.angle, pos))  # put back to where it touched (_to_contact)
+        return Wreck(vid, vmodels.model_of(v.type_id), role, lane, pos, x, y, ang, v.length, v.speed,
                      speeding=vid in self.speeders)
+
+    WIDTH_M = {"bus": 2.5, "coach": 2.5, "truck": 2.5, "trailer": 2.5, "delivery": 2.1, "motorcycle": 0.9}
+
+    def _to_contact(self, a: str, b: str, vehicles: dict) -> float:
+        """Two cars SUMO found inside each other at the end of this step: when in the step they touched
+        (contact_fraction, from where they were at the step before), and each put back along its lane by the way it
+        went after that. -> that fraction of the step. (Before 3 Nov they stood inside each other, the viewer drew them
+        so, and a rear-end's follower was pulled back out over the next step: tools/measure_impact.py.)"""
+        c = self.conn
+        va, vb = vehicles.get(a), vehicles.get(b)
+        pa, pb = self._before.get(a), self._before.get(b)
+        if va is None or vb is None:
+            return 1.0
+        pa = pa or va
+        pb = pb or vb
+        size = {}
+        for vid, v in ((a, va), (b, vb)):
+            try:
+                size[vid] = (v.length, c.vehicle.getWidth(vid))
+            except Exception:  # noqa: BLE001
+                size[vid] = (v.length, self.WIDTH_M.get(v.vclass, 1.85))
+        f = contact_fraction((pa.x, pa.y, pa.angle), (va.x, va.y, va.angle), (pb.x, pb.y, pb.angle),
+                             (vb.x, vb.y, vb.angle), size[a], size[b])
+        if f >= 1.0:
+            return 1.0
+        for vid, v, p in ((a, va, pa), (b, vb, pb)):
+            back = (1.0 - f) * math.hypot(v.x - p.x, v.y - p.y)
+            if back < 0.02:
+                continue
+            try:
+                lane, pos = c.vehicle.getLaneID(vid), c.vehicle.getLanePosition(vid)
+            except Exception as e:  # noqa: BLE001
+                log.debug("to contact %s: %s", vid, e)
+                continue
+            back = min(back, max(pos - 0.1, 0.0))  # (it came onto this lane in the step: as far back as it goes)
+            if back < 0.02:
+                continue
+            k = back / math.hypot(v.x - p.x, v.y - p.y)  # back along the way it went in the step (as drawn)
+            d = (v.angle - p.angle + 180.0) % 360.0 - 180.0
+            x, y, ang = v.x + (p.x - v.x) * k, v.y + (p.y - v.y) * k, (v.angle - d * k) % 360.0
+            try:
+                if lane.startswith(":"):  # in a junction, where it is across its lane: the very place
+                    edge, idx = lane.rsplit("_", 1)
+                    c.vehicle.moveToXY(vid, edge, int(idx), x, y, ang, keepRoute=1)
+                else:  # (on a road it is then centred in its lane: _fit_in_lane)
+                    c.vehicle.moveTo(vid, lane, pos - back)
+            except Exception as e:  # noqa: BLE001
+                log.debug("to contact %s: %s", vid, e)
+                continue
+            # (SUMO reports the new place only after the next step)
+            self._moved[vid] = (x, y, ang, pos - back)
+        return f
 
     def _touching(self, inc: Incident) -> None:
         """Rear-end: SUMO noticed the crash a step late, the follower partly inside the leader; it is put back to
@@ -1786,12 +1956,22 @@ class IncidentManager:
         for w in inc.wrecks:  # stays frozen (SUMO may reset a speed on some events)
             if not w.removed and w.vid in vehicles and vehicles[w.vid].speed > 0.05:
                 self._freeze(w.vid)
-        if inc.phase == "crash" and now - inc.t0 >= POLICE_DELAY_S:
-            if self._send_police(inc, late=now - inc.t0 > 30.0):
+        if inc.police_due is None:  # (an incident made elsewhere: a breakdown, or one from before 3 Nov)
+            inc.police_due = inc.t0 + police_delay(self.police_rng, self.police_delay_s, self.police_spread)
+            inc.police_record = {"due": round(inc.police_due, 1), "sent": None, "on_scene": None, "how": None,
+                                 "cars": 0}
+        if inc.phase == "crash" and now >= inc.police_due:
+            if self._send_police(inc, late=now - inc.police_due > 24.0):
                 inc.phase = "police en route"
-            elif now - inc.t0 > 90.0:
+                rec = inc.police_record
+                rec["cars"] = rec.get("cars", 0) + 1
+                if rec.get("sent") is None:
+                    rec["sent"] = round(now, 1)
+                    inc.log(now, f"police sent ({now - inc.t0:.0f} s after the crash)")
+            elif now - inc.police_due > 84.0:
                 inc.phase = "secured"  # no way in for a police car: the scene is handled on foot
                 inc.police_t = now
+                inc.police_record.update(on_scene=round(now, 1), how="on foot (no way in for a car)")
                 inc.log(now, "no police car could get there: secured on foot")
         elif inc.phase == "police en route":
             pid = inc.police
@@ -1808,7 +1988,7 @@ class IncidentManager:
             if v is None and pid not in c.vehicle.getIDList():
                 inc.log(now, "police car lost; sending another")
                 inc.phase = "crash"
-                inc.t0 = now - POLICE_DELAY_S
+                inc.police_due = now  # another is sent at once (before 3 Nov: t0 moved, which shifted the events' times)
                 return
             if v is not None:
                 try:
@@ -1833,7 +2013,7 @@ class IncidentManager:
                     self.role.pop(pid, None)
                     inc.police, inc.no_depot = None, True
                     inc.phase = "crash"
-                    inc.t0 = now - POLICE_DELAY_S
+                    inc.police_due = now
                     inc.log(now, f"{pid} far too long on its way: another car comes")
                     return
                 if not arrived and self.depots is not None and self.depots.owns(pid) and \
@@ -1849,7 +2029,7 @@ class IncidentManager:
                     self.role.pop(pid, None)
                     inc.police, inc.no_depot = None, True
                     inc.phase = "crash"
-                    inc.t0 = now - POLICE_DELAY_S
+                    inc.police_due = now
                     inc.log(now, f"{pid} held up on its way: back to the station, another car comes")
                     return
                 try:
@@ -1867,10 +2047,13 @@ class IncidentManager:
                                                 or (inc.police_stuck_s > 120.0 and self._near(v, inc, 120.0))):
                     self._stop_here(pid)  # stuck in the queue close by: stops there, the officer walks
                     arrived = True
+                    inc.police_record["how"] = "car stopped short in traffic, officer on foot"
                     inc.log(now, "police car stuck in traffic close by: stops there")
             if arrived:
                 inc.phase = "secured"
                 inc.police_t = now
+                inc.police_record["on_scene"] = round(now, 1)
+                inc.police_record["how"] = inc.police_record.get("how") or "car at the scene"
                 try:
                     inc.police_at = (c.vehicle.getLaneID(pid), c.vehicle.getLanePosition(pid))
                 except Exception:  # noqa: BLE001
@@ -3351,6 +3534,16 @@ class IncidentManager:
             return any(t.vid == vid and t.state == "leaving" and not getattr(t, "rolling", False) for t in inc.tows)
         return inc.phase in ("police en route", "secured", "recovery", "clearing")
 
+    def hit_poses(self, now: float) -> dict:
+        """Wrecks that crashed in the step ending at `now`: vid -> SUMO (x, y, angle) where they came to rest (put back
+        to where they touched, centred in their lane). The viewer draws their last step ending there (cosim/freefly)."""
+        out = {}
+        for i in self.incidents:
+            for w in i.wrecks:
+                if w.t_hit is not None and now - STEP_S < w.t_hit <= now + 1e-6 and not w.removed:
+                    out[w.vid] = (w.x, w.y, w.angle)
+        return out
+
     def light_bits(self, vid: str) -> int | None:
         """Extra light bits (carla.VehicleLightState values) for incident vehicles: wrecks' hazards, police beacons,
         the trucks' hazards while stopped. None: not an incident vehicle."""
@@ -3366,6 +3559,9 @@ class IncidentManager:
                         return 0x10 | 0x20 | (0x40 if backing else 0)  # hazards (blinkers), reversing light
             return None
         if r[1] == "wreck":
+            w = next((w for i in self.incidents if i.id == r[0] for w in i.wrecks if w.vid == vid), None)
+            if w is not None and w.t_hit is not None and self.now - w.t_hit < HAZARDS_AFTER_S:
+                return 0  # (3 Nov) not yet: on with the hit they were on before the cars touched
             return 0x10 | 0x20
         if r[1] == "police":
             return 0x200 | 0x1 if self.on_run(vid) else 0x1  # Special1 (beacons) | Position
@@ -3386,9 +3582,11 @@ class IncidentManager:
                 "cause": getattr(i, "cause", None), "speeding": [w.vid for w in i.wrecks if w.speeding],
                 "x": i.x, "y": i.y, "edge": i.edge, "lane": i.lane, "open_lane": i.open_lane,
                 "closed": [ln for ln, _ in i.closed], "police": i.police, "police_t": i.police_t,
-                "police_at": getattr(i, "police_at", None),
+                "police_at": getattr(i, "police_at", None), "police_record": dict(i.police_record),
+                "t_contact": i.t_contact,
                 "wrecks": [{"vid": w.vid, "model": w.model, "role": w.role, "lane": w.lane, "pos": w.pos, "x": w.x,
                             "y": w.y, "angle": w.angle, "length": w.length, "damage": w.damage, "removed": w.removed,
+                            "speed": w.speed, "t_hit": w.t_hit,
                             "tow": w.tow, "exit": dict(w.exit) if w.exit else None} for w in i.wrecks],
                 "tows": [{"vid": t.vid, "wreck": t.wreck, "state": t.state, "t_load": t.t_load, "load": t.load,
                           "tl": t.tl, "rejoin": t.rejoin} for t in i.tows],

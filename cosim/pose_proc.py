@@ -60,14 +60,26 @@ def _ease(k: float) -> float:
     return k * k * (3.0 - 2.0 * k)
 
 
-def lay_wreck(tf, dmg: dict, t_show: float | None):
+def damage_share(dmg: dict, t_show: float | None, t_sim: float | None = None) -> float:
+    """How far into the slide and spin of the impact a wreck is (0..1, eased over dmg["ramp_s"]): from the hit itself
+    (dmg["t_hit"], SUMO time) at the SUMO time the picture shows (t_sim). 3 Nov: before, from when the scene first saw
+    the crash (dmg["t0"], wall clock), 0.7 s before the cars were drawn touching: the struck car was pushed and turned
+    before it was hit (tools/measure_impact.py: done before the contact for 24 of 64 wrecks). That is kept only for a
+    damage without t_hit."""
+    ramp = max(dmg.get("ramp_s", 0.4), 0.05)
+    if t_sim is not None and dmg.get("t_hit") is not None:
+        return _ease((t_sim - dmg["t_hit"]) / ramp)
+    if t_show is not None and dmg.get("t0") is not None:
+        return _ease((t_show - dmg["t0"]) / ramp)
+    return 1.0
+
+
+def lay_wreck(tf, dmg: dict, t_show: float | None, t_sim: float | None = None):
     """A wreck as it came to rest: turned, tilted, pushed, sunk (dmg from cosim/incidents.IncidentManager._damage),
-    reached in dmg["ramp_s"] after the crash (dmg["t0"], wall clock): the slide and spin of the impact."""
+    reached in dmg["ramp_s"] after the hit (damage_share): the slide and spin of the impact."""
     import carla
 
-    k = 1.0
-    if t_show is not None and dmg.get("t0") is not None:
-        k = _ease((t_show - dmg["t0"]) / max(dmg.get("ramp_s", 0.4), 0.05))
+    k = damage_share(dmg, t_show, t_sim)
     yaw = tf.rotation.yaw + dmg.get("yaw", 0.0) * k
     f = tf.get_forward_vector()
     dx = dmg.get("dx", 0.0) * k
@@ -77,6 +89,17 @@ def lay_wreck(tf, dmg: dict, t_show: float | None):
         roll = 88.0 * k * (1 if dmg.get("roll", 0.0) >= 0 else -1)
         loc.z += 0.85 * k  # on its side: the body's half width above the road
     return carla.Transform(loc, carla.Rotation(tf.rotation.pitch + dmg.get("pitch", 0.0) * k, yaw, roll))
+
+
+def hit_fraction(dmg: dict | None, t_end: float | None, dt: float) -> float | None:
+    """The fraction of the step (ending at SUMO time t_end) at which a wreck hit (dmg["t_hit"], 3 Nov), if it hit in
+    that step; else None."""
+    if not dmg or t_end is None or dmg.get("t_hit") is None:
+        return None
+    f = (dmg["t_hit"] - (t_end - dt)) / dt
+    if -1e-6 <= f <= 1.0 + 1e-6:
+        return min(max(f, 0.0), 1.0)
+    return None
 
 
 def _rot(p: float, y: float, r: float):
@@ -257,26 +280,31 @@ class FramePoser:
         from cosim.convert import vehicle_transform
 
         out = []
+        t_end, dt = self.seg.get("t"), self.seg.get("dt") or 0.5
+        t_sim = None if t_end is None else t_end - (1.0 - s) * dt  # the SUMO time this picture shows
         for e in self.seg["veh"]:
             aid, vid, p0, p1, p2, p3, length, angle, z0, z1, pt0, pt1 = e[:12]
             la0, la1, sp0, sp1, dmg = e[12:17] if len(e) >= 17 else (None, None, None, None, None)
+            hit = hit_fraction(dmg, t_end, dt)
             if p1 is None:  # no step before: where it is
                 x, y = p2
             else:
                 tm = self._timed.get(vid)
                 if tm is None:
-                    tm = self._timed[vid] = Timed(p0, p1, p2, p3)
+                    tm = self._timed[vid] = Timed(p0, p1, p2, p3, stop_at=hit)
                 x, y = tm.at(s)
             la = None
             if la1 is not None:
                 la = la1 if la0 is None else la0 + ((la1 - la0 + 180.0) % 360.0 - 180.0) * s
             sp = None if sp1 is None else (sp1 if sp0 is None else sp0 + (sp1 - sp0) * s)
             ang = self.trails.update(vid, x, y, length, angle, la, sp)
-            if dmg:  # a wreck lies along its lane as SUMO has it (cosim/incidents.py centres it), then as the crash left it
+            if dmg and (hit is None or s >= hit):
+                # a wreck lies along its lane as SUMO has it (cosim/incidents.py centres it), then as the crash left it;
+                # (3 Nov) on its way to the hit, as it drove
                 ang = angle
             tf = vehicle_transform(self.frame, x, y, ang, length, z0 + (z1 - z0) * s, pt0 + (pt1 - pt0) * s)
             if dmg:
-                tf = lay_wreck(tf, dmg, t_show)
+                tf = lay_wreck(tf, dmg, t_show, t_sim)
             out.append((aid, tf))
         return out
 

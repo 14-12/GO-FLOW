@@ -1295,3 +1295,106 @@ plate camera's are only kept until a plate is read.
 **Not done yet.** Handing an unread car over to the next junction's camera (the user's idea, 1 Nov): the first
 camera would send a description (class, colour, appearance, exit, expected arrival) and the next would re-identify
 the car and read its plate, with the officer confirming the match.
+
+## The moment of a crash, and the police in minutes (3 Nov)
+
+The GO-FLOW team's accident agent v2 was not accepted (their report, 2 Nov): it caught 10 of 10 test crashes, but with
+a median of 70 s to detect them. It mostly reacted to stopped police lights, which appeared 15 to 45 s after
+impact. They also saw crashing cars go from driving to standing over 2 to 3 s, like hard braking, and asked whether
+the viewer's smoothing causes this. Two of v2's problems came from the simulator.
+
+**How it was measured.** `tools/measure_impact.py` runs the viewer's traffic and accidents in SUMO alone
+(`tools/check_accidents.py`, no CARLA). It keeps each wreck's SUMO states from 8 s before the crash to 5 s after. It
+then replays them through the viewer's own motion code (`interp.Timed`, as `pose_proc.FramePoser` uses it, 60
+poses a second) and through the damage ramp. The run: 6 seeds (7, 11, 23, 31, 41, 53), 60 min each, the evening
+rush, the ring road's cars on, careless share 0.3 (more crashes in less time; it does not change how one happens).
+The same tool ran on the code before the change (git `033a793`) and after it. Results: `out\impact_3nov\`
+(`impact_b2_*` before, `impact_a2_*` after, `impact_town_*` after without the ring road, `police_old_*` / `police_new_*`). What CARLA itself draws was not
+recorded in this check: the pose process applies these poses one picture later and does not change their shape.
+
+**What made the impact soft.** The viewer's smoothing between steps was not the cause: it spreads a stop over half
+a step (0.5 s) at most. There were three causes:
+
+1. **The push and turn came before the hit.** The damage ramp (`pose_proc.lay_wreck`) started on the wall clock
+   when the scene first saw the crash. That is 0.7 s before the cars were drawn touching. The ramp started before
+   contact for 64 of 64 wrecks, and was over before contact for 24 of them. At the real moment of contact nothing
+   new happened. The debris and the hazard lights also appeared before the hit.
+2. **The cars overlapped, then pulled apart.** SUMO notices a collision only at the end of the 0.5 s step it
+   happened in. By then the cars are inside each other by up to a step's travel. The follower was drawn driving
+   into the other car, then pulled back out over the next 0.5 s (median 0.75 m, up to 5.5 m; 17 of 33 colliders
+   moved back more than 0.5 m). The drawn car took a median of 0.30 s to stop at the hit (90 % of its impact speed
+   to under 0.5 m/s; up to 0.87 s), easing in like braking.
+3. **Red-light runners braked inside the junction.** In 4 of 5 junction crashes, the car that ran the red braked
+   at 4 to 4.5 m/s² for 2 to 3.5 s in the junction. It was then hit at 0 to 0.5 m/s in 3 of them. Its mode kept a
+   safe gap, and the crossing car most likely counted as a car ahead (one braked while still distracted). A lapse that ran out inside the junction also turned it
+   back into SUMO's careful driver. This is SUMO's own motion. On camera it looks like a car braking to a stop and
+   then a soft crash.
+
+Other braking before a crash is meant to be there and was left alone. On the ring road a car brakes hard for no
+reason the others see, and the car behind reacts late, then brakes as hard as it can and still hits. A broken-down
+car rolls to a stop at 2.5 m/s².
+
+**What changed:**
+
+* **Put back to the contact.** `contact_fraction` (`cosim/incidents.py`) finds when in the step the two bodies
+  first touched: boxes of SUMO's lengths and widths, moved from the step before. `_to_contact` puts both cars back
+  along their way to that point (`moveTo`; `moveToXY` inside a junction). `t_contact` / `t_hit` is that moment on the
+  simulation's clock. `t0` stays the step that saw it, so earlier labels still line up.
+* **A dead stop at the hit.** The viewer ends the crash step where the cars came to rest
+  (`IncidentManager.hit_poses`, `FreeFly.produce`). It draws them going on at their speed and stopping dead there
+  (`Timed(stop_at=...)`, `pose_proc.hit_fraction`). The step before still runs on towards where SUMO had them, so
+  nothing brakes before the hit.
+* **The impact starts at the hit.** The push and turn are timed from `t_hit` on the SUMO time the picture shows
+  (`pose_proc.damage_share`). The debris goes down with the hit (`IncidentScene.hit_delay`). The hazard lights
+  come on 2 s later (`HAZARDS_AFTER_S`).
+* **A red-light runner goes on through the junction.** Once in the junction it goes on at its speed and brakes for
+  nobody. Its lapse lasts until it is out, at most 4 s longer (`RED_THROUGH_MAX_S`).
+
+**After** (the same seeds; the first crashes of the runs are the same ones, later ones differ):
+
+| Measure | Before | After |
+| --- | --- | --- |
+| Damage ramp started before the drawn contact | 64 of 64 wrecks | 0 of 71 |
+| Damage ramp over before the drawn contact | 24 of 64 | 0 of 71 |
+| Colliders moving back more than 0.5 m after the hit | 17 of 33 (median 0.75 m, up to 5.5 m) | 0 of 36 |
+| Drawn stop at the hit, 90 % of the impact speed to under 0.5 m/s | median 0.30 s, up to 0.87 s (40 wrecks) | median 0.03 s, up to 0.18 s (49) |
+| Pairs drawn inside each other at rest (bodies shrunk 0.15 m) | 28 of 31 (where SUMO saw them, as drawn before; counted on the after runs) | 3 of 31 |
+| Junction crashes: red-runner speed at the hit | 0.0, 0.1, 0.5, 4.7, 4.9 m/s | 5.5 to 8.8 m/s (8 crashes) |
+
+The 6 town seeds without the ring road give the same picture: no move back after the hit, no ramp before contact,
+and 1 of 18 pairs still inside each other. Those few pairs could not go back far enough because their car had come
+onto its lane during the step. The red-runners still slow down *before* the junction (its safe gap, for a crossing
+car ahead) and then cross at 5.5 to 8.8 m/s. A real distracted driver might not slow at all. This was left as it is.
+
+**The police: minutes, not seconds.** Before, the police car was sent 6 s after every crash and was on scene 13 to
+45 s after it. v2 learnt "stopped police lights = crash" from this. Now the dispatch delay is drawn per incident from
+a log-normal: median 240 s, spread 0.5, kept within 60 to 900 s (`police_delay`, `POLICE_MEDIAN_S`, `POLICE_SPREAD`).
+The drive there comes on top; the car starts out of sight close by, so this is 7 to 39 s. Viewer option
+`--police-delay MEDIAN[:SPREAD]`; `6:0` gives the old response. Each incident records `police_record`: `due`, `sent`,
+`on_scene` (empty if they never got there) and `how` ("car at the scene", "car stopped short in traffic, officer on
+foot", "on foot (no way in for a car)"). It is in the snapshot, in `incidents.json` (`police`, `t_contact`,
+`contact_at_clip_s`) and in `check_accidents.py`'s output.
+
+Measured with `tools/check_accidents.py --ring --buses`, 3 seeds (7, 11, 23) × 60 min, normal careless share:
+
+| Measure | `6:0` (before) | default (after) |
+| --- | --- | --- |
+| Incidents | 18 | 17 |
+| Police on scene after the crash | median 14 s (13 to 45 s) | median 206 s (104 to 411 s) |
+| Police not on scene when the run ended | 0 | 2 (still due) |
+| Lane reopened after the crash | median 180 s | median 419 s (4 still open at the end) |
+| Cars standing over 2 min, not part of an incident | 39 | 36 |
+
+Slower police did not lock the town, and the number of incidents barely changed. Incidents now stay open longer, so
+`MAX_ACTIVE` (2 at a time) is reached more often. This may matter for how many crashes a recording run yields.
+
+**A bug on the way.** Re-sending a police car moved the incident's own `t0`. The event times written to
+`incidents.json` (`t0` + each event's offset) then shifted for that incident. The re-send now moves only
+`police_due`.
+
+**Tests.** `tests/test_crash_moment.py` (15): contact geometry, the dead stop, the ramp from the hit, the debris
+delay, the hazard delay, `hit_poses`, the police delay, its option and the snapshot fields. All 228 pass (213
+before).
+
+**Not yet checked in CARLA.** A recording with crashes in front of a camera should confirm it frame by frame on the
+pictures: `tools\record_incident_clips.bat`, then compare `contact_at_clip_s` with the clip.

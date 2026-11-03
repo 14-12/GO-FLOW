@@ -41,6 +41,8 @@ POST_BEHIND_M = 4.0                 # the officer's post: between his car (8 m b
 GLASS = ("static.prop.brokentile01", "static.prop.brokentile02", "static.prop.brokentile03", "static.prop.brokentile04")
 BITS = ("static.prop.garbage05", "static.prop.garbage06", "static.prop.garbage02")
 FLUID = ("static.prop.dirtdebris01", "static.prop.dirtdebris02", "static.prop.dirtdebris03")
+SHOW_LEAD_S = 0.2                   # cosim/freefly.FrameFeeder.LEAD_S: a step's scene update comes this long before the
+STEP_S = 0.5                        # step is shown, and the step (SUMO's) ends on what SUMO saw at its end
 STATUS_COLOUR = {"ACCIDENT": "crash", "BREAKDOWN": "crash", "POLICE ON THE WAY": "police en route", "POLICE ARRIVING": "police en route",
                  "POLICE ON SCENE": "secured", "TOW TRUCK ON THE WAY": "recovery", "LOADING THE WRECK": "recovery",
                  "CLEARING": "clearing"}
@@ -206,28 +208,44 @@ class IncidentScene:
                 self.decks_on.pop(vid)
                 self.decks_free.append(d)
 
+    def _hit_dmg(self, w: dict, now: float) -> dict:
+        """A wreck's damage as the pose process lays it (pose_proc.lay_wreck): from the hit's SUMO time (t_hit, 3 Nov),
+        at the speed it had (v_hit); t0 (wall clock, when this saw it) for a snapshot without it."""
+        return dict(w["damage"], t0=now, t_hit=w.get("t_hit"), v_hit=w.get("speed"))
+
+    @staticmethod
+    def hit_delay(inc: dict, wrecks: list) -> float:
+        """Wall seconds from now (the scene update of the step that saw the crash) to the hit as shown: that step
+        starts SHOW_LEAD_S from now, and the hit is t_hit - (its start) into it. (3 Nov: the debris was down before
+        the cars touched.)"""
+        hits = [w.get("t_hit") for w in wrecks if w.get("t_hit") is not None]
+        if not hits or inc.get("now") is None:
+            return 0.0
+        return SHOW_LEAD_S + min(max(min(hits) - (inc["now"] - STEP_S), 0.0), STEP_S)
+
     def _crash(self, inc: dict, st: dict, now: float, vehicles: dict) -> None:
         for w in inc["wrecks"]:
             if w["vid"] not in self.dmg:
-                self.dmg[w["vid"]] = dict(w["damage"], t0=now)
+                self.dmg[w["vid"]] = self._hit_dmg(w, now)
         if inc["kind"] == "breakdown":  # (31 Oct) nothing hit anything: no debris
             return
-        self._debris(inc, st, inc["wrecks"])
+        self._debris(inc, st, inc["wrecks"], at=now + self.hit_delay(inc, inc["wrecks"]))
 
     def _joined(self, inc: dict, st: dict, now: float) -> None:
         """Cars that ran into the wrecks later (a pile-up, 31 Oct; before, they stood there undamaged), or into a
         stalled car: their damage, and debris where they hit."""
         new = [w for w in inc["wrecks"] if w["vid"] not in self.dmg and not w["removed"]]
         for w in new:
-            self.dmg[w["vid"]] = dict(w["damage"], t0=now)
+            self.dmg[w["vid"]] = self._hit_dmg(w, now)
         if inc["kind"] == "breakdown":
             return
+        at = now + self.hit_delay(inc, new)
         if not st["debris"]:
-            self._debris(inc, st, inc["wrecks"])
+            self._debris(inc, st, inc["wrecks"], at=at)
         elif new:
-            self._debris(inc, st, new)
+            self._debris(inc, st, new, at=at)
 
-    def _debris(self, inc: dict, st: dict, wrecks: list) -> None:
+    def _debris(self, inc: dict, st: dict, wrecks: list, at: float | None = None) -> None:
         pts = [self._carla(w["x"], w["y"], w["angle"], w["length"]) for w in wrecks]
         if not pts:
             return
@@ -244,7 +262,11 @@ class IncidentScene:
             for _ in range(n):
                 a, d = r.uniform(0, 2 * math.pi), rad * math.sqrt(r.random())
                 props.append((r.choice(kinds), cx + d * math.cos(a), cy + d * math.sin(a), cz + 0.02, r.uniform(0, 360)))
-        self.send(("props", f"inc{inc['id']}_debris", props))
+        msg = ("props", f"inc{inc['id']}_debris", props)
+        if at is not None and at > time.time():
+            self.later.append((at, msg))  # (3 Nov) down with the hit, not before it
+        else:
+            self.send(msg)
         st["debris"] = True
 
     # ------------------------------------------------------------------ the people

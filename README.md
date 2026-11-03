@@ -199,6 +199,7 @@ town05_freefly.bat
 | `--speeders` | 0.08 | Share of new cars driven 25 to 50 % over the limit (three times as often careless) |
 | `--pileups / --no-pileups`, `--ring-brake-every` | on, 400 | Pile-ups on the ring road; seconds between sudden hard brakings there on average |
 | `--lookalikes / --no-lookalikes` | on | Look-alikes that are not incidents: double-parked delivery vans, buses standing long at a stop |
+| `--police-delay MEDIAN[:SPREAD]` | 240:0.5 | Seconds from a crash to the police car being sent: the median and the spread of a log-normal (0: always the median). `6:0` is the response before 3 Nov |
 | `--emergency-every` | 45 | Seconds between ambulance / police runs |
 | `--pedestrians-per-km` | 20 | Pedestrians per km of pavement |
 | `--no-bus-lines`, `--no-cameras`, `--no-depots`, `--no-plates` | | Leave those parts out |
@@ -393,6 +394,16 @@ Three ideas shape the design.
 * **Look-alikes, which are not incidents.** A delivery van stops in its lane with its hazard lights on for 1 to 3
   minutes, or a bus stands at its stop far longer than usual. Nobody responds to them; they are logged so that an
   incident detector can be shown what it must not report.
+* **The moment of the crash.** SUMO notices a collision only at the end of its 0.5 s step, the cars already inside
+  each other. They are put back to where they first touched (`contact_fraction` in `cosim/incidents.py`), and the
+  viewer draws them going on at their speed and stopping dead there, at that moment. The push and turn of the impact
+  (`cosim/pose_proc.lay_wreck`) and the debris start at the hit; the hazard lights come on 2 s later. Each incident's
+  `t_contact` is that moment on the simulation's clock (`t0` is the step that saw it, up to 0.5 s later). Measured with
+  `tools/measure_impact.py` (SUMO alone, the viewer's motion replayed).
+* **The police response.** The police car is sent minutes after a crash, not seconds: the delay is drawn per
+  incident (median 4 min, 5 to 95 % about 1.75 to 9 min, `--police-delay`), and the drive there comes on top (usually under a minute). Each
+  incident records when the police were due, sent and on scene, and how they got there (`police` in
+  `incidents.json`; `on_scene` stays empty if they never got there).
 * **The scene** (`cosim/incident_scene.py`):
   * damage and hazard lights;
   * the lanes blocked in SUMO, so traffic queues and goes round;
@@ -401,7 +412,8 @@ Three ideas shape the design.
 * **The depots.** The police, ambulances and recovery trucks leave from and return to a hospital, a police
   station and a recovery yard (`cosim/depots.py`).
 * `cosim/clip_recorder.py` can film chosen cameras to MP4 with every accident labelled on the simulation's clock
-  (the `--record-*` options). Its `incidents.json` gives each incident's kind, cause, cars and speeders, and the
+  (the `--record-*` options). Its `incidents.json` gives each incident's kind, cause, cars and speeders, the moment of
+  contact and the police record, and the
   look-alikes with the seconds each camera has them in its picture.
 
 ### 5.7 Red-light camera and the police office

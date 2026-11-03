@@ -54,6 +54,9 @@ def main(argv=None) -> int:
                     help="no breakdowns, speeders, pile-ups or look-alikes (the incidents before 31 Oct)")
     ap.add_argument("--no-breakdowns", dest="breakdowns", action="store_false")
     ap.add_argument("--no-lookalikes", dest="lookalikes", action="store_false")
+    ap.add_argument("--police-delay", default=None, metavar="MEDIAN[:SPREAD]",
+                    help="seconds from a crash to the police car being sent (cosim/freefly.py --police-delay; default "
+                         "240:0.5, 3 Nov; 6:0 as before)")
     a = ap.parse_args(argv)
     scen = scenario_mod.load("town05", ROOT)
     pool = daily.load_pool(scen.folder)
@@ -87,6 +90,9 @@ def main(argv=None) -> int:
         kw["breakdown_mean_s"] = 0.0
     if not a.lookalikes:
         kw["lookalikes"] = False
+    from cosim.incidents import police_delay_args
+
+    kw.update(police_delay_args(a.police_delay))
     im = IncidentManager(c, scen.net_file, typer, seed=a.seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
     sod = a.hour * 3600
@@ -220,9 +226,19 @@ def main(argv=None) -> int:
                      "wrecks": len(i.wrecks), "phase": i.phase, "cause": getattr(i, "cause", None), "police_s": at(i, "police on scene"),
                      "closed": bool(at(i, "lane closed")), "last_load_s": max((t for t, e in i.events if "loaded onto" in e),
                                                                              default=None),
-                     "reopened_s": at(i, "lane reopened"), "events": i.events})
+                     "reopened_s": at(i, "lane reopened"), "t_contact": i.t_contact, "police": dict(i.police_record),
+                     "events": i.events})
     done = [r for r in rows if r["reopened_s"] is not None]
-    res = {"variant": {"lc": a.lc, "incidents": not a.no_incidents, "share": a.share}, "collisions_seen": len(im._pairs),
+    pol = [r["police"] for r in rows if r["police"]]
+    res = {"variant": {"lc": a.lc, "incidents": not a.no_incidents, "share": a.share, "police_delay": a.police_delay},
+           "collisions_seen": len(im._pairs),
+           # (3 Nov) the police: sent and on scene, seconds after the crash; incidents whose police never got there
+           "police_sent_after_s": sorted(round(p["sent"] - r["t0"]) for r, p in ((r, r["police"]) for r in rows)
+                                         if p and p.get("sent") is not None),
+           "police_on_scene_after_s": sorted(round(p["on_scene"] - r["t0"]) for r, p in ((r, r["police"]) for r in rows)
+                                             if p and p.get("on_scene") is not None),
+           "police_never_on_scene": sum(1 for p in pol if p.get("on_scene") is None),
+           "police_how": {h: sum(1 for p in pol if str(p.get("how")) == h) for h in sorted({str(p.get("how")) for p in pol})},
            "minutes": a.minutes, "hour": a.hour, "wall_s": round(time.time() - t_wall), "stats": im.stats, "near_misses_by_reason": im.near_why,
            "incidents": len(incs), "completed": len(done),
            "police_on_scene_s": sorted(r["police_s"] for r in rows if r["police_s"] is not None),
