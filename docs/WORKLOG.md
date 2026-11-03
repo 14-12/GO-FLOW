@@ -1398,3 +1398,106 @@ before).
 
 **Not yet checked in CARLA.** A recording with crashes in front of a camera should confirm it frame by frame on the
 pictures: `tools\record_incident_clips.bat`, then compare `contact_at_clip_s` with the clip.
+
+**Checked in CARLA (3 Nov, afternoon).** Two runs of `tools\record_incident_clips.bat` (careless share 0.5,
+four cameras, 16:00, real time).
+
+* *The camera pictures could not settle it.* Run 1 had 4 crashes. Two had their contact on film, on cameras 1427-2
+  and 1126-1, but both were 70 to 90 m away: a car was 20 to 40 pixels long, partly hidden by poles and trees, and the
+  detector's boxes jittered more than the stop itself (`tools/check_impact_video.py`, kept for closer crashes).
+* *What CARLA drew instead.* The pose process now writes each wreck's actor, as the server's own snapshot has it in
+  every picture, from the hit's step to 4 s after it (`pose_proc.CrashTrace`, `out\freefly\crash_trace.csv`;
+  `tools/check_crash_trace.py`). This does not depend on any camera.
+  * Run 1: hw28 at 15.5 m/s in the 0.3 s before its hit moved 0.23 m in all after it, in the picture of the hit, and
+    stood. It did not move back.
+  * Run 2: hw1 at 25.7 m/s stopped in the picture of the hit (0.14 m between +0.1 and +0.4 s). It was then pushed 1.45
+    m and turned over the next 0.85 s: the damage ramp, timed from the hit as intended. The car that ran into the
+    wrecks a second later (hw13) also stopped where it hit.
+* *Two things the trace showed, fixed.*
+  1. Run 1's struck car (hw13, standing) slid 1.5 m sideways in the 0.5 s *before* it was hit. That was its centring
+     in the lane (`_fit_in_lane`), drawn in the hit's step. The hit's step now ends where it touched
+     (`Wreck.hit_pose`); the centring is drawn in the next step, with the push of the impact. In run 2 the centring
+     (0.8 m) came after the hit.
+  2. A car far from the viewer's eye was posed only every 2nd picture (beyond 120 m) or every 4th (beyond 250 m)
+     (`pose_proc.NEAR_M`, `FAR_M`). In run 1 the eye was at the first recorded camera, so a crash on another camera
+     moved in steps of up to 0.45 s, 2 to 4 poses a second at about 9 pictures a second. This was also true of the
+     earlier recordings (`record_v2_training`). Every recorded camera is now an eye for the pose process, as the
+     red-light camera already was (`record_eyes` in `cosim/freefly.py`). In run 2 a crash on the ring road was posed
+     in every picture. CARLA ran at 9 to 10 pictures a second with four cameras recording, as before.
+* *Seen on the way, not changed.*
+  * Run 1's incident 3: the police were sent 226 s after the crash and three cars in turn did not get through in
+    the next 12 minutes, behind the queue another crash had left near the same junction. With the police seconds
+    away, such a queue had no time to form. The police may need to come through the stopped traffic (as on a real
+    run), or the queue be undone.
+  * Only 2 incidents may be open at once (`MAX_ACTIVE`), and each now stays open 7 to 10 minutes. Run 1 had 3 crashes
+    in its first 10 minutes and then none for 8. This matters for how many recording runs the 30-crash delivery needs.
+
+## The police get through, and 3 incidents at a time (3 Nov, evening)
+
+These are the two problems from the CARLA check. They were measured in SUMO alone at careless share 0.5, as in the
+recording runs.
+
+**The police stuck in a queue.** `tools/check_incident_scene.py` runs the scene code with the depots and someone
+watching (`--watch 150`, so nobody is put on the road in sight). It reproduced the stuck police at 4 seeds × 40 min:
+13 of 15 police cars got to their scene and 2 never did. One case, followed step by step (seed 11):
+
+* the wrecks stood at the end of road 8 (31 m long) on lane 8_3, the only lane with the right turn onto -5;
+* a car at the end of the open lane 8_4 that wanted that turn stood at a green light for 20 minutes, and the queue
+  behind it, the police car (40 m from the scene) and then the recovery trucks with it.
+
+`_keep_lane` did take such a car to a road its lane leads to. But a car standing 150 s in sight is rerouted by travel
+times (`unjam`), and that put it back on the blocked turn, every time. With the police there within seconds, the
+queue never got that long. Two changes:
+
+* after that rerouting, `_keep_lane` runs again (`kept_lane_after_reroute`);
+* a police car standing over 30 s in a queue within 60 m of its scene, on a road where it may not stop (before, only
+  the closed lane or the wrecks' lane), lets the officer get out and walk (`ON_FOOT_AFTER_S`, `ON_FOOT_NEAR_M`).
+  `police_record.how` says "officer on foot from the queue". The car keeps its place and comes on to its stop when the
+  traffic moves. An officer whose car stands over 20 m from his post first walks up between the lanes, then across
+  (`incident_scene.FAR_POST_M`).
+
+Same 4 seeds × 40 min, after: 17 of 17 police got to their scene, median 74 s and at most 186 s after being sent. The
+officer walked from the queue 4 times.
+
+**Fewer crashes.** Only 2 incidents could be open at once (`MAX_ACTIVE`), and with the police minutes away each stays
+open 7 to 10 minutes. `tools/check_accidents.py --ring --buses --share 0.5`, 3 seeds × 60 min:
+
+| | Police at 6 s, 2 open | 4 min, 2 open | 4 min, 3 open | 4 min, 4 open |
+| --- | --- | --- | --- | --- |
+| Crashes (breakdowns not counted) | 13 | 8 | 14 | 14 |
+| Cars standing over 2 min, not part of an incident | 35 | 52 | 57 | 50 |
+
+`MAX_ACTIVE` is now 3. The viewer makes the scenes' people, police cars and recovery trucks ready for that many
+(officers, crew and drivers, 1 + 1 + 3 per scene; option `--max-incidents`). 4 gave no more crashes: then the
+cooldown between incidents (60 s) and the careless drivers set the pace.
+
+**What is left around the scenes.** The same 4 seeds × 40 min, all on today's code, with the police at 6 s (2 open)
+and at 4 min (3 open):
+
+| | Police at 6 s, 2 open | 4 min, 3 open |
+| --- | --- | --- |
+| Incidents | 11 | 17 |
+| Police on scene, sent to there | 11 of 11, median 52 s, at most 320 s | 17 of 17, median 74 s, at most 186 s |
+| Recovery trucks held up on their way and replaced | 4 | 14 |
+| Poses of a person inside a standing car (drivers to the pavement, officers to their post) | 159 | 155 |
+| Poses of a recovery truck overlapping another vehicle | 831 | 427 |
+
+So the people walking through cars and the trucks backing into others are not from the slower police; they were
+there with the police at 6 s too (all of them in seed 31 then). With the police at 4 min they are spread over three
+seeds (48, 53 and 54 poses), and seed 11 had a truck backing out of a junction across an ambulance in the queue. More trucks held up is from the slower police: a scene now has its queue before they come.
+None of these stops an incident from clearing. They are the next things to fix if the crash clips must be clean in
+the minutes after the police arrive.
+
+**In CARLA (3 Nov, 16:19).** `tools\record_incident_clips.bat` with all of the above, 18 minutes (careless share 0.5,
+four cameras):
+
+* the scenes made ready for 3 incidents (walkers: 3 police, 3 crew, 9 drivers; 9 recovery-truck decks), and 3 were
+  open at once from the start; 7 crashes in the 18 minutes;
+* the police got to all 6 scenes they were due at, 7 to 134 s after being sent; at incident 5 the police car stood
+  in a queue on another road and the officer walked; the 7th was not due yet when the run was stopped;
+* every incident due to clear did (4);
+* the wrecks, as CARLA drew them (`crash_trace.csv`): the 6 cars moving at their hit stopped within 0.16 to 0.59 s
+  (the push of the impact included), none moved back more than 0.1 m;
+* no errors in the viewer or the pose process (118 reports, 0 errors); CARLA 8.1 to 12.9 pictures a second, median
+  9.3, as before;
+* one recovery truck was held up on its way and replaced.

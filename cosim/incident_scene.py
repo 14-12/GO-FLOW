@@ -35,6 +35,8 @@ DOOR_MODELS = {"vehicle.dodge.charger_2020", "vehicle.dodge.charger_police_2020"
                "vehicle.mini.cooper_s_2021", "vehicle.nissan.patrol_2021", "vehicle.volkswagen.t2_2021",
                "vehicle.ford.ambulance", "vehicle.carlamotors.firetruck", "vehicle.carlamotors.european_hgv"}
 WALK_MS = 1.4
+FAR_POST_M = 20.0                   # (3 Nov) an officer whose car stands further than this from his post (held up in a
+                                    # queue) walks up between the lanes first
 DOOR_OPEN_S = 2.6                   # a door opened to get out is shut again (it would reach into a lane)
 POST_BEHIND_M = 4.0                 # the officer's post: between his car (8 m back) and the wrecks, inside the cones,
                                     # the car shielding him from anyone still coming up the closed lane
@@ -434,9 +436,15 @@ class IncidentScene:
             pts.append(_local(px, py, pyaw, 0.3, -1.45))  # beside the driver's door
             # round his car, not through it: along its side to a corner, then to his post
             fx, fy = post[0] - px, post[1] - py
-            ahead = fx * math.cos(math.radians(pyaw)) + fy * math.sin(math.radians(pyaw)) > 0
+            along = fx * math.cos(math.radians(pyaw)) + fy * math.sin(math.radians(pyaw))
+            ahead = along > 0
             right = -fx * math.sin(math.radians(pyaw)) + fy * math.cos(math.radians(pyaw)) > 0
-            if right:  # his post is on the car's other side: round its front or its back
+            if math.hypot(fx, fy) > FAR_POST_M and ahead:
+                # (3 Nov) his car held up in a queue further back (IncidentManager: the officer walks): up the line
+                # between the lanes, where the queue leaves room, then across to his post; straight there he walked
+                # through the cars standing in the queue (tools/check_incident_scene.py, seed 11)
+                pts.append(_local(px, py, pyaw, along, -1.45))
+            elif right:  # his post is on the car's other side: round its front or its back
                 end = (pv.length / 2 + 1.0) * (1 if ahead else -1)
                 pts += [_local(px, py, pyaw, end, -1.45), _local(px, py, pyaw, end, 1.45)]
             pa = self.cs.actors.get(inc["police"])

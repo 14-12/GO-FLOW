@@ -533,6 +533,56 @@ class Driver:
         return v_out, w_out, pv, pw, posed, skipped
 
 
+class CrashTrace:
+    """(3 Nov) What CARLA drew of each wreck around its hit, picture by picture, from the server's own snapshot: where
+    the actor stood (CARLA x, y, yaw) and the SUMO time the picture shows. From the hit's step (when the wreck's damage
+    reaches the pose process, up to 0.5 s before the hit) to KEEP_S after it. Appended to out/freefly/crash_trace.csv;
+    read by tools/check_crash_trace.py. A failure here never stops the posing."""
+
+    KEEP_S = 4.0
+    HEADER = "sim_s,t_hit,v_hit,vid,actor,x,y,yaw,wall_s\n"
+
+    def __init__(self, path=None):
+        from pathlib import Path
+
+        self.path = Path(path) if path else Path(__file__).resolve().parents[1] / "out" / "freefly" / "crash_trace.csv"
+        self.f = None
+        self.rows = 0
+        self.failed = False
+
+    def picture(self, snap, seg, t_pic: float) -> int:
+        if self.failed or seg is None or seg.get("t") is None:
+            return 0
+        try:
+            dt = seg.get("dt") or 0.5
+            t_sim = seg["t"] - dt + min(max(t_pic - seg["start"], 0.0), dt)
+            out = []
+            for e in seg["veh"]:
+                dmg = e[16] if len(e) >= 17 else None
+                if not dmg or dmg.get("t_hit") is None or t_sim - dmg["t_hit"] > self.KEEP_S:
+                    continue
+                a = snap.find(e[0])
+                if a is None:
+                    continue
+                tf = a.get_transform()
+                out.append(f"{t_sim:.3f},{dmg['t_hit']:.3f},{dmg.get('v_hit') or 0:.2f},{e[1]},{e[0]},"
+                           f"{tf.location.x:.3f},{tf.location.y:.3f},{tf.rotation.yaw:.2f},{t_pic:.3f}\n")
+            if out:
+                if self.f is None:
+                    self.path.parent.mkdir(parents=True, exist_ok=True)
+                    new = not self.path.exists()
+                    self.f = self.path.open("a", encoding="utf-8")
+                    if new:
+                        self.f.write(self.HEADER)
+                self.f.writelines(out)
+                self.f.flush()
+                self.rows += len(out)
+            return len(out)
+        except Exception:  # noqa: BLE001 - the trace is an aid; it stops, the posing goes on
+            self.failed = True
+            return 0
+
+
 class Judder:
     """From each picture's snapshot: how far each vehicle moved since the picture before."""
 
@@ -836,6 +886,7 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
     drv = Driver(cx, cy)
     poser = drv.poser
     judder = Judder()
+    trace = CrashTrace()
     lag = Lag()
     clock = FrameClock()
     pacing = Pacing()
@@ -858,6 +909,7 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
                 loc = sp.get_transform().location
                 eye = (loc.x, loc.y)
             judder.picture(snap, st["actors"], dt, eye)
+            trace.picture(snap, poser.seg, t_pic)
             waiting = lag.picture(snap)
             st["frames"] += 1
             if waiting is not None and waiting >= WAITING_MAX and not measure_only:

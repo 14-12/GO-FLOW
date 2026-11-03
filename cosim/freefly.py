@@ -197,6 +197,9 @@ def parse_args(argv=None):
     ap.add_argument("--clock-speed", type=float, default=None,
                     help="game seconds per real second (default cosim/daily.GAME_SPEED, 60: a day in 24 min); "
                          "1 = real time, the light stays as it is during a recording")
+    ap.add_argument("--max-incidents", type=int, default=None,
+                    help="incidents open at a time at most (cosim/incidents.py MAX_ACTIVE, 3); the scenes' people, "
+                         "police cars and recovery trucks are made ready for that many")
     ap.add_argument("--careless-share", type=float, default=None,
                     help="share of new cars whose drivers are careless (cosim/incidents.py CARELESS_SHARE, 0.10): "
                          "more, accidents come sooner")
@@ -448,14 +451,16 @@ def pooled_carla_side():
             self.short = 0
             return n
 
-        def prespawn_scene_walkers(self) -> dict[str, list[int]]:
+        def prespawn_scene_walkers(self, scenes: int = 2) -> dict[str, list[int]]:
             """The people an accident scene needs (cosim/incident_scene.py): police officers, the recovery trucks'
-            crew, drivers; parked out of sight, physics off (posed by the pose process)."""
+            crew, drivers; parked out of sight, physics off (posed by the pose process). `scenes`: accidents open at a
+            time (one officer, one of the crew, three drivers each)."""
             from cosim.incident_scene import CIVIL_BP, POLICE_BP, WORKER_BP
 
             out: dict[str, list[int]] = {}
             batch, roles = [], []
-            for role, bps, n in (("police", POLICE_BP, 2), ("worker", WORKER_BP, 2), ("civil", CIVIL_BP, 6)):
+            for role, bps, n in (("police", POLICE_BP, scenes), ("worker", WORKER_BP, scenes),
+                                 ("civil", CIVIL_BP, 3 * scenes)):
                 for i in range(n):
                     try:
                         bp = self.library.find(bps[i % len(bps)])
@@ -1075,6 +1080,7 @@ class FreeFly:
                                              pileups=a.pileups, lookalikes=a.lookalikes,
                                              ring_brake_mean_s=(a.ring_brake_every or incidents_mod.RING_BRAKE_MEAN_S),
                                              **incidents_mod.police_delay_args(a.police_delay),
+                                             **({} if a.max_incidents is None else {"max_active": a.max_incidents}),
                                              **({} if a.careless_share is None else {"share": a.careless_share}))
             self.pop.type_for = self.incidents.type_for
         self.pop.start_ok = lambda edge: not self.in_view(*self.edge_start.get(edge, (1e9, 1e9)))
@@ -1148,9 +1154,10 @@ class FreeFly:
             counts[vc] = counts.get(vc, 0) + int(math.ceil(peak * w / tot)) + 2
         counts["bus"] = max(counts.get("bus", 0), 7)  # the line buses
         counts["emergency"], counts["authority"] = 2, 2
-        if self.incidents is not None:  # police cars and recovery trucks of two accidents at a time
-            counts["authority"] += 2
-            counts["truck"] = counts.get("truck", 0) + 2
+        scenes = self.incidents.max_active if self.incidents is not None else 0
+        if self.incidents is not None:  # police cars and recovery trucks of the accidents open at a time
+            counts["authority"] += scenes
+            counts["truck"] = counts.get("truck", 0) + scenes
         # per CARLA model, as the vehicles will be drawn (each is sized as its model, cosim/vmodels.py)
         per_model: dict[str, int] = {}
         for vc, n in counts.items():
@@ -1160,13 +1167,13 @@ class FreeFly:
         if self.incidents is not None:  # the recovery trucks (cosim/towing.py): the HGV, whatever the mix says
             from cosim import towing as _tw
 
-            per_model[_tw.TRUCK_MODEL] = per_model.get(_tw.TRUCK_MODEL, 0) + 2
+            per_model[_tw.TRUCK_MODEL] = per_model.get(_tw.TRUCK_MODEL, 0) + scenes
         log.info("%d parked vehicles %s", self.cs.prewarm_vehicles(per_model), per_model)
         self.scene = None
         if self.incidents is not None:
             from cosim.incident_scene import IncidentScene, SceneWalkers
 
-            roles = self.cs.prespawn_scene_walkers()
+            roles = self.cs.prespawn_scene_walkers(self.incidents.max_active)
             log.info("accident scenes: walkers %s", {k: len(v) for k, v in roles.items()})
             self.scene = IncidentScene(scen.frame, self.cs.ground, self.incidents.net, self.scene_send,
                                        SceneWalkers(roles), self.cs, self.models)
@@ -1199,7 +1206,8 @@ class FreeFly:
             self.ask_plates()
             if self.scene is not None:  # the recovery trucks' decks (cosim/towing.py), made by the same process
                 yard = self.depots.depots.get("tow") if self.depots is not None else None
-                self.plate_in.put(("decks", 4 + (len(yard.slots) if yard is not None else 0)))
+                self.plate_in.put(("decks", 2 * self.incidents.max_active
+                                   + (len(yard.slots) if yard is not None else 0)))
             if self.depots is not None:  # the depots' signs (cosim/depots.py)
                 self.plate_in.put(("signs", self._depot_signs()))
         elif self.drivers_on:
@@ -2996,6 +3004,24 @@ def register_fleet(ff, st: dict) -> None:
     del by_actor
 
 
+def record_eyes(ff, rec) -> None:
+    """(3 Nov) Every recorded camera is an eye for the pose process: the vehicles it films are posed every picture.
+    Before, only those within NEAR_M of the viewer's own eye (the first camera) were; beyond, every 2nd picture, and
+    beyond FAR_M every 4th (cosim/pose_proc.py): on the other cameras' film a car moved 2-4 times a second, and a crash
+    there showed in steps of up to 0.45 s (CARLA trace of a crash 300 m off, 3 Nov). As for the red-light camera: a
+    point 30 m ahead of each camera."""
+    q = getattr(ff, "pose_q", None)
+    if q is None:
+        return
+    pts = []
+    for r in rec.recs.values():
+        if getattr(r, "stopped", False):
+            continue
+        sp = r.spec
+        pts.append((sp.x + 30.0 * math.cos(math.radians(sp.yaw)), sp.y + 30.0 * math.sin(math.radians(sp.yaw))))
+    q.put(("eyes", pts))
+
+
 def demo_record_clips(ff, st: dict, args, clock) -> bool:
     """--record-clips, once per pass of the main loop: record --record-cams to MP4 (cosim/clip_recorder.py) until
     there is a normal-traffic stretch and a crash in a recorded picture (with RECORD_PRE_S before and RECORD_POST_S
@@ -3031,6 +3057,7 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
                                                    carla.Rotation(first.pitch, first.yaw, 0.0)))
         orig = ff.in_view
         ff.in_view = lambda x, y: orig(x, y) or rec.near_recorded(x, y)  # nobody appears or vanishes on film
+        record_eyes(ff, rec)
         st.update(rec=rec, out=out, t0=now, last=0.0, incs={}, seen={}, dynamic=0, stamp=stamp,
                   sim0=ff.sim_now, game0=clock.game_s)
         cr.write_json(out / "run.json", {
@@ -3062,6 +3089,7 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
                 cand = [(i, d) for i, d in rec.seen_by(cx, cy) if i not in rec.recs]
                 if cand:
                     r = rec.start(cand[0][0], reason=f"after crash {inc.id}")
+                    record_eyes(ff, rec)
                     st["dynamic"] += 1
                     info["dynamic_camera"] = r.name
             st["incs"][inc.id] = info

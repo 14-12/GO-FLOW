@@ -76,7 +76,10 @@ DISTRACT_PER_S = 1 / 8.0    # a careless driver looks away about every 8 s of dr
 # crash there happens at the speeds the two had.
 RED_THROUGH_MAX_S = 4.0
 LAPSE_AHEAD = 10.0          # ... ten times as often when the car ahead is slower and close, or the light is red
-MAX_ACTIVE = 2
+MAX_ACTIVE = 3                # (3 Nov: was 2) with the police minutes away an incident stays open 7-10 min, and 2 at a
+                              # time held the crashes back: careless share 0.5, ring road and buses, 3 seeds x 60 min
+                              # (tools/check_accidents.py): 13 crashes with the police at 6 s, 8 at 4 min with 2 open,
+                              # 14 with 3 (and 14 with 4), cars standing over 2 min 35 / 52 / 57 / 50
 COOLDOWN_S = 60.0           # simulated seconds between two new incidents at least
 POLICE_DELAY_S = 6.0          # (before 3 Nov: every police car was sent this soon; `police_delay_s=6, police_spread=0`)
 # 3 Nov: the police are sent minutes after the crash, not seconds. With 6 s they were on scene 15-45 s after it, and the
@@ -111,6 +114,8 @@ BLOCKER_PREFIX = "incblock"   # a closed lane's end SUMO knows of (Incident._blo
 TRUCK_BASE = "tru_truck"
 DEPOT_NAMES = {"police": "police station", "tow": "recovery yard", "hospital": "hospital"}
 ADJ_WAIT_S = 40.0            # a truck backing across open lanes waits this long at most for who is where it sweeps
+ON_FOOT_AFTER_S = 30.0       # (3 Nov) a police car standing this long in a queue within ON_FOOT_NEAR_M of the scene, on a
+ON_FOOT_NEAR_M = 60.0        # road it may not stop on: the officer walks from there (IncidentManager._advance)
 EN_ROUTE_MAX_S = 240.0       # a police car (or, a minute more, a truck) this long on its way: another comes
 DEPOT_REACH_M = 500.0        # an accident further than this by road gets a vehicle put on the road near it instead
 JAMMED_SHARE = 0.6           # a road with most lanes standing this full counts as jammed (no depot vehicle sent through)
@@ -233,6 +238,7 @@ class Wreck:
     exit: dict | None = None        # its driver getting out: when, to where on the pavement (SUMO x, y), crossing?
     speeding: bool = False          # a speeder (31 Oct)
     t_hit: float | None = None      # (3 Nov) SUMO time of the hit, within the step SUMO saw it (contact_fraction)
+    hit_pose: tuple | None = None   # (3 Nov) SUMO (x, y, angle) where it touched, before it is centred in its lane
 
 
 MIN_ENTRY_M = 10.0  # room left at the start of a short closed lane: who still comes onto it moves over there
@@ -572,6 +578,12 @@ class IncidentManager:
                     self.stats["rerouted_in_sight"] = self.stats.get("rerouted_in_sight", 0) + 1
                 except Exception:  # noqa: BLE001
                     pass
+                # (3 Nov) the quickest way by travel times may need a lane it cannot reach from where it stands (the
+                # one _keep_lane took it off): a car at the end of 8_4, its turn only from 8_3 behind two wrecks, was
+                # put back on that turn every 150 s and stood at a green for 20 minutes, the queue behind it too, and
+                # with it the police car and the recovery trucks (tools/check_incident_scene.py --share 0.5, seed 11)
+                if self._keep_lane(vid, near_end=12.0):
+                    self.stats["kept_lane_after_reroute"] = self.stats.get("kept_lane_after_reroute", 0) + 1
                 self.jammed[vid] = now  # again after another after_s, if still standing
                 continue
             try:
@@ -1087,6 +1099,7 @@ class IncidentManager:
             self._freeze(vid)
             w = self._wreck(vid, v, role)
             w.t_hit = inc.t_contact
+            w.hit_pose = (w.x, w.y, w.angle)
             inc.wrecks.append(w)
             self.role[vid] = (inc.id, "wreck")
         if kind == "rear-end":
@@ -1122,6 +1135,7 @@ class IncidentManager:
         self._freeze(vid)
         w = self._wreck(vid, v, role)
         w.t_hit = now if t_hit is None else t_hit
+        w.hit_pose = (w.x, w.y, w.angle)
         w.damage = self._damage(sev, "rear-end", w, inc)
         self._fit_in_lane(w)
         inc.wrecks.append(w)
@@ -2049,6 +2063,17 @@ class IncidentManager:
                     arrived = True
                     inc.police_record["how"] = "car stopped short in traffic, officer on foot"
                     inc.log(now, "police car stuck in traffic close by: stops there")
+                elif not arrived and not ok_here and \
+                        ((inc.police_stuck_s > ON_FOOT_AFTER_S and self._near(v, inc, ON_FOOT_NEAR_M))
+                         or (inc.police_stuck_s > 120.0 and self._near(v, inc, 120.0))):
+                    # (3 Nov) stuck in a queue close by, on a road where it may not stand (the road into the scene's,
+                    # across the junction): the officer gets out and walks; the car keeps its place in the queue and
+                    # comes on to its stop when the traffic moves. Before, it waited there for good: in the CARLA run
+                    # of 3 Nov and tools/check_incident_scene.py --share 0.5 --watch 150 (seed 11) the police never got
+                    # to two scenes in 20 minutes (one car 40 m from the scene, behind a queue that did not move)
+                    arrived = True
+                    inc.police_record["how"] = "officer on foot from the queue (the car comes on later)"
+                    inc.log(now, f"police car {pid} stuck in the queue on {p_lane}: the officer walks")
             if arrived:
                 inc.phase = "secured"
                 inc.police_t = now
@@ -3535,13 +3560,16 @@ class IncidentManager:
         return inc.phase in ("police en route", "secured", "recovery", "clearing")
 
     def hit_poses(self, now: float) -> dict:
-        """Wrecks that crashed in the step ending at `now`: vid -> SUMO (x, y, angle) where they came to rest (put back
-        to where they touched, centred in their lane). The viewer draws their last step ending there (cosim/freefly)."""
+        """Wrecks that crashed in the step ending at `now`: vid -> SUMO (x, y, angle) where they touched (put back to
+        there, _to_contact). The viewer draws their last step ending there (cosim/freefly). Their centring in the lane
+        (_fit_in_lane, up to a lane's width for a car hit while changing lanes) is drawn in the step after, with the
+        push and turn of the impact: drawn in the hit's step, a standing car slid sideways into the hit (CARLA trace,
+        3 Nov, tools/check_crash_trace.py: 1.5 m in the 0.5 s before it)."""
         out = {}
         for i in self.incidents:
             for w in i.wrecks:
-                if w.t_hit is not None and now - STEP_S < w.t_hit <= now + 1e-6 and not w.removed:
-                    out[w.vid] = (w.x, w.y, w.angle)
+                if w.t_hit is not None and now - STEP_S - 1e-6 <= w.t_hit <= now + 1e-6 and not w.removed:
+                    out[w.vid] = w.hit_pose or (w.x, w.y, w.angle)
         return out
 
     def light_bits(self, vid: str) -> int | None:

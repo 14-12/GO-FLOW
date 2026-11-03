@@ -113,6 +113,9 @@ def test_hit_poses_name_the_cars_that_crashed_in_this_step():
     im.incidents = [Incident(1, 100.5, "rear-end", 14.0, "severe", "35", "35_2", 0.0, 3.0, wrecks=[w1, w2, w3])]
     assert im.hit_poses(100.5) == {"a": (1.0, 2.0, 90.0), "b": (1.0, 8.0, 90.0)}
     assert im.hit_poses(101.0) == {}
+    # where it touched, not where it is centred in its lane afterwards (that is drawn in the next step)
+    w2.hit_pose = (2.2, 8.0, 84.0)
+    assert im.hit_poses(100.5)["b"] == (2.2, 8.0, 84.0)
 
 
 def test_hazards_come_on_after_the_hit():
@@ -161,3 +164,53 @@ def test_the_snapshot_carries_the_contact_and_the_police_record():
     assert snap["t_contact"] == 100.3 and snap["police_record"]["due"] == 330.5
     assert snap["wrecks"][0]["t_hit"] == 100.3 and snap["wrecks"][0]["speed"] == 14.0
     assert not math.isnan(snap["severity"])
+
+
+# ------------------------------------------------------------------ what CARLA drew (cosim/pose_proc.CrashTrace)
+def test_the_crash_trace_writes_the_wrecks_around_their_hit(tmp_path):
+    from types import SimpleNamespace as NS
+
+    from cosim.pose_proc import CrashTrace
+    from tools.check_crash_trace import analyse
+
+    class Snap:
+        def __init__(self, x):
+            self.x = x
+
+        def find(self, aid):
+            if aid != 7:
+                return None
+            loc, rot = NS(x=self.x, y=0.0, z=0.0), NS(yaw=0.0)
+            return NS(get_transform=lambda: NS(location=loc, rotation=rot))
+
+    tr = CrashTrace(tmp_path / "trace.csv")
+    dmg = {"t_hit": 100.3, "v_hit": 10.0}
+    veh = [(7, "a", None, None, None, None, 4.5, 0.0, 0, 0, 0, 0, None, None, None, None, dmg),
+           (8, "b", None, None, None, None, 4.5, 0.0, 0, 0, 0, 0, None, None, None, None, None)]
+    seg = {"t": 100.5, "dt": 0.5, "start": 50.0, "veh": veh}
+    xs = []
+    for i in range(10):  # 10 m/s until the hit at 100.3 (0.3 s into the step), then standing
+        t_sim = 100.0 + i * 0.1
+        x = 10.0 * min(t_sim, 100.3)
+        xs.append(x)
+        seg_i = seg if t_sim <= 100.5 else dict(seg, t=101.0, start=50.5)
+        assert tr.picture(Snap(x), seg_i, 50.0 + i * 0.1) == 1
+    rows = list(open(tmp_path / "trace.csv", encoding="utf-8"))
+    assert rows[0].startswith("sim_s,") and len(rows) == 11
+    import csv
+
+    data = [{k: (r[k] if k == "vid" else float(r[k])) for k in r}
+            for r in csv.DictReader(open(tmp_path / "trace.csv", encoding="utf-8"))]
+    res = analyse(data)
+    assert res["speed_before_hit_ms"] == pytest.approx(10.0, abs=0.2)
+    assert res["stop_takes_s"] is not None and res["stop_takes_s"] <= 0.21
+    assert res["moved_back_after_hit_m"] == 0.0
+
+
+def test_the_crash_trace_never_breaks_the_posing(tmp_path):
+    from cosim.pose_proc import CrashTrace
+
+    tr = CrashTrace(tmp_path / "t.csv")
+    assert tr.picture(None, {"t": 1.0, "start": 0.0, "veh": [(1, "a", *([None] * 14), {"t_hit": 0.9})]}, 0.1) == 0
+    assert tr.failed
+    assert tr.picture(None, None, 0.0) == 0

@@ -196,6 +196,9 @@ def main(argv=None) -> int:
                     help="someone watches every accident: whatever is within M m of one counts as in sight (as "
                          "freefly's in_view does for the camera), so police cars and recovery trucks must come from "
                          "out of sight")
+    ap.add_argument("--police-delay", default=None, metavar="MEDIAN[:SPREAD]",
+                    help="seconds from a crash to the police car being sent (cosim/freefly.py --police-delay)")
+    ap.add_argument("--max-incidents", type=int, default=None, help="incidents open at a time at most")
     a = ap.parse_args(argv)
     from cosim import towing
     from cosim.pose_proc import Driver, compose
@@ -223,6 +226,11 @@ def main(argv=None) -> int:
     typer = vmodels.Typer(c, cands, models, base)
     sinks = sorted({r.split()[-1] for routes in pool.routes.values() for r in routes})
     kw = {} if a.share is None else {"share": a.share}
+    from cosim.incidents import police_delay_args
+
+    kw.update(police_delay_args(a.police_delay))
+    if a.max_incidents is not None:
+        kw["max_active"] = a.max_incidents
     im = IncidentManager(c, scen.net_file, typer, seed=a.seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
     if a.watch > 0:
@@ -243,7 +251,9 @@ def main(argv=None) -> int:
     def ground(x, y, yaw):
         return 0.0, 0.0
 
-    walkers = SceneWalkers({"police": [1, 2], "worker": [3, 4], "civil": [5, 6, 7, 8, 9, 10]})
+    n = im.max_active  # (3 Nov) as the viewer makes them ready (freefly prespawn_scene_walkers)
+    walkers = SceneWalkers({"police": list(range(1, n + 1)), "worker": list(range(n + 1, 2 * n + 1)),
+                            "civil": list(range(2 * n + 1, 5 * n + 1))})
     scene = IncidentScene(scen.frame, ground, im.net, send, walkers, cs, models)
     scene.add_decks([901, 902, 903, 904, 905, 906, 907])
     depots = calls = None

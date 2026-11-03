@@ -208,7 +208,8 @@ def main(argv=None) -> int:
                     cases[key] = {"incident": inc.id, "kind": inc.kind, "cause": getattr(inc, "cause", None), "vid": w.vid, "role": w.role,
                                   "impact_kmh": round(inc.severity * 3.6), "speed": round(w.speed, 2), "t_crash": t_c,
                                   "states": states, "ramp_s": (w.damage or {}).get("ramp_s"), "until": t_c + POST_S,
-                                  "t_hit": getattr(w, "t_hit", None), "rest": (w.x, w.y), "rest_angle": w.angle,
+                                  "t_hit": getattr(w, "t_hit", None), "rest": (getattr(w, "hit_pose", None) or (w.x, w.y))[:2],
+                                  "rest_angle": (getattr(w, "hit_pose", None) or (0, 0, w.angle))[2],
                                   "length": w.length, "width": 1.85}
         r = orig_step(self, *args, **kw)
         dt_box[0] = self.step_length

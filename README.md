@@ -199,6 +199,7 @@ town05_freefly.bat
 | `--speeders` | 0.08 | Share of new cars driven 25 to 50 % over the limit (three times as often careless) |
 | `--pileups / --no-pileups`, `--ring-brake-every` | on, 400 | Pile-ups on the ring road; seconds between sudden hard brakings there on average |
 | `--lookalikes / --no-lookalikes` | on | Look-alikes that are not incidents: double-parked delivery vans, buses standing long at a stop |
+| `--max-incidents` | 3 | Incidents open at a time at most (the scenes' people and vehicles are made ready for that many) |
 | `--police-delay MEDIAN[:SPREAD]` | 240:0.5 | Seconds from a crash to the police car being sent: the median and the spread of a log-normal (0: always the median). `6:0` is the response before 3 Nov |
 | `--emergency-every` | 45 | Seconds between ambulance / police runs |
 | `--pedestrians-per-km` | 20 | Pedestrians per km of pavement |
@@ -399,7 +400,9 @@ Three ideas shape the design.
   viewer draws them going on at their speed and stopping dead there, at that moment. The push and turn of the impact
   (`cosim/pose_proc.lay_wreck`) and the debris start at the hit; the hazard lights come on 2 s later. Each incident's
   `t_contact` is that moment on the simulation's clock (`t0` is the step that saw it, up to 0.5 s later). Measured with
-  `tools/measure_impact.py` (SUMO alone, the viewer's motion replayed).
+  `tools/measure_impact.py` (SUMO alone, the viewer's motion replayed), and in CARLA with the pose process's trace of
+  each wreck (`out\freefly\crash_trace.csv`, read by `tools/check_crash_trace.py`). While clips are recorded, every
+  recorded camera counts as an eye, so the vehicles it films are posed in every picture.
 * **The police response.** The police car is sent minutes after a crash, not seconds: the delay is drawn per
   incident (median 4 min, 5 to 95 % about 1.75 to 9 min, `--police-delay`), and the drive there comes on top (usually under a minute). Each
   incident records when the police were due, sent and on scene, and how they got there (`police` in

@@ -54,6 +54,8 @@ def main(argv=None) -> int:
                     help="no breakdowns, speeders, pile-ups or look-alikes (the incidents before 31 Oct)")
     ap.add_argument("--no-breakdowns", dest="breakdowns", action="store_false")
     ap.add_argument("--no-lookalikes", dest="lookalikes", action="store_false")
+    ap.add_argument("--max-incidents", type=int, default=None,
+                    help="incidents open at a time at most (cosim/incidents.py MAX_ACTIVE)")
     ap.add_argument("--police-delay", default=None, metavar="MEDIAN[:SPREAD]",
                     help="seconds from a crash to the police car being sent (cosim/freefly.py --police-delay; default "
                          "240:0.5, 3 Nov; 6:0 as before)")
@@ -93,6 +95,8 @@ def main(argv=None) -> int:
     from cosim.incidents import police_delay_args
 
     kw.update(police_delay_args(a.police_delay))
+    if a.max_incidents is not None:
+        kw["max_active"] = a.max_incidents
     im = IncidentManager(c, scen.net_file, typer, seed=a.seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
     sod = a.hour * 3600
@@ -238,6 +242,11 @@ def main(argv=None) -> int:
            "police_on_scene_after_s": sorted(round(p["on_scene"] - r["t0"]) for r, p in ((r, r["police"]) for r in rows)
                                              if p and p.get("on_scene") is not None),
            "police_never_on_scene": sum(1 for p in pol if p.get("on_scene") is None),
+           # (3 Nov) from being sent to on scene; incidents that needed more than one car
+           "police_drive_s": sorted(round(p["on_scene"] - p["sent"]) for p in pol
+                                    if p.get("on_scene") is not None and p.get("sent") is not None),
+           "police_cars_over_one": sum(1 for p in pol if p.get("cars", 0) > 1),
+           "max_incidents": im.max_active,
            "police_how": {h: sum(1 for p in pol if str(p.get("how")) == h) for h in sorted({str(p.get("how")) for p in pol})},
            "minutes": a.minutes, "hour": a.hour, "wall_s": round(time.time() - t_wall), "stats": im.stats, "near_misses_by_reason": im.near_why,
            "incidents": len(incs), "completed": len(done),
