@@ -73,6 +73,9 @@ def parse_args(argv=None):
     ap.add_argument("--goflow-confirm", choices=("v2i", "camera"), default=None,
                     help="with --goflow-priority: a request counts on the vehicle's own radio request (v2i) or once a "
                          "camera has confirmed its siren (camera; default with agents_observed)")
+    ap.add_argument("--goflow-llm", default=None, metavar="MODEL",
+                    help="with --goflow-priority: the LLM coordinator in the background (Ollama model, e.g. qwen2.5:3b); "
+                         "the rules act at once and stay in charge whenever it is slow or down")
     ap.add_argument("--radius", type=float, default=500.0, help="draw the vehicles within this many metres of you")
     ap.add_argument("--rate", type=float, default=60.0,
                     help="vehicle updates per second sent to CARLA (the picture's own rate is the GPU's)")
@@ -267,6 +270,9 @@ def parse_args(argv=None):
             os.environ["GOFLOW_PRIORITY_MODE"] = "live"  # the SUMO thread never waits for it
             if args.goflow_confirm:
                 os.environ["GOFLOW_PRIORITY_CONFIRM"] = args.goflow_confirm
+            if args.goflow_llm:
+                os.environ["GOFLOW_PRIORITY_ARGS"] = (os.environ.get("GOFLOW_PRIORITY_ARGS", "")
+                                                      + f" --llm --llm-model {args.goflow_llm}").strip()
         elif not base.endswith("_goflow"):
             log.warning("--goflow-priority needs the junction agents (--controller agents or agents_observed); ignored")
     return args

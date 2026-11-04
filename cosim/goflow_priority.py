@@ -247,11 +247,22 @@ class GoflowMixin:
         self._gf_announced: set[tuple[str, str, str]] = set()
         self.goflow_stats = {"plan_steps": 0, "fallback_steps": 0, "requests": 0, "refused": 0}
         junctions = {}
+        self._gf_in_lanes: dict[str, list[str]] = {}
         for tls, a in self.junctions.items():
             greens = [sorted(_greens(a.states[k])) for k in a.cycle if a.kind[k] == "car"]
-            junctions[tls] = {"n_links": len(a.states[0]) if a.states else 0, "greens": greens}
+            lane_links: dict[str, list[int]] = {}
+            for i, ls in enumerate(tc.trafficlight.getControlledLinks(tls)):
+                for link in ls:
+                    if not link[0].startswith(":"):
+                        lane_links.setdefault(link[0], [])
+                        if i not in lane_links[link[0]]:
+                            lane_links[link[0]].append(i)
+            self._gf_in_lanes[tls] = sorted(lane_links)
+            junctions[tls] = {"n_links": len(a.states[0]) if a.states else 0, "greens": greens,
+                              "lane_links": lane_links}
         mode = os.environ.get("GOFLOW_PRIORITY_MODE", "lockstep")
         args = os.environ.get("GOFLOW_PRIORITY_ARGS", "").split()
+        self._gf_llm = "--llm" in args
         confirm = os.environ.get("GOFLOW_PRIORITY_CONFIRM", "camera" if self.uses_cameras else "v2i")
         if confirm == "camera" and not self.uses_cameras:
             confirm = "v2i"  # no camera reports without agents_observed
@@ -276,6 +287,9 @@ class GoflowMixin:
     def observe(self, reports: list[dict]) -> None:
         super().observe(reports)
         self._ems_lanes = {e["lane"] for r in reports for e in r.get("ems", []) if e.get("confirmed")}
+        # what the cameras confirmed, with where: the LLM's evidence for sirens without a radio request
+        self._gf_sightings = [{"cam": r.get("cam"), "tls": r.get("tls"), "lane": e["lane"], "votes": e.get("votes"),
+                               "of": e.get("of")} for r in reports for e in r.get("ems", []) if e.get("confirmed")]
 
     def _gf_state(self, tc, now: float, wanted: list[str]) -> dict:
         vehicles = []
@@ -295,7 +309,19 @@ class GoflowMixin:
             except Exception:  # noqa: BLE001 - left this step
                 continue
         self._gf_seq += 1
-        return {"type": "state", "v": 1, "seq": self._gf_seq, "t": now, "vehicles": vehicles}
+        msg = {"type": "state", "v": 1, "seq": self._gf_seq, "t": now, "vehicles": vehicles}
+        if self.uses_cameras:
+            msg["sightings"] = list(getattr(self, "_gf_sightings", []))
+            self._gf_sightings = []
+        if self._gf_llm and vehicles:  # stopped vehicles per junction, for the LLM's get_network_state
+            q = {}
+            for tls, lanes in self._gf_in_lanes.items():
+                try:
+                    q[tls] = sum(tc.lane.getLastStepHaltingNumber(ln) for ln in lanes)
+                except Exception:  # noqa: BLE001
+                    continue
+            msg["queues"] = q
+        return msg
 
     def _requests(self, tc, now: float) -> None:
         cl = getattr(self, "goflow", None)
@@ -304,7 +330,8 @@ class GoflowMixin:
         try:
             wanted = [v for v in self.emergency()]
             cur = frozenset(wanted)
-            due = now - self._gf_last_send >= (self.goflow_send_every_s if wanted else self.goflow_heartbeat_s)
+            busy = wanted or getattr(self, "_gf_sightings", None)
+            due = now - self._gf_last_send >= (self.goflow_send_every_s if busy else self.goflow_heartbeat_s)
             if due or cur != self._gf_last_set:
                 self._gf_last_send, self._gf_last_set = now, cur
                 cl.exchange(self._gf_state(tc, now, wanted))
@@ -325,6 +352,17 @@ class GoflowMixin:
         for tls, j in plan.get("junctions", {}).items():
             a = self.junctions.get(tls)
             vid = j.get("vehicle")
+            if a is not None and j.get("mode") == "CAMERA_PRIORITY":  # a siren the cameras confirmed, no request
+                links = [int(x) for x in j.get("links", [])]
+                if links and self._exit_free(tc, a, links[0]):
+                    self.requests[tls] = set(links)
+                    self.request_by[tls] = "camera"
+                    key = (tls, "camera", str(j.get("until")))
+                    if key not in self._gf_announced:
+                        self._gf_announced.add(key)
+                        phases = [k for k in a.cycle if a.kind[k] == "car" and set(links) & _greens(a.states[k])][:1]
+                        self._event(a, "ambulance", phases, "GO-FLOW: green for flashing lights seen by a camera")
+                continue
             if a is None or j.get("mode") not in EMERGENCY_MODES or vid not in wanted or vid not in alive:
                 continue
             links = [int(x) for x in j.get("links", [])]
@@ -358,7 +396,9 @@ class GoflowMixin:
                 self._gf_announced.add(key)
                 phases = [k for k in a.cycle if a.kind[k] == "car" and set(links) & _greens(a.states[k])][:1]
                 what = "police car" if j.get("level") == 2 else "ambulance" if j.get("level") == 3 else "recovery truck"
-                if j["mode"] == "CONFLICT_RESOLUTION":
+                if j.get("source") == "llm":
+                    text = f"GO-FLOW (LLM): {what} first"
+                elif j["mode"] == "CONFLICT_RESOLUTION":
                     text = f"GO-FLOW: two emergencies here, {what} first"
                 elif j.get("rank", 0) == 0:
                     text = f"GO-FLOW: green for {what}"

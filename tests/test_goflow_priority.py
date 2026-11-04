@@ -86,6 +86,11 @@ def test_flag(monkeypatch):
     monkeypatch.delenv("GOFLOW_PRIORITY_MODE", raising=False)
     assert freefly.parse_args(["--controller", "actuated", "--goflow-priority"]).controller == "actuated"
     assert freefly.parse_args(["--controller", "agents_observed"]).controller == "agents_observed"
+    monkeypatch.delenv("GOFLOW_PRIORITY_ARGS", raising=False)
+    freefly.parse_args(["--controller", "agents", "--goflow-priority", "--goflow-llm", "qwen2.5:3b"])
+    assert os.environ.get("GOFLOW_PRIORITY_ARGS") == "--llm --llm-model qwen2.5:3b"
+    monkeypatch.delenv("GOFLOW_PRIORITY_ARGS", raising=False)
+    monkeypatch.delenv("GOFLOW_PRIORITY_MODE", raising=False)
 
 
 def _spawn_fake(fake):

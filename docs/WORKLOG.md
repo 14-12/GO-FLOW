@@ -1522,3 +1522,24 @@ used: it was trained for 2 greens, 4 approaches of 2 lanes and a 1 s step, and T
   (horizon 20/30/45 s) before the held-out runs. Plan computed in 0.04 ms (p50), 0.10 ms (p95).
 * Tests: `tests\test_goflow_priority.py` (names, the child process never fatal, stale plans ignored, the flag);
   `agents\priority_agent\town05\tests` (8, in the agent's venv).
+
+## GO-FLOW priority agent: the LLM in the background, camera sightings (4 Nov)
+
+`agents/priority_agent/town05/llm_town.py`: the agent's LLM coordinator (B5) reworked for a live city. The rules'
+plan is answered at once on every state; events (new and cancelled requests, conflicts between emergency vehicles,
+dispatch messages, and **flashing lights the cameras confirm on a lane where no vehicle sent a request**) go to a
+worker thread that calls Ollama; what the LLM decides is laid over the rules' plan from the next state on. It never
+blocks: before, the agent paused SUMO during each call (3.4 s mean on the corridor).
+
+Guardrails, in code: ModeSafety on every mode; an emergency vehicle holding a junction is never displaced by a lower
+one (class, then arrival); escalation only for a vehicle named in a dispatch message received; camera-only green
+(`request_green_for_lane`) only with a confirmed sighting on that lane in the last 10 s, one per junction per 120 s,
+20 s at most, the junction agents' own guards still applying; answers after the call's deadline (20 s) refused.
+LLM down, slow or wrong: the rules' plan stays.
+
+Checked (cloud, SUMO 1.27.1, no Ollama there): 8 tests with a scripted model (`town05/tests/test_town05_llm.py`:
+the rules answer at once and the LLM overrides later; police never before an ambulance; LLM down = rules only; late
+answers refused; camera green limits; escalation needs a dispatch message); `agents_observed_goflow` with
+`--llm` and no Ollama, seed 11, x0.8, 900 s: runs on the rules, one `llm_unavailable` line; seed 12: 62 confirmed
+camera sightings reached the agent in 900 s. Not yet measured: the LLM's real latency on the PC's CPU next to
+CARLA, and whether its decisions help (needs Ollama on the PC).
