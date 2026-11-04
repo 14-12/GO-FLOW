@@ -1,0 +1,8 @@
+networkx
+sumolib==1.27.1
+eclipse-sumo==1.27.1
+langgraph
+langchain
+langchain-core
+langchain-ollama
+matplotlib
