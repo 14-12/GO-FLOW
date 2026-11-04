@@ -1,0 +1,8 @@
+# GO-FLOW priority agent for Town05: what the coordinator process needs (its own venv, Python 3.11;
+# tools\setup_goflow_priority.bat). Never installed into the project's .venv.
+# Same SUMO as the project (requirements.txt at the root): 1.27.1.
+numpy
+eclipse-sumo==1.27.1
+traci==1.27.1
+sumolib==1.27.1
+pytest

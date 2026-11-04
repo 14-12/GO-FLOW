@@ -1501,3 +1501,24 @@ four cameras):
 * no errors in the viewer or the pose process (118 reports, 0 errors); CARLA 8.1 to 12.9 pictures a second, median
   9.3, as before;
 * one recovery truck was held up on its way and replaced.
+
+
+## GO-FLOW priority agent: integration, step 0-4 (4 Nov)
+
+The priority agent of the GO-FLOW `priority-agent` branch (ADSP: priority tracking, rule coordinator, safety layer,
+LLM coordinator, PPO) brought in under `agents/priority_agent/` (its own venv, `tools\setup_goflow_priority.bat`).
+Only its coordinator runs here, as an advisor to the junction agents (`cosim/goflow_priority.py`,
+`--controller agents_goflow` / `agents_observed_goflow`, viewer `--goflow-priority`, off by default). The PPO is not
+used: it was trained for 2 greens, 4 approaches of 2 lanes and a 1 s step, and Town05 has 4-5 greens a signal.
+
+* Shadow check (`agents\priority_agent\town05\shadow_check.py`, seed 11, x0.8, 900 s): the agent's unchanged code
+  runs on Town05 without an error and changes no signal state (same SHA-256 of every signal state as a run without
+  it); `Intersection.from_sumo` finds 4-5 greens at every signal (PPO needs 2) and maps the approaches wrongly at
+  5 signals (2014 and 2328: the three roads fall into one direction; 1882, 2240, 2296: a walking area counted as a
+  fourth approach). Hence the adapter speaks link indices, not N/E/S/W.
+* Smoke run, one seed only (seed 11, x0.8, 1800 s, emergency every 120 s, `tools/eval_town05_baseline.py`; run in the cloud: Linux, Python 3.13, SUMO 1.27.1):
+  agents vs agents_goflow: ambulances on a run 60.8 vs 45.3 s time loss (9 vehicles), car waiting 104.0 vs 110.3 s,
+  pedestrian time loss 83.8 vs 85.0 s. One seed: not a result; the car cost is to be checked on dev seeds 11-16
+  (horizon 20/30/45 s) before the held-out runs. Plan computed in 0.04 ms (p50), 0.10 ms (p95).
+* Tests: `tests\test_goflow_priority.py` (names, the child process never fatal, stale plans ignored, the flag);
+  `agents\priority_agent\town05\tests` (8, in the agent's venv).

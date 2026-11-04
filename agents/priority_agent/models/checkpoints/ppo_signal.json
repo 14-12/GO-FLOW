@@ -1,0 +1,19 @@
+{
+ "algo": "MaskablePPO (sb3-contrib)",
+ "timesteps": 1000000,
+ "envs": 2,
+ "train_time_s": 2371,
+ "hyperparameters": {
+  "n_steps": "1024",
+  "batch_size": "256",
+  "n_epochs": "10",
+  "learning_rate": "0.0003",
+  "gamma": "0.98",
+  "gae_lambda": "0.95",
+  "ent_coef": "0.01",
+  "clip_range": "0.2",
+  "policy_kwargs": "{'net_arch': [128, 128]}"
+ },
+ "obs_dim": 35,
+ "decision_interval_s": 5
+}

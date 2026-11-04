@@ -1,0 +1,6 @@
+# Optional, offline only: the PPO signal policy (environment/, models/). Not used on Town05 (integration plan, section 2 row 3).
+-r requirements.txt
+torch
+gymnasium
+stable-baselines3
+sb3-contrib

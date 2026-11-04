@@ -1,0 +1,62 @@
+<routes>
+  <!-- Types de véhicules -->
+  <vType id="car" vClass="passenger" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="16.67"/>
+    <!-- Véhicules d'urgence : AUCUN device bluelight (ils respectent les feux).
+       Leur priorité vient uniquement du système de contrôle des feux.
+       - priority_class : classe lue par le système (EMERGENCY_MEDICAL, FIRE, POLICE, TRANSIT)
+       - siren          : état par défaut de la sirène ; modifiable par véhicule ou via TraCI.
+         Sans sirène active, un véhicule d'urgence est traité comme un véhicule ordinaire. -->
+  <vType id="ambulance" vClass="emergency" accel="2.8" decel="5.0" sigma="0.2" length="6.5" maxSpeed="19.44"
+         speedFactor="1.2" guiShape="emergency" color="1,1,1">
+    <param key="priority_class" value="EMERGENCY_MEDICAL"/>
+    <param key="siren" value="on"/>
+  </vType>
+  <vType id="fire_truck" vClass="emergency" accel="1.8" decel="4.5" sigma="0.2" length="10" maxSpeed="16.67"
+         speedFactor="1.1" guiShape="firebrigade" color="1,0,0">
+    <param key="priority_class" value="FIRE"/>
+    <param key="siren" value="on"/>
+  </vType>
+  <vType id="police" vClass="authority" accel="3.0" decel="5.0" sigma="0.2" length="5" maxSpeed="22.22"
+         speedFactor="1.2" guiShape="police" color="0,0,0.6">
+    <param key="priority_class" value="POLICE"/>
+    <param key="siren" value="on"/>
+  </vType>
+  <vType id="bus_transit" vClass="bus" accel="1.2" decel="4.0" sigma="0.3" length="12" maxSpeed="13.89"
+         guiShape="bus" color="0,0.6,1">
+    <param key="priority_class" value="TRANSIT"/>
+  </vType>
+
+  <route id="r_WE" edges="W2C C2E"/>
+  <route id="r_EW" edges="E2C C2W"/>
+  <route id="r_NS" edges="N2C C2S"/>
+  <route id="r_SN" edges="S2C C2N"/>
+  <route id="r_WN" edges="W2C C2N"/>
+  <route id="r_ES" edges="E2C C2S"/>
+  <route id="r_NE" edges="N2C C2E"/>
+  <route id="r_SW" edges="S2C C2W"/>
+
+  <!-- Trafic ordinaire : flux asymétriques (axe E-O plus chargé) -->
+  <flow id="f_WE" type="car" route="r_WE" begin="0" end="900" probability="0.12" departLane="best" departSpeed="max"/>
+  <flow id="f_EW" type="car" route="r_EW" begin="0" end="900" probability="0.12" departLane="best" departSpeed="max"/>
+  <flow id="f_NS" type="car" route="r_NS" begin="0" end="900" probability="0.06" departLane="best" departSpeed="max"/>
+  <flow id="f_SN" type="car" route="r_SN" begin="0" end="900" probability="0.06" departLane="best" departSpeed="max"/>
+  <flow id="f_WN" type="car" route="r_WN" begin="0" end="900" probability="0.02" departLane="best" departSpeed="max"/>
+  <flow id="f_ES" type="car" route="r_ES" begin="0" end="900" probability="0.02" departLane="best" departSpeed="max"/>
+  <flow id="f_NE" type="car" route="r_NE" begin="0" end="900" probability="0.02" departLane="best" departSpeed="max"/>
+  <flow id="f_SW" type="car" route="r_SW" begin="0" end="900" probability="0.02" departLane="best" departSpeed="max"/>
+  <flow id="f_bus" type="bus_transit" route="r_SN" begin="60" end="900" period="180"/>
+
+  <!-- Véhicules d'urgence calés pour arriver pendant le ROUGE de leur approche dans le plan fixe
+       (cycle 90 s : vert N-S 0-42, vert E-O 45-87 ; trajet de 400 m ~ 18-25 s).
+       IMPORTANT : SUMO exige que les <vehicle> soient triés par heure de départ. -->
+  <vehicle id="amb_0"    type="ambulance"  route="r_NS" depart="130" departLane="best" departSpeed="max"/>
+
+  <!-- Cas de contrôle : voiture de police en patrouille, sirène ÉTEINTE.
+       Elle ne doit déclencher AUCUNE demande de priorité. -->
+  <vehicle id="police_patrol" type="police" route="r_EW" depart="250" departLane="best" departSpeed="max">
+    <param key="siren" value="off"/>
+  </vehicle>
+
+  <vehicle id="fire_0"   type="fire_truck" route="r_WE" depart="350" departLane="best" departSpeed="max"/>
+  <vehicle id="police_0" type="police"     route="r_SN" depart="670" departLane="best" departSpeed="max"/>
+</routes>

@@ -191,6 +191,7 @@ town05_freefly.bat
 | Viewer option | Default | What it does |
 | --- | --- | --- |
 | `--controller` | `coordinated` | Who runs the signals: `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents_observed` (junction agents fed by the cameras), `agents` (the same agents on exact counts) |
+| `--goflow-priority` | off | With `--controller agents` or `agents_observed`: the GO-FLOW priority agent (`agents/priority_agent`, its own Python environment from `tools\setup_goflow_priority.bat`) plans the emergency vehicles' requests: every signal within 30 s of an emergency vehicle, ambulance before police before a recovery truck. The agents still run the signals (`cosim/goflow_priority.py`); `--goflow-confirm v2i\|camera` |
 | `--set-time HH:MM` | saved clock | Start the clock at this time |
 | `--clock-speed` | 60 | Town seconds per real second |
 | `--accidents / --no-accidents` | on | Careless drivers crash; the police and recovery trucks respond |
@@ -373,6 +374,11 @@ Three ideas shape the design.
   * serves an emergency vehicle on a run first;
   * treats someone waiting at a crossing as a call for that green.
   `agents_observed` uses the cameras; `agents` uses exact counts (the upper bound).
+* **GO-FLOW priority agent** (`--controller agents_goflow` / `agents_observed_goflow`, or `--goflow-priority` in the
+  viewer). The same agents, but their pre-emption requests come from the GO-FLOW coordinator, a separate process in
+  its own Python environment (`agents/priority_agent/town05/serve.py`, JSON lines). If it is slow, crashed or not
+  installed, the agents use their own requests, so the town runs exactly as under `agents` / `agents_observed`.
+  Evaluation: `tools\eval_town05_goflow.bat`.
 * **Detector.** `models/carla-yolo26n-t05.pt` is YOLO26n fine-tuned on CARLA, then on Town05. Its 9 classes:
   car, van, bus, truck, ambulance, ambulance with lights, police, police with lights, pedestrian. In the viewer it
   runs only when you press H (`cosim/inspector.py`, `cctv.py`).

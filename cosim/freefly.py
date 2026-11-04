@@ -67,6 +67,12 @@ def parse_args(argv=None):
     ap.add_argument("--agent-hud", action=argparse.BooleanOptionalAction, default=False,
                     help="with the agents: their decisions on the overlay, over each junction and top right "
                          "(cosim/agent_hud.py). Off by default since 24 Oct (too many notices); the accident markers stay")
+    ap.add_argument("--goflow-priority", action="store_true",
+                    help="with --controller agents / agents_observed: the GO-FLOW priority agent plans the emergency "
+                         "vehicles' requests (cosim/goflow_priority.py, agents/priority_agent); off by default")
+    ap.add_argument("--goflow-confirm", choices=("v2i", "camera"), default=None,
+                    help="with --goflow-priority: a request counts on the vehicle's own radio request (v2i) or once a "
+                         "camera has confirmed its siren (camera; default with agents_observed)")
     ap.add_argument("--radius", type=float, default=500.0, help="draw the vehicles within this many metres of you")
     ap.add_argument("--rate", type=float, default=60.0,
                     help="vehicle updates per second sent to CARLA (the picture's own rate is the GPU's)")
@@ -254,6 +260,15 @@ def parse_args(argv=None):
             args.controller = "coordinated" if coord.is_file() else "agents_observed"
         else:
             args.controller = "actuated"
+    if args.goflow_priority:
+        base = re.split(r"[-+@]", args.controller, maxsplit=1)[0]
+        if base in ("agents", "agents_observed"):
+            args.controller = base + "_goflow" + args.controller[len(base):]
+            os.environ["GOFLOW_PRIORITY_MODE"] = "live"  # the SUMO thread never waits for it
+            if args.goflow_confirm:
+                os.environ["GOFLOW_PRIORITY_CONFIRM"] = args.goflow_confirm
+        elif not base.endswith("_goflow"):
+            log.warning("--goflow-priority needs the junction agents (--controller agents or agents_observed); ignored")
     return args
 
 
@@ -1299,6 +1314,12 @@ class FreeFly:
             return out
 
         pol.emergency = on_run
+        if hasattr(pol, "goflow_role"):  # GO-FLOW: an accident's police car or recovery truck (cosim/goflow_priority.py)
+            def role(vid: str):
+                r = self.incidents.role.get(vid) if self.incidents is not None else None
+                return r[1] if r and r[1] in ("police", "tow") else None
+
+            pol.goflow_role = role
         if getattr(pol, "uses_cameras", False):
             from cosim.camera_reports import Layout, SimulatedCameras
 
