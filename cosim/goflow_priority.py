@@ -361,8 +361,14 @@ class GoflowMixin:
                 text = f"GO-FLOW: getting ready for {what} (ETA {j.get('eta_s') or 0:.0f} s)"
             items.append({"tls": tls, "vehicle": j["vehicle"], "links": j.get("links", []), "rank": rank,
                           "kind": "ambulance" if rank == 0 else "corridor", "text": text})
+        refused = {r.get("vehicle") for r in plan.get("refused", [])}
         self.stats["goflow_refused"] = self.stats.get("goflow_refused", 0) + len(plan.get("refused", []))
-        return {"items": items, "handles": cur}
+        # A vehicle GO-FLOW's safety layer refused (e.g. too many pre-emptions at a junction) is handed back to the
+        # agents' own rule for this step: a refusal means "no more than the agents would give", never "nothing".
+        handed_back = cur & refused
+        if handed_back:
+            self.stats["goflow_handed_back"] = self.stats.get("goflow_handed_back", 0) + len(handed_back)
+        return {"items": items, "handles": cur - refused}  # its accepted junctions stay; the agents add their own
 
     def _gf_record(self) -> None:
         """What the child did, in the agents' stats: the evaluation saves them with every run (agent_stats), so a

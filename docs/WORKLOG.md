@@ -1562,3 +1562,21 @@ CARLA, and whether its decisions help (needs Ollama on the PC).
 * **Held-out seeds 31-40** in `tools\eval_town05_goflow.bat final`; seeds 21-30 only for comparison.
 * Same figures as before the refactor (seed 11, x0.8, 1800 s): agents_goflow 45.26 s emergency time loss, cars
   110.27 s waiting; agents_observed_goflow 49.15 s, cars 102.79 s. One seed.
+
+## GO-FLOW priority: a refused vehicle goes back to the agents' own rule (5 Nov)
+
+Seen in the sumo-gui demo (`tools\goflow_priority_demo.bat`, an emergency vehicle every ~45 s): police cars waiting
+at reds. GO-FLOW's safety layer refused them 94 times in 30 min ("3 pre-emptions in 300 s" at 1427, police are not
+exempt), and since the plan still claimed those vehicles, the junction agents did not ask for them either: no
+priority at all, worse than the agents alone. Now a vehicle refused in a plan is handed back to the agents' own rule
+for that step (its accepted junctions stay in the plan); counted as `goflow_handed_back`.
+
+Seed 11, x0.8, 1800 s, emergency every 45 s (`--no-gui`; mean time loss, s):
+
+| | ambulances (19) | police (21) | police waiting | others waiting |
+|---|---|---|---|---|
+| agents (without GO-FLOW) | 114.3 | 73.0 | 46.4 | 120.8 |
+| agents_goflow before the fix | 122.1 | 79.1 | 55.9 | 130.8 |
+| agents_goflow after the fix | 103.9 | 68.0 | 44.8 | 128.7 |
+
+One seed. The cost for the other vehicles (+8 s) is what the dev runs have to settle (horizon, rate limit).

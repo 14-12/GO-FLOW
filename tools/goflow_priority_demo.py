@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     ap.add_argument("--delay", type=float, default=0.08, help="real seconds per step while an emergency is on a run")
     ap.add_argument("--zoom", type=float, default=900.0)
     ap.add_argument("--no-gui", action="store_true", help="sumo instead of sumo-gui (tests)")
+    ap.add_argument("--port", type=int, default=8890)
     a = ap.parse_args(argv)
 
     if not a.without and not os.environ.get("GOFLOW_PRIORITY_PY"):
@@ -59,7 +60,7 @@ def main(argv=None) -> int:
     if not a.no_gui:
         extra += ["--start", "true", "--quit-on-end", "true", "--delay", "0"]
     print(f"Town05, {controller}, seed {a.seed}, demand x{a.scale:g}, an emergency vehicle every ~{a.every:g} s")
-    s = SumoSide(ROOT / "scenarios" / "town05", controller, gui=not a.no_gui, seed=a.seed, port=8890,
+    s = SumoSide(ROOT / "scenarios" / "town05", controller, gui=not a.no_gui, seed=a.seed, port=a.port,
                  label="goflow_demo", extras=True, emergency_every=a.every, extra_args=extra)
     ex = s.extras
     ex.config.pedestrians_per_km = 20.0
