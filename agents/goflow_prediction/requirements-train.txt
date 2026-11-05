@@ -1,0 +1,2 @@
+# Graph WaveNet training on Town05 (offline, CARLA closed). CPU wheel is enough for live use.
+torch>=2.2
