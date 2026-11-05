@@ -7,7 +7,7 @@ Town05 needs is **added** in `town05/`.
 | File | What it does |
 |---|---|
 | `town05/conflicts.py` | `LinkMap`: which link indices of a signal one car green serves together (from the program the town sends). `TownJunction`: what `coordination.rules` reads from an `Intersection`, keyed by link instead of N/E/S/W. |
-| `town05/tracker.py` | `TownTracker`: builds `PriorityVehicle` / `TLSStop` from the town's `state` message (vClass emergency → ambulance level 3, authority → police level 2, incident recovery truck → level 1; `siren_on` = on a run; `confirmed` = V2I or camera vote). |
+| `town05/tracker.py` | `TownTracker`: builds `PriorityVehicle` / `TLSStop` from the town's `state` message (vClass emergency → ambulance level 3, authority → police level 2, recovery trucks get no signal priority (they drive with hazard lights); `siren_on` = on a run; `confirmed` = V2I or camera vote). |
 | `town05/coordinator.py` | `TownRuleCoordinator(RuleCoordinator)`: the B4 rules unchanged; only the conflict test uses links, and the plan carries every link one green serves together. |
 | `town05/serve.py` | The child process: JSON lines on stdin/stdout (`hello`→`ready`, `state`→`plan`, `bye`). Writes `out/goflow_priority/<run>/decisions.jsonl`, `summary.json`. |
 | `town05/llm_town.py` | `TownLLMAdvisor`: the LLM coordinator in a background thread, on events; its accepted decisions are laid over the rules' plan. Tools: `get_priority_requests`, `get_camera_sightings`, `get_network_state`, `plan_priority_corridor`, `set_intersection_mode`, `request_green_for_lane`, `escalate_priority`. Rules stay in charge when it is slow, down or refused. |

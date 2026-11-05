@@ -5,13 +5,14 @@
     (the agents' suffixes work too: "agents_observed_goflow-trickle@horizon=...")
 
 The junction agents (cosim/agents_actuated.py) stay in charge of every signal: skip, spill, trickle, balance,
-pedcall, the walk rules, the program's own states. Only where their pre-emption requests come from changes: instead
+pedcall, the walk rules, the program's own states. Only where their pre-emption requests come from changes, through
+their public hook ActuatedAgents.request_source: instead
 of "the next signal within 150 m, the one after within 300 m and 25 s", a child process (the GO-FLOW coordinator, in
 its own Python environment) plans every signal an emergency vehicle on a run will reach within its horizon,
-arbitrates between vehicles that need conflicting greens (ambulance before police before a recovery truck, then
-first come), and refuses what its safety layer refuses (siren on and confirmed, at most 3 pre-emptions per junction
-in 300 s except for ambulances). The agents then execute those requests with their own guards (_can_pass,
-ev_patience_s, stall_s, ev_starve_limit), as they do their own.
+arbitrates between vehicles that need conflicting greens (ambulance before police, then first come; recovery trucks
+keep the agents' own rule), and refuses what its safety layer refuses (siren on and confirmed, at most 3 pre-emptions per junction
+in 300 s except for ambulances). The agents then execute those requests with their own guards
+(ActuatedAgents._external_requests: _can_pass, ev_patience_s, stall_s, the exit's room), as they do their own.
 
 The child speaks JSON lines on its stdin/stdout (agents/priority_agent/town05/serve.py). Two modes:
   lockstep (default, SUMO-only evaluation): each state is answered before the step goes on (5 s timeout);
@@ -230,7 +231,7 @@ class GoflowClient:
 
 
 class GoflowMixin:
-    """Mixed in before ActuatedAgents: replaces _requests() by GO-FLOW's plan when there is a valid one."""
+    """Mixed in before ActuatedAgents: plugs GO-FLOW's plan into the agents' request_source hook."""
 
     goflow_send_every_s = 1.0
     goflow_heartbeat_s = 5.0
@@ -245,7 +246,6 @@ class GoflowMixin:
         self._gf_last_set: frozenset = frozenset()
         self._gf_seq = 0
         self._gf_announced: set[tuple[str, str, str]] = set()
-        self.goflow_stats = {"plan_steps": 0, "fallback_steps": 0, "requests": 0, "refused": 0}
         junctions = {}
         self._gf_in_lanes: dict[str, list[str]] = {}
         for tls, a in self.junctions.items():
@@ -272,6 +272,7 @@ class GoflowMixin:
         hello = {"type": "hello", "v": 1, "run_id": run_id, "step_s": tc.simulation.getDeltaT(), "mode": mode,
                  "confirm": confirm, "junctions": junctions}
         self.goflow.start(hello)
+        self.request_source = self._gf_source
 
     @property
     def goflow_status(self) -> str:
@@ -323,90 +324,58 @@ class GoflowMixin:
             msg["queues"] = q
         return msg
 
-    def _requests(self, tc, now: float) -> None:
-        cl = getattr(self, "goflow", None)
-        if cl is None or "preempt" not in self.on:
-            return super()._requests(tc, now)
-        try:
-            wanted = [v for v in self.emergency()]
-            cur = frozenset(wanted)
-            busy = wanted or getattr(self, "_gf_sightings", None)
-            due = now - self._gf_last_send >= (self.goflow_send_every_s if busy else self.goflow_heartbeat_s)
-            if due or cur != self._gf_last_set:
-                self._gf_last_send, self._gf_last_set = now, cur
-                cl.exchange(self._gf_state(tc, now, wanted))
-            plan = cl.valid_plan(now, self.goflow_max_age_s)
-        except Exception as e:  # noqa: BLE001 - never into the SUMO thread
-            log.debug("GO-FLOW: %s", e)
-            plan = None
+    def _gf_source(self, tc, now: float) -> dict | None:
+        """The junction agents' request_source (cosim/agents_actuated.py): GO-FLOW's plan as items, or None (no valid
+        plan: the agents ask for every vehicle on a run themselves). Recovery trucks are left to the agents' own rule
+        (a loaded truck waved off at the stop line): GO-FLOW gives signal priority to police cars and ambulances only."""
+        cl = self.goflow
+        wanted = [v for v in self.emergency() if self.goflow_role(v) != "tow"]
+        cur = frozenset(wanted)
+        busy = wanted or getattr(self, "_gf_sightings", None)
+        if now - self._gf_last_send >= (self.goflow_send_every_s if busy else self.goflow_heartbeat_s) \
+                or cur != self._gf_last_set:
+            self._gf_last_send, self._gf_last_set = now, cur
+            cl.exchange(self._gf_state(tc, now, wanted))
+        self._gf_record()
+        plan = cl.valid_plan(now, self.goflow_max_age_s)
         if plan is None:
-            self.goflow_stats["fallback_steps"] += 1
-            return super()._requests(tc, now)
-        self.goflow_stats["plan_steps"] += 1
-        self._gf_apply(tc, now, plan, set(wanted))
-
-    def _gf_apply(self, tc, now: float, plan: dict, wanted: set[str]) -> None:
-        self.requests, self.request_by = {}, {}
-        asked = {}
-        alive = set(tc.vehicle.getIDList())
+            return None
+        items = []
         for tls, j in plan.get("junctions", {}).items():
-            a = self.junctions.get(tls)
-            vid = j.get("vehicle")
-            if a is not None and j.get("mode") == "CAMERA_PRIORITY":  # a siren the cameras confirmed, no request
-                links = [int(x) for x in j.get("links", [])]
-                if links and self._exit_free(tc, a, links[0]):
-                    self.requests[tls] = set(links)
-                    self.request_by[tls] = "camera"
-                    key = (tls, "camera", str(j.get("until")))
-                    if key not in self._gf_announced:
-                        self._gf_announced.add(key)
-                        phases = [k for k in a.cycle if a.kind[k] == "car" and set(links) & _greens(a.states[k])][:1]
-                        self._event(a, "ambulance", phases, "GO-FLOW: green for flashing lights seen by a camera")
+            mode = j.get("mode")
+            if mode == "CAMERA_PRIORITY":
+                items.append({"tls": tls, "vehicle": None, "links": j.get("links", []), "rank": 0,
+                              "kind": "ambulance", "text": "GO-FLOW: green for flashing lights seen by a camera"})
                 continue
-            if a is None or j.get("mode") not in EMERGENCY_MODES or vid not in wanted or vid not in alive:
+            if mode not in EMERGENCY_MODES or j.get("vehicle") not in cur:
                 continue
-            links = [int(x) for x in j.get("links", [])]
-            if not links:
-                continue
-            if j.get("rank", 0) == 0:  # its next signal: the agents' own guards, as for their own requests
-                first = asked[(tls, vid)] = self._asked.get((tls, vid), now)
-                if now - first > self.ev_patience_s:
-                    self.stats["ev_patience"] += 1
-                    continue
-                try:
-                    nxt = tc.vehicle.getNextTLS(vid)[:1]
-                except Exception:  # noqa: BLE001
-                    continue
-                if nxt and nxt[0][3] in "Gg" and tc.vehicle.getSpeed(vid) < 0.5:
-                    since = self._stopped_on_green.setdefault(vid, now)
-                    if now - since >= self.stall_s:
-                        self.stats["ev_dropped"] += 1
-                        continue
-                else:
-                    self._stopped_on_green.pop(vid, None)
-                if not self._can_pass(tc, a, vid, links[0]):
-                    continue
-            elif not self._exit_free(tc, a, links[0]):
-                continue
-            self.requests[tls] = set(links)
-            self.request_by[tls] = vid
-            self.goflow_stats["requests"] += 1
-            key = (tls, vid, j["mode"])
-            if key not in self._gf_announced:
-                self._gf_announced.add(key)
-                phases = [k for k in a.cycle if a.kind[k] == "car" and set(links) & _greens(a.states[k])][:1]
-                what = "police car" if j.get("level") == 2 else "ambulance" if j.get("level") == 3 else "recovery truck"
-                if j.get("source") == "llm":
-                    text = f"GO-FLOW (LLM): {what} first"
-                elif j["mode"] == "CONFLICT_RESOLUTION":
-                    text = f"GO-FLOW: two emergencies here, {what} first"
-                elif j.get("rank", 0) == 0:
-                    text = f"GO-FLOW: green for {what}"
-                else:
-                    text = f"GO-FLOW: getting ready for {what} (ETA {j.get('eta_s', 0):.0f} s)"
-                self._event(a, "ambulance" if j.get("rank", 0) == 0 else "corridor", phases, text)
-        self.goflow_stats["refused"] += len(plan.get("refused", []))
-        self._asked = asked
+            what = {3: "ambulance", 2: "police car"}.get(j.get("level"), "emergency vehicle")
+            rank = j.get("rank", 0) or 0
+            if j.get("source") == "llm":
+                text = f"GO-FLOW (LLM): {what} first"
+            elif mode == "CONFLICT_RESOLUTION":
+                text = f"GO-FLOW: two emergencies here, {what} first"
+            elif rank == 0:
+                text = f"GO-FLOW: green for {what}"
+            else:
+                text = f"GO-FLOW: getting ready for {what} (ETA {j.get('eta_s') or 0:.0f} s)"
+            items.append({"tls": tls, "vehicle": j["vehicle"], "links": j.get("links", []), "rank": rank,
+                          "kind": "ambulance" if rank == 0 else "corridor", "text": text})
+        self.stats["goflow_refused"] = self.stats.get("goflow_refused", 0) + len(plan.get("refused", []))
+        return {"items": items, "handles": cur}
+
+    def _gf_record(self) -> None:
+        """What the child did, in the agents' stats: the evaluation saves them with every run (agent_stats), so a
+        result says how often GO-FLOW was really in charge (external_plan_steps) or had fallen back
+        (external_fallback_steps), and why."""
+        cl = self.goflow
+        for k in ("timeouts", "errors", "restarts", "dropped"):
+            self.stats[f"goflow_{k}"] = cl.stats[k]
+        self.stats["goflow_down"] = int(cl.status == "down")
+        llm = (cl.plan or {}).get("llm")
+        if llm:
+            for k in ("calls", "failures", "late", "refused", "p95_latency_s"):
+                self.stats[f"goflow_llm_{k}"] = llm.get(k)
 
 
 class GoflowAgents(GoflowMixin, ActuatedAgents):

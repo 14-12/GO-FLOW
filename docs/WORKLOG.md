@@ -1543,3 +1543,22 @@ answers refused; camera green limits; escalation needs a dispatch message); `age
 `--llm` and no Ollama, seed 11, x0.8, 900 s: runs on the rules, one `llm_unavailable` line; seed 12: 62 confirmed
 camera sightings reached the agent in 900 s. Not yet measured: the LLM's real latency on the PC's CPU next to
 CARLA, and whether its decisions help (needs Ollama on the PC).
+
+## GO-FLOW priority agent: after the review (5 Nov)
+
+* **A public hook instead of a subclass override.** `ActuatedAgents.request_source` (None by default) lets an outside
+  planner say who should get which link; `_external_requests` runs every such request through the agents' own
+  guards (next signal: patience, stopped on its green, `_can_pass`; further on: the exit's room). The safety rules
+  stay in one place. `cosim/goflow_priority.py` no longer overrides `_requests` or copies the guards. With the hook
+  unset nothing changes: `agents` and `agents_observed` give the same figures as on `main` (seed 11, x0.8, 1800 s:
+  car waiting 104.02 / 107.78 s, emergency time loss 60.83 / 81.67 s), and their stats gain no key.
+* **In charge or fallen back, in every result.** The hook counts `external_plan_steps` and
+  `external_fallback_steps` in the agents' stats, which `tools/eval_town05_baseline.py` saves with every run
+  (`agent_stats`), with `goflow_timeouts`, `goflow_errors`, `goflow_restarts`, `goflow_down`, `goflow_refused` and,
+  with the LLM, `goflow_llm_calls / failures / late / refused / p95_latency_s`. Seed 11: GO-FLOW in charge on 3580
+  of 3600 steps (the first 10 s before its first plan), no timeout, no restart.
+* **No signal priority for recovery trucks** (they drive with hazard lights, not a siren): GO-FLOW plans police and
+  ambulances only; a loaded truck waved off at the stop line keeps the agents' own rule.
+* **Held-out seeds 31-40** in `tools\eval_town05_goflow.bat final`; seeds 21-30 only for comparison.
+* Same figures as before the refactor (seed 11, x0.8, 1800 s): agents_goflow 45.26 s emergency time loss, cars
+  110.27 s waiting; agents_observed_goflow 49.15 s, cars 102.79 s. One seed.

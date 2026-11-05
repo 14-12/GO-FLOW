@@ -1,6 +1,6 @@
 """The B4 rule coordinator (coordination.rules.RuleCoordinator) on Town05's junctions.
 
-Unchanged rules: class first (ambulance > police > tow), then first seen, then ETA; every signal
+Unchanged rules: class first (ambulance > police), then first seen, then ETA; every signal
 whose ETA is under the horizon is prepared (corridor); RECOVERY for recovery_s after the passage;
 ModeSafety (siren on and confirmed, rate limit per junction, valid junction and link).
 Changed for Town05: a conflict is judged on link indices (no car green serves both links) instead

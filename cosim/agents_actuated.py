@@ -449,16 +449,35 @@ class ActuatedAgents:
         self._waiting = waiting
         self._longest = longest
 
+    # An outside planner of the emergency requests (cosim/goflow_priority.py), None by default. Called on every step
+    # as request_source(tc, now), it returns None (no plan this step: the agents ask as below, for every vehicle on a
+    # run) or {"items": [...], "handles": {vehicle ids}}. Each item {"tls", "vehicle" (None: a siren a camera saw
+    # with no request), "links", "rank" (0: the vehicle's next signal), "kind", "text"} goes through the same guards
+    # as the agents' own requests (_external_requests); the vehicles on a run that the plan does not handle are asked
+    # for as below. The safety rules stay here: the planner only says who should get which link.
+    request_source = None
+
     def _requests(self, tc, now: float) -> None:
         self.requests = {}
         self.request_by = {}
         if "preempt" not in self.on:
             return
+        external = None
+        if self.request_source is not None:
+            try:
+                external = self.request_source(tc, now)
+            except Exception:  # noqa: BLE001 - a planner's fault is never the town's
+                external = None
+            key = "external_fallback_steps" if external is None else "external_plan_steps"
+            self.stats[key] = self.stats.get(key, 0) + 1
         wanted = set(self.emergency())
-        if not wanted:
-            self._asked = {}
-            return
         asked = {}
+        if external is not None:
+            self._external_requests(tc, now, external.get("items", []), asked)
+            wanted -= set(external.get("handles", ()))
+        if not wanted:
+            self._asked = asked
+            return
         for vid in wanted & set(tc.vehicle.getIDList()):
             upcoming = tc.vehicle.getNextTLS(vid)
             if not upcoming:
@@ -495,6 +514,48 @@ class ActuatedAgents:
                                                      and int(link2) in _greens(a2.states[k])][:1],
                                     "green wave: getting ready for an ambulance")
         self._asked = asked
+
+    def _external_requests(self, tc, now: float, items: list[dict], asked: dict) -> None:
+        """An outside planner's requests (request_source), through the agents' own guards: its next signal, the
+        patience limit, a vehicle stopped on its green, a link it can pass; a signal further on, an exit with room."""
+        alive = set(tc.vehicle.getIDList())
+        seen = self.__dict__.setdefault("_external_seen", set())
+        for it in items:
+            a = self.junctions.get(it.get("tls"))
+            links = [int(x) for x in it.get("links", [])]
+            vid = it.get("vehicle")
+            if a is None or not links:
+                continue
+            if vid is None or it.get("rank", 0) > 0:
+                if vid is not None and vid not in alive:
+                    continue
+                if not self._exit_free(tc, a, links[0]):
+                    continue
+            else:
+                if vid not in alive:
+                    continue
+                first = asked[(a.tls, vid)] = self._asked.get((a.tls, vid), now)
+                if now - first > self.ev_patience_s:
+                    self.stats["ev_patience"] += 1
+                    continue
+                nxt = tc.vehicle.getNextTLS(vid)[:1]
+                if nxt and nxt[0][3] in "Gg" and tc.vehicle.getSpeed(vid) < 0.5:
+                    since = self._stopped_on_green.setdefault(vid, now)
+                    if now - since >= self.stall_s:
+                        self.stats["ev_dropped"] += 1
+                        continue
+                else:
+                    self._stopped_on_green.pop(vid, None)
+                if not self._can_pass(tc, a, vid, links[0]):
+                    continue
+            self.requests[a.tls] = set(links)
+            self.request_by[a.tls] = vid or "camera"
+            self.stats["external_requests"] = self.stats.get("external_requests", 0) + 1
+            text = it.get("text")
+            if text and (a.tls, vid, text) not in seen:
+                seen.add((a.tls, vid, text))
+                self._event(a, it.get("kind", "ambulance"),
+                            [k for k in a.cycle if a.kind[k] == "car" and set(links) & _greens(a.states[k])][:1], text)
 
     def _exit_free(self, tc, a: _Agent, link: int) -> bool:
         out = a.link_out.get(link)

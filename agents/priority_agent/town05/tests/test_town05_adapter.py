@@ -39,8 +39,8 @@ def test_linkmap():
 def test_tracker_classes_and_passed():
     tr = TownTracker("v2i")
     out = tr.update(0.0, [veh("a"), veh("p", "authority"), veh("t", "passenger", role="tow"), veh("c", "passenger")])
-    assert out["a"].priority_level == 3 and out["p"].priority_level == 2 and out["t"].priority_level == 1
-    assert "c" not in out
+    assert out["a"].priority_level == 3 and out["p"].priority_level == 2
+    assert "c" not in out and "t" not in out  # recovery trucks get no signal priority
     assert out["a"].is_active and out["a"].upcoming[0].approach == "0"
     out = tr.update(1.0, [veh("a", nxt=(("K", 2, 200.0),))])
     assert out["a"].passed == ["J"]

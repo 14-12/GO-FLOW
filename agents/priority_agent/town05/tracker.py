@@ -4,7 +4,8 @@
 Mapping (integration plan, section 2 row 4):
   vClass "emergency"            -> EMERGENCY_MEDICAL, level 3
   vClass "authority"            -> POLICE, level 2
-  role "tow" (incident truck)   -> POLICE class, level 1 (open question Q4)
+  role "tow" (incident truck)   -> no signal priority (it drives with hazard lights, not a siren; the town's own
+                                   agents still release a loaded truck waved off at the stop line)
   siren_on  = on_run            (the vehicle's own request, as the town's agents use it)
   confirmed = True with confirm="v2i"; with confirm="camera", once a camera has confirmed its siren
 A stop is TLSStop(tls_id, approach=str(link index), edge=lane, distance_m, eta_s, rank).
@@ -15,7 +16,6 @@ from coordination.priority import PRIORITY_LEVEL, PriorityVehicle, TLSStop
 
 V_REF_MIN = 8.0  # m/s, as coordination.priority (ETA = distance / max(speed, 8 m/s))
 CLASS_OF = {"emergency": "EMERGENCY_MEDICAL", "authority": "POLICE"}
-TOW_LEVEL = 1
 
 
 class TownTracker:
@@ -32,7 +32,7 @@ class TownTracker:
     @staticmethod
     def classify(v: dict) -> tuple[str, int] | None:
         if v.get("role") == "tow":
-            return "POLICE", TOW_LEVEL
+            return None
         cls = CLASS_OF.get(v.get("vclass", ""))
         return (cls, PRIORITY_LEVEL[cls]) if cls else None
 

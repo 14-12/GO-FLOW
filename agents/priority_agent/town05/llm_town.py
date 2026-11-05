@@ -36,7 +36,7 @@ SYSTEM_PROMPT = """You coordinate the emergency-vehicle priority of the 15 signa
 You NEVER control lights. Rules already prepare every emergency vehicle's corridor automatically (see "Current plan");
 the junction agents then switch the lights with their own safety rules. Your job is only what the rules cannot do:
 - arbitrate conflicts: when two emergency vehicles need conflicting greens at one junction, decide who goes first
-  (set_intersection_mode with CONFLICT_RESOLUTION for that vehicle). Policy: ambulance > police > recovery truck;
+  (set_intersection_mode with CONFLICT_RESOLUTION for that vehicle). Policy: ambulance > police;
   same class: the one arriving clearly first, else the one that asked first; a dispatch message about a
   life-threatening case may justify escalate_priority for that vehicle;
 - camera sightings: a camera may see flashing lights where no vehicle has sent a radio request. It may be a real

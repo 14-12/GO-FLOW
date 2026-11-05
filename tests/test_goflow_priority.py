@@ -115,3 +115,13 @@ def test_hello_shape():
     """What the child is told about a junction: its car greens as link sets (agents/priority_agent/town05/serve.py)."""
     msg = {"type": "hello", "v": 1, "junctions": {"J": {"n_links": 8, "greens": [[0, 1], [2, 3]]}}}
     assert json.loads(json.dumps(msg))["junctions"]["J"]["greens"][1] == [2, 3]
+
+
+def test_request_source_is_off_by_default():
+    """The junction agents' public hook: unset on every existing controller, so nothing changes for them."""
+    for name in ("agents", "agents_observed", "agents-corridor"):
+        a = make(name)
+        assert a.request_source is None
+        assert not any(k.startswith(("external_", "goflow_")) for k in a.stats)
+    g = make("agents_goflow")
+    assert hasattr(g, "_gf_source") and not hasattr(gp.GoflowMixin, "_requests")
