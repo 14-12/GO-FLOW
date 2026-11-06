@@ -63,3 +63,52 @@ def test_cut_makes_a_clip_of_the_asked_length(tmp_path):
     cut(src, dst, 2.0, 3.0)
     n, _secs = imageio_ffmpeg.count_frames_and_secs(str(dst))
     assert 28 <= n <= 32
+
+
+class _World:
+    def __init__(self):
+        self.cb, self.removed = None, False
+
+    def on_tick(self, cb):
+        self.cb = cb
+        return 7
+
+    def remove_on_tick(self, i):
+        self.removed = i == 7
+
+
+class _Lay:
+    def __init__(self):
+        cam = type("C", (), {"width": 960, "height": 540, "fov": 75.0})()
+        self.cams, self.names = [cam], ["A"]
+
+
+def test_a_picture_is_labelled_with_the_sumo_time_it_shows_not_sumos_latest_step(tmp_path, monkeypatch):
+    """6 Nov: frames.csv sim_s was SUMO's own time when the picture arrived (sim_now), about 2 s ahead of what the
+    picture showed. Now it is depicted_at(the picture's time on the wall clock); sim_now stays as sumo_s."""
+    import cosim.clip_recorder as cr
+
+    w = _World()
+    rec = cr.ClipRecorder(w, _Lay(), tmp_path, lambda: 102.0, depicted=lambda wall: 100.0 + (wall - 1000.0))
+    # CARLA's clock 50.0 s showed up at wall 1000.3, 50.1 at 1000.35: the lowest gap is the offset (950.25)
+    snap = type("S", (), {})()
+    for wall, el in ((1000.3, 50.0), (1000.35, 50.1)):
+        monkeypatch.setattr(cr.time, "time", lambda wall=wall: wall)
+        snap.timestamp = type("T", (), {"elapsed_seconds": el})()
+        w.cb(snap)
+    assert rec.offset == pytest.approx(950.25)
+    # a picture of CARLA time 50.5, arriving late at wall 1001.9: it was drawn at wall 1000.75, which shows 100.75
+    assert rec.picture_sim(50.5, 1001.9, 102.0) == pytest.approx(100.75)
+    # depicted_at knows nothing yet: SUMO's own time
+    rec.depicted = lambda wall: None
+    assert rec.picture_sim(50.5, 1001.9, 102.0) == 102.0
+    rec.close()
+    assert w.removed
+
+
+def test_without_depicted_the_label_is_sumos_time(tmp_path):
+    import cosim.clip_recorder as cr
+
+    w = _World()
+    rec = cr.ClipRecorder(w, _Lay(), tmp_path, lambda: 5.0)
+    assert w.cb is None and rec.picture_sim(1.0, 2.0, 5.0) == 5.0

@@ -151,12 +151,33 @@ class Recording:
 class ClipRecorder:
     """Records some of the layout's cameras to MP4 while the viewer runs (see the module doc)."""
 
-    def __init__(self, world, layout, out_dir: Path, sim_now, fps: float = 10.0, crf: int = 20):
+    def __init__(self, world, layout, out_dir: Path, sim_now, fps: float = 10.0, crf: int = 20, depicted=None):
+        """depicted (6 Nov): wall time -> the SUMO time a picture taken then shows (cosim/freefly.FreeFly.depicted_at),
+        each picture's `sim_s`. Before, `sim_s` was SUMO's own time when the picture arrived (sim_now), which runs a
+        step or several ahead of what is shown: in the CARLA run of 6 Nov a crash was on the film about 2 s after its
+        label (pose process trace against the video). That time is kept in the column `sumo_s`."""
         self.world, self.lay, self.out, self.sim_now = world, layout, Path(out_dir), sim_now
         self.fps, self.crf = fps, crf
+        self.depicted = depicted
+        self.offset = None   # wall time - CARLA's elapsed time of a picture (the lowest seen), as cosim/enforcement.py
+        self._tick_id = None
+        if depicted is not None:
+            def on_tick(snap):
+                off = time.time() - snap.timestamp.elapsed_seconds
+                self.offset = off if self.offset is None else min(self.offset + 1e-4, off)
+
+            self._tick_id = world.on_tick(on_tick)
         self.out.mkdir(parents=True, exist_ok=True)
         self.recs: dict[int, Recording] = {}
         self.w, self.h, self.fov = layout.cams[0].width, layout.cams[0].height, layout.cams[0].fov
+
+    def picture_sim(self, carla_s: float, wall: float, sumo_s: float) -> float:
+        """The SUMO time a picture shows: from its CARLA time on the wall clock (depicted), else SUMO's own time."""
+        if self.depicted is None:
+            return sumo_s
+        frame_wall = carla_s + self.offset if self.offset is not None else wall
+        sim = self.depicted(frame_wall)
+        return sumo_s if sim is None else sim
 
     # -- cameras --------------------------------------------------------------------------------
 
@@ -195,13 +216,16 @@ class ClipRecorder:
         writer.send(None)
         index = (self.out / f"{slug(name)}.frames.csv").open("w", newline="", encoding="utf-8")
         cw = csv.writer(index)
-        cw.writerow(["frame", "video_s", "sim_s", "carla_s", "wall_s"])
+        cw.writerow(["frame", "video_s", "sim_s", "carla_s", "wall_s", "sumo_s"])
 
         def on_image(img, rec=rec):
             if rec.stopped:
                 return
             try:
-                rec.q.put_nowait((bytes(img.raw_data), img.timestamp, self.sim_now(), time.time()))
+                wall, sumo_s = time.time(), self.sim_now()
+                # timed here, not in the writer: depicted_at keeps the last 64 steps only, the writer may lag
+                rec.q.put_nowait((bytes(img.raw_data), img.timestamp, sumo_s, wall,
+                                  self.picture_sim(img.timestamp, wall, sumo_s)))
             except queue.Full:
                 rec.dropped += 1
 
@@ -211,13 +235,13 @@ class ClipRecorder:
                     item = rec.q.get()
                     if item is None:
                         break
-                    raw, ts, sim_s, wall = item
+                    raw, ts, sumo_s, wall, sim_s = item
                     bgra = np.frombuffer(raw, dtype=np.uint8).reshape(self.h, self.w, 4)
                     writer.send(np.ascontiguousarray(bgra[:, :, 2::-1]).tobytes())
                     if rec.started_sim is None:
                         rec.started_sim = sim_s
                     cw.writerow([rec.frames, f"{rec.frames / self.fps:.2f}", f"{sim_s:.2f}", f"{ts:.3f}",
-                                 f"{wall:.3f}"])
+                                 f"{wall:.3f}", f"{sumo_s:.2f}"])
                     rec.frames += 1
                     rec.last_sim = sim_s
             except Exception:  # a failed recording is logged, the viewer goes on
@@ -253,6 +277,12 @@ class ClipRecorder:
     def close(self) -> None:
         for i in list(self.recs):
             self.stop(i)
+        if self._tick_id is not None:
+            try:
+                self.world.remove_on_tick(self._tick_id)
+            except Exception:  # noqa: BLE001
+                pass
+            self._tick_id = None
 
     # -- what the cameras see -------------------------------------------------------------------
 

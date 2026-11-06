@@ -1555,3 +1555,30 @@ The estimate from the table is about 38 crashes seen clearly. `record_stage2.bat
 road first, to check the yield in CARLA.
 
 Tests: `tests/test_crash_focus.py` (5).
+
+### The trial in CARLA, and the clips' clock (6 Nov)
+
+**Trial** (`record_stage2.bat trial`, ring road cameras, 09:00, 25 min, `out\incident_clips\20261106_141418`): 6
+crashes, 3 of them clearly in a camera's picture, about 7 an hour. SUMO alone at 09:00 gives 8 to 13 an hour (seeds 7
+and 11), so the trial is at the low end, not out of line.
+
+**More incidents at a time does not help.** `tools/check_accidents.py ... --crash-focus 0.5 --max-incidents M`, ring
+road cameras, seeds 7 and 11, 60 min each, crashes seen clearly:
+
+| Hour | M = 3 | M = 5 |
+| --- | --- | --- |
+| 09:00 | 8, 13 | 8, 9 |
+| 16:00 | 14, 11 | 12, 7 |
+
+More open incidents mean more queues, and fewer cars reach the cameras' views at speed. `record_stage2.bat` keeps 3.
+
+**The labels were about 2 s early.** Projecting the trace of a wreck (`out/freefly/crash_trace.csv`, what CARLA drew)
+into the 2328-2 video showed the car on film about 2 s after its `frames.csv` time. `sim_s` there was SUMO's latest
+step when the picture arrived (`ff.sim_now`); the pictures show an older step (the viewer runs a step behind, the
+frame feeder and the SUMO queue add more). `ClipRecorder` now times each picture as `cosim/enforcement.SiteCamera`
+does: CARLA's own time of the picture, put on the wall clock by the lowest gap seen in `world.on_tick`, then
+`FreeFly.depicted_at` (the SUMO time shown then). The old value stays in a new column, `sumo_s`. Every label taken
+from `frames.csv` (`crash_at_clip_s`, `contact_at_clip_s`, the cut windows) follows. **Clips recorded before 6 Nov
+(v1, v2) carry the early labels: their crash happens about 2 s after the labelled second.**
+
+Tests: `tests/test_clip_recorder.py` (2 more).

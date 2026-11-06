@@ -3043,7 +3043,7 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
         lay = Layout.load(ROOT / "out" / f"{args.scenario}_cameras")
         stamp = time.strftime("%Y%m%d_%H%M%S")
         out = ROOT / "out" / "incident_clips" / stamp
-        rec = cr.ClipRecorder(ff.world, lay, out, lambda: ff.sim_now, fps=args.record_fps)
+        rec = cr.ClipRecorder(ff.world, lay, out, lambda: ff.sim_now, fps=args.record_fps, depicted=ff.depicted_at)
         names = [n.strip() for n in args.record_cams.split(";") if n.strip()]
         if args.record_specs:  # cameras of their own (tools/record_city_cams.json): name + CamSpec fields
             from cosim.perception import CamSpec
