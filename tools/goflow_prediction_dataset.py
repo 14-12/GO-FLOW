@@ -1,0 +1,302 @@
+"""Town05 datasets for agents/goflow_prediction and agents/goflow_traffic (plan, section 6), SUMO alone, no CARLA.
+
+    .venv\\Scripts\\python tools\\goflow_prediction_dataset.py --seeds 101-104 --minutes 30 --out out\\goflow_prediction\\datasets\\D2_try
+
+The viewer's traffic as tools/check_accidents.py builds it (the day's curve held by cosim/live.Population, the bus
+lines, the ring road's cars), the viewer's SUMO options, and the clock MOVING: town time = start hour + SUMO seconds x
+--clock-speed (60 as in the viewer). Signals: --controller (default coordinated, the viewer's). Accidents off unless
+--accidents. Demand levels: --scale multiplies the day's curve (the viewer has no scale; decision of the plan).
+
+Every second each approach (tools/goflow_prediction_graph.py: one per camera) is sampled through TraCI lane
+subscriptions: vehicles, halting vehicles, mean speed (m/s), occupancy (fraction, as SUMO gives it), and the share of its signal links
+that are green. Each --dt (30 s) window is averaged into one row. The first --warmup minutes are dropped.
+
+Output, a NEW folder: runs/seed<seed>.npz (one run each), dataset.npz (all runs, goflow_prediction.data format),
+nodes.json and distance.csv (copied from the graph), runs.json (per run: wall time, vehicles, gridlock flag).
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+VIEWER_SUMO_ARGS = ["--lateral-resolution", "0.8", "--collision.action", "warn", "--collision.check-junctions", "true",
+                    "--collision.mingap-factor", "0"]
+HORIZONS_S = (60, 120, 300)
+STUCK_S = 300.0
+
+
+def seeds_arg(s: str) -> list[int]:
+    out = []
+    for part in s.split(","):
+        if "-" in part:
+            a, b = part.split("-")
+            out += list(range(int(a), int(b) + 1))
+        elif part:
+            out.append(int(part))
+    return out
+
+
+def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> dict:
+    import traci.constants as tc
+
+    from cosim import daily, vmodels
+    from cosim import scenario as scenario_mod
+    from cosim.blueprints import Candidate
+    from cosim.freefly import BusLines
+    from cosim.lanegeo import LaneGeometry
+    from cosim.live import Population
+    from cosim.sumo_side import SumoSide
+
+    t_wall = time.time()
+    scen = scenario_mod.load("town05", ROOT)
+    pool = daily.load_pool(scen.folder)
+    models = vmodels.load()
+    pool.vtypes = {t: vmodels.with_attrs(vt, vmodels.LANE_CHANGE_ATTRS) for t, vt in pool.vtypes.items()}
+    work = Path(out_dir) / "work"
+    work.mkdir(parents=True, exist_ok=True)
+    pf = work / f"routes_{seed}.rou.xml"
+    rids = daily.write_pool_routes(pool, pf)
+    et = vmodels.extras_types_file(models, work / f"extras_types_{seed}.add.xml", vmodels.LANE_CHANGE_ATTRS)
+    curve = [v * a["scale"] for v in daily.population_curve(None, pool, mean_trip_min=140 / 60.0)]
+    extra = ["--route-files", str(pf), "--end", "100000000"] + VIEWER_SUMO_ARGS
+    if a["junction_blocker"]:
+        extra += ["--ignore-junction-blocker", str(a["junction_blocker"])]
+    sumo = SumoSide(scen.folder, a["controller"], seed=seed, port=port, label=f"gfp{port}", extras=True,
+                    additional=BusLines.additional(scen.folder, "town05") if a["buses"] else [],
+                    emergency_every=45, extras_types=et, lane_geometry=LaneGeometry(scen.net_file), extra_args=extra)
+    c = sumo.conn
+    pop = Population(c, pool, rids, curve, seed=seed)
+    cands = [Candidate(m, i["base_type"].lower(), i["special_type"].lower(), int(i["generation"] or 1), ("0",),
+                       i["has_lights"]) for m, i in models.items()]
+    base = {t: (re.search(r'vClass="([^"]+)"', vt) or [None, "passenger"])[1] for t, vt in pool.vtypes.items()}
+    base.update({t: vc for t, vc in vmodels.EMERGENCY_TYPES.items()})
+    typer = vmodels.Typer(c, cands, models, base)
+    # The incident manager always runs, as in the viewer: it is also what undoes knots of cars out of sight
+    # (IncidentManager.unjam). Without --accidents it makes no crash, breakdown, pile-up or look-alike.
+    from cosim.incidents import IncidentManager
+
+    sinks = sorted({r.split()[-1] for routes in pool.routes.values() for r in routes})
+    kw = {}
+    if not a["accidents"]:
+        kw = dict(share=0.0, breakdown_mean_s=0.0, speeder_share=0.0, pileups=False, lookalikes=False)
+    elif a["careless_share"] is not None:
+        kw = dict(share=a["careless_share"])
+    im = IncidentManager(c, scen.net_file, typer, seed=seed, walk=sumo.walk, sinks=sinks, **kw)
+    pop.type_for = im.type_for
+    bus = ring = None
+    if a["buses"]:
+        bus_types = [t for t, vt in pool.vtypes.items() if 'vClass="bus"' in vt]
+        bus = BusLines(c, scen.folder, "town05", bus_types[0], type_for=typer.type_for)
+        for i, t in enumerate(pop.types):
+            if t in bus_types:
+                pop.weights[i] = 0
+    if a["ring"]:
+        import sumolib
+
+        from cosim.highway import HighwayTraffic, find_loops
+
+        net = sumolib.net.readNet(str(scen.net_file))
+        loops = find_loops(net)
+        top = max(curve) or 1.0
+        ring = HighwayTraffic(c, loops, lambda s_: daily.target_at(curve, s_) / top,
+                              types=[(t, n) for t, n in pool.per_hour.items() if base.get(t) != "bus"],
+                              type_for=pop.type_for, seed=seed + 3,
+                              lengths={e: net.getEdge(e).getLength() for lp in loops for e in lp}, policy=sumo.policy)
+        ring.protected = im.protected
+        ring.setup()
+
+    # what is measured: lane subscriptions (sent back with each step, no extra round trips)
+    lane_vars = [tc.LAST_STEP_VEHICLE_NUMBER, tc.LAST_STEP_VEHICLE_HALTING_NUMBER, tc.LAST_STEP_MEAN_SPEED,
+                 tc.LAST_STEP_OCCUPANCY]
+    for n in nodes:
+        for ln in n["lanes"]:
+            c.lane.subscribe(ln, lane_vars)
+    links = {}  # node index -> (tls, [link indices of its lanes])
+    for j, n in enumerate(nodes):
+        cl = c.trafficlight.getControlledLinks(n["tls"])
+        idx = [i for i, group in enumerate(cl) if any(lk[0] in n["lanes"] for lk in group)]
+        links[j] = (n["tls"], idx)
+
+    N = len(nodes)
+    dt = a["dt"]
+    sod0 = a["start_hour"] * 3600.0
+    t_start = sumo.time
+
+    def sod_at(t):
+        return (sod0 + (t - t_start) * a["clock_speed"]) % 86400.0
+
+    pop.add(int(pop.target(sod_at(t_start))), anywhere=True)
+    end = t_start + 60.0 * (a["minutes"] + a["warmup"])
+    keep_from = t_start + 60.0 * a["warmup"]
+    acc = np.zeros((5, N))
+    nsamp = 0
+    rows = {k: [] for k in ("t", "tod", "dem", "dem_at", "halt", "veh", "speed", "occ", "green")}
+    k = 0
+    win_end = keep_from + dt
+    cur = None
+    while sumo.time < end:
+        cur = sumo.step()
+        k += 1
+        sod = sod_at(cur.time)
+        pop.step(cur.vehicles, sod, lambda vid, v: not im.protected(vid) and not vid.startswith("pt_"))
+        if ring is not None and k % 4 == 0:
+            ring.step(cur.vehicles, sod, set(c.simulation.getPendingVehicles()))
+        if bus is not None and k % 2 == 0:
+            bus.step(cur.time, sod / 3600.0)
+            for vid in [v for v in cur.vehicles if v.startswith("pt_")]:
+                try:
+                    route, idx = c.vehicle.getRoute(vid), c.vehicle.getRouteIndex(vid)
+                except Exception:  # noqa: BLE001
+                    continue
+                if idx >= len(route) - 3:
+                    bus.next_lap(vid, idx, route)
+        im.step(cur.time, cur.vehicles, cur.tls)
+        if int(cur.time * 2) % 10 == 0:  # every 5 s, as the viewer
+            im.unjam(cur.time, cur.vehicles)
+        if cur.time < keep_from or k % 2:
+            continue
+        subs = c.lane.getAllSubscriptionResults()
+        for j, n in enumerate(nodes):
+            veh = halt = occ = sp = 0.0
+            for ln in n["lanes"]:
+                r = subs.get(ln, {})
+                veh += r.get(tc.LAST_STEP_VEHICLE_NUMBER, 0)
+                halt += r.get(tc.LAST_STEP_VEHICLE_HALTING_NUMBER, 0)
+                occ += r.get(tc.LAST_STEP_OCCUPANCY, 0.0)   # already a fraction (checked: 0.66 for 77 % covered)
+                sp += r.get(tc.LAST_STEP_MEAN_SPEED, 0.0)
+            nl = max(len(n["lanes"]), 1)
+            tls, idx = links[j]
+            st = cur.tls.get(tls, "")
+            green = (sum(st[i] in "Gg" for i in idx if i < len(st)) / len(idx)) if idx and st else math.nan
+            acc[:, j] += (halt, veh, sp / nl, occ / nl, green)
+        nsamp += 1
+        if cur.time >= win_end - 1e-6:
+            m = acc / max(nsamp, 1)
+            rows["t"].append(cur.time)
+            rows["tod"].append(sod)
+            rows["dem"].append(daily.demand_factor(sod / 3600.0) * a["scale"])
+            rows["dem_at"].append([daily.demand_factor(((sod + h * a["clock_speed"]) % 86400) / 3600.0) * a["scale"]
+                                   for h in HORIZONS_S])
+            for name, i in (("halt", 0), ("veh", 1), ("speed", 2), ("occ", 3), ("green", 4)):
+                rows[name].append(m[i].copy())
+            acc[:] = 0.0
+            nsamp = 0
+            win_end += dt
+    def stuck_one(v):  # waiting at a red or in a jam, not at a planned stop (deliveries, bus stops)
+        try:
+            return (not v.startswith("pt_") and c.vehicle.getWaitingTime(v) > STUCK_S
+                    and not c.vehicle.isStopped(v))
+        except Exception:  # noqa: BLE001 - already gone
+            return False
+
+    stuck_ids = [v for v in (cur.vehicles if cur else {}) if stuck_one(v)]
+    stuck = len(stuck_ids)
+    where = {}
+    for v in stuck_ids:
+        try:
+            ln = c.vehicle.getLaneID(v)
+            where[ln] = where.get(ln, 0) + 1
+        except Exception:  # noqa: BLE001
+            pass
+    vehicles_end = len(cur.vehicles) if cur else 0
+    sumo.close()
+    T = len(rows["t"])
+    arr = {k_: np.asarray(v, dtype=np.float32) for k_, v in rows.items()}
+    np.savez_compressed(Path(out_dir) / "runs" / f"seed{seed}.npz", t=arr["t"], tod_s=arr["tod"], demand=arr["dem"],
+                        demand_at=arr["dem_at"].reshape(T, len(HORIZONS_S)),
+                        **{n_: arr[n_].reshape(T, N) for n_ in ("halt", "veh", "speed", "occ", "green")})
+    return dict(seed=seed, steps=T, wall_s=round(time.time() - t_wall), vehicles_end=vehicles_end,
+                stuck_over_300s=stuck, stuck_lanes=dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
+                gridlock=stuck > 50, incidents=len(im.done) + len(im.incidents))
+
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT,
+                              timeout=10).stdout.strip()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seeds", required=True)
+    ap.add_argument("--minutes", type=float, default=30.0, help="SUMO minutes kept per run (after the warm-up)")
+    ap.add_argument("--warmup", type=float, default=5.0, help="SUMO minutes dropped at the start")
+    ap.add_argument("--start-hour", type=float, default=6.0)
+    ap.add_argument("--clock-speed", type=float, default=60.0)
+    ap.add_argument("--dt", type=float, default=30.0)
+    ap.add_argument("--controller", default="coordinated")
+    ap.add_argument("--scale", type=float, default=1.0, help="multiplies the day's vehicle curve")
+    ap.add_argument("--accidents", action="store_true")
+    ap.add_argument("--careless-share", type=float, default=None)
+    ap.add_argument("--no-buses", dest="buses", action="store_false")
+    ap.add_argument("--no-ring", dest="ring", action="store_false")
+    ap.add_argument("--junction-blocker", type=float, default=60.0,
+                    help="SUMO --ignore-junction-blocker (60 as agents_final_jb; 0 = off)")
+    ap.add_argument("--graph", default=str(ROOT / "out" / "goflow_prediction" / "graph"))
+    ap.add_argument("--jobs", type=int, default=2)
+    ap.add_argument("--port", type=int, default=8930)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args(argv)
+    out = Path(args.out)
+    if out.exists():
+        print(f"{out} exists: results are never overwritten")
+        return 1
+    g = Path(args.graph)
+    nodes = json.loads((g / "nodes.json").read_text(encoding="utf-8"))
+    (out / "runs").mkdir(parents=True)
+    shutil.copy(g / "nodes.json", out / "nodes.json")
+    shutil.copy(g / "distance.csv", out / "distance.csv")
+    a = vars(args).copy()
+    seeds = seeds_arg(args.seeds)
+    results = []
+    with ProcessPoolExecutor(max_workers=args.jobs) as ex:
+        futs = {ex.submit(one_run, s, a, nodes, str(out), args.port + i): s for i, s in enumerate(seeds)}
+        for f in as_completed(futs):
+            try:
+                r = f.result()
+            except Exception as e:  # noqa: BLE001 - one failed run is reported, the others go on
+                r = dict(seed=futs[f], error=f"{type(e).__name__}: {e}")
+            results.append(r)
+            print(json.dumps(r), flush=True)
+    good = sorted((r for r in results if "error" not in r), key=lambda r: seeds.index(r["seed"]))
+    (out / "runs.json").write_text(json.dumps(results, indent=1), encoding="utf-8")
+    if not good:
+        print("no run finished")
+        return 2
+    parts = [np.load(out / "runs" / f"seed{r['seed']}.npz") for r in good]
+    T = [len(p["t"]) for p in parts]
+    meta = dict(dt_s=args.dt, horizons_s=list(HORIZONS_S), source="exact", controller=args.controller,
+                clock_speed=args.clock_speed, start_hour=args.start_hour, scale=args.scale, minutes=args.minutes,
+                warmup=args.warmup, accidents=args.accidents, careless_share=args.careless_share, buses=args.buses,
+                ring=args.ring, junction_blocker=args.junction_blocker, git_commit=git_commit(),
+                tool="tools/goflow_prediction_dataset.py", runs=good)
+    np.savez_compressed(
+        out / "dataset.npz", nodes=np.array([n["node"] for n in nodes]),
+        storage=np.array([n["storage"] for n in nodes], dtype=np.float64),
+        t=np.concatenate([p["t"] for p in parts]).astype(np.float64),
+        run=np.concatenate([np.full(n_, i) for i, n_ in enumerate(T)]),
+        seed=np.concatenate([np.full(n_, r["seed"]) for n_, r in zip(T, good)]),
+        tod_s=np.concatenate([p["tod_s"] for p in parts]), demand=np.concatenate([p["demand"] for p in parts]),
+        demand_at=np.concatenate([p["demand_at"] for p in parts]), meta=json.dumps(meta),
+        **{c_: np.concatenate([p[c_] for p in parts]) for c_ in ("halt", "veh", "speed", "occ", "green")})
+    print(f"[ok] {out / 'dataset.npz'}: {len(good)} runs, {sum(T)} steps x {len(nodes)} approaches")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

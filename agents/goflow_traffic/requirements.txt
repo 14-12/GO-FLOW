@@ -2,4 +2,6 @@
 numpy==2.1.3
 pandas==3.0.0
 xgboost==3.2.0
+# XGBRegressor (her predictor's class) needs scikit-learn; her pyproject does not list it
+scikit-learn>=1.5
 pytest==8.4.2

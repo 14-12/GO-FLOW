@@ -13,6 +13,7 @@ Dataset file (`.npz`, written by tools/goflow_prediction_dataset.py, one or seve
     halt, veh, speed, occ, green   [T, N]   means over the step; NaN = not measured (camera mode: speed, occ)
     meta       json string: dt_s, horizons_s, source, controller, clock_speed, scale, git_commit, ...
     goflow_pred_occ [T, N]  optional: GO-FLOW's occupancy forecast made at t (only from her real model)
+    goflow_state    [T, N]  optional: her traffic_state at t (goflow_traffic.export)
 
 Graph file: `distance.csv` with columns from,to,cost (road metres, i -> j = traffic goes from i to j), node ids as in
 `nodes`. Same kernel as the PEMS08 loader of DSO4: w = exp(-(d / sigma)^2), sigma = std of the distances.
@@ -43,6 +44,7 @@ class Dataset:
     x: dict                  # channel -> [T, N]
     meta: dict
     goflow: np.ndarray | None = None   # [T, N]
+    goflow_state: np.ndarray | None = None   # [T, N] her traffic_state ("" = none yet)
 
     @property
     def fill(self) -> np.ndarray:
@@ -70,7 +72,8 @@ def load_dataset(path) -> Dataset:
                  t=z["t"].astype(np.float64), run=z["run"].astype(np.int64), seed=z["seed"].astype(np.int64),
                  tod_s=z["tod_s"].astype(np.float64), demand=z["demand"].astype(np.float64),
                  demand_at=z["demand_at"].astype(np.float64), x=x, meta=meta,
-                 goflow=z["goflow_pred_occ"].astype(np.float64) if "goflow_pred_occ" in z.files else None)
+                 goflow=z["goflow_pred_occ"].astype(np.float64) if "goflow_pred_occ" in z.files else None,
+                 goflow_state=z["goflow_state"].astype(str) if "goflow_state" in z.files else None)
     check_dataset(ds)
     return ds
 

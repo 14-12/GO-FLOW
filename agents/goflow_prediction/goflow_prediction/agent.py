@@ -259,9 +259,17 @@ def obs_from_dataset(ds, i: int, seq: int, goflow_states=None) -> dict:
            "demand_at": {h: float(ds.demand_at[i, k]) for k, h in enumerate(tb.steps)}, "nodes": nodes}
     if ds.goflow is not None:
         msg["goflow"] = {n: {"pred_occ": None if not np.isfinite(ds.goflow[i, j]) else float(ds.goflow[i, j]),
-                             "traffic_state": None if goflow_states is None else goflow_states[i][j]}
+                             "traffic_state": _state(goflow_states, ds, i, j)}
                          for j, n in enumerate(ds.nodes)}
     return msg
+
+
+def _state(override, ds, i, j):
+    src = override if override is not None else ds.goflow_state
+    if src is None:
+        return None
+    v = src[i][j]
+    return str(v) if v else None
 
 
 def replay(agent: ForecastAgent, ds, seeds, goflow_states=None):
