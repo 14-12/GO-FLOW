@@ -37,10 +37,32 @@ class TimeBase:
 
 @dataclass(frozen=True)
 class AlertRules:
-    full: float = FULL
+    full: float = FULL             # fixed thresholds: used only when a model has no per-approach thresholds
     low: float = LOW
     cooldown_s: float = 120.0      # no new alert on the same approach for this long
     eval_window: int = 12          # matured forecasts used by the self-evaluation (per horizon)
+
+
+# Per-approach thresholds (decision A, 6 Nov 2026). At the viewer's demand a queue almost never fills 85 % of a whole
+# approach (D2_x1_coord_v1: 3 approaches of 55, no onset in the dev seeds), so "full" is relative to each approach:
+# its fill exceeded only 1 % of the time on the TRAIN seeds (GO-FLOW's own method: quantiles of the train data).
+FULL_Q = 0.99                      # "unusually long queue" for this approach
+LOW_Q = 0.90                       # "still flowing": under what this approach exceeds 10 % of the time
+MIN_QUEUE_VEH = 3.0                # never "unusually long" under 3 queued vehicles (nearly empty approaches)
+
+
+def approach_thresholds(fill, storage, rows):
+    """-> (full [N], low [N]) from the train rows only. full >= MIN_QUEUE_VEH / storage; low < full."""
+    import numpy as np
+
+    f = fill[rows]
+    with np.errstate(all="ignore"):
+        q_full = np.nanquantile(f, FULL_Q, axis=0)
+        q_low = np.nanquantile(f, LOW_Q, axis=0)
+    floor = MIN_QUEUE_VEH / np.maximum(storage, 1.0)
+    full = np.fmax(np.nan_to_num(q_full, nan=1.0), floor)
+    low = np.minimum(np.nan_to_num(q_low, nan=0.0), 0.7 * full)
+    return full, low
 
 
 @dataclass

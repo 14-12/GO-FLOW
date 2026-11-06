@@ -184,3 +184,26 @@ def test_goflow_model_and_confirmation(toy, tmp_path):
         out_ = agent.step(msg)
     assert out_["forecast"]["chosen"]["60"] in ("last_value", "cycle_persistence", "lgbm_gf")
     assert "lgbm_gf" not in agent._available()
+
+
+def test_per_approach_thresholds_from_train(trained):
+    th = json.loads((trained / "thresholds.json").read_text(encoding="utf-8"))
+    assert th["train_seeds"] == list(range(101, 107))
+    for n in NODES:
+        assert th["full"][n] >= 3 / 20.0 - 1e-9          # never under 3 queued vehicles (storage 20)
+        assert th["low"][n] < th["full"][n]
+    agent = ForecastAgent([ModelBundle(trained)])
+    assert np.allclose(agent.full, [th["full"][n] for n in NODES])
+
+
+def test_event_metrics_scores_each_alert_in_its_own_run():
+    from goflow_prediction.metrics import event_metrics
+
+    t = np.array([30.0, 60, 90, 30, 60, 90])            # two runs with the same SUMO times
+    run = np.array([0, 0, 0, 1, 1, 1])
+    fill = np.array([[0.1], [0.1], [0.1], [0.1], [0.9], [0.9]])
+    om = np.zeros((6, 1), bool)
+    alert_run0 = {"t": 30.0, "node": "a-1", "horizon_s": 60, "row": 0}
+    alert_run1 = {"t": 30.0, "node": "a-1", "horizon_s": 60, "row": 3}
+    assert event_metrics([alert_run0], om, t, ["a-1"], fill, 0.85, 30.0, run=run)["precision"] == 0.0
+    assert event_metrics([alert_run1], om, t, ["a-1"], fill, 0.85, 30.0, run=run)["precision"] == 1.0

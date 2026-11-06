@@ -7,6 +7,7 @@ Writes into --out (which must not exist yet: results are never overwritten):
     lgbm_<h>s.txt        one model per horizon
     adjacency.npy        the graph the features used (so live use needs no SUMO files)
     storage.npy, nodes.json
+    thresholds.json      per-approach alert thresholds (train seeds only)
     model_card.json      version, time base, seeds, features, dataset, git commit, dev metrics
     dev_metrics.csv      model and baselines per horizon on the dev seeds
 """
@@ -22,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from .baselines import DemandHA, cycle_persistence, last_value
-from .config import ModelCard
+from .config import ModelCard, approach_thresholds
 from .data import anchors, load_dataset, load_graph
 from .features import build, gather, neighbor_mats
 from .graphs import get_graph
@@ -111,6 +112,12 @@ def train(dataset, graph, out, train_seeds, dev_seeds, graph_kind="real", use_no
     table.to_csv(os.path.join(out, "dev_metrics.csv"), index=False)
     np.save(os.path.join(out, "adjacency.npy"), adj)
     np.save(os.path.join(out, "storage.npy"), ds.storage)
+    full, low = approach_thresholds(fill, ds.storage, rows_tr)
+    with open(os.path.join(out, "thresholds.json"), "w", encoding="utf-8") as f:
+        json.dump({"rule": "per approach: full = Q99 of fill on the train seeds (>= 3 vehicles), "
+                   "low = Q90 (< 0.7 full)", "train_seeds": list(train_seeds),
+                   "full": dict(zip(ds.nodes, map(float, full))), "low": dict(zip(ds.nodes, map(float, low)))},
+                  f, indent=1)
     with open(os.path.join(out, "nodes.json"), "w", encoding="utf-8") as f:
         json.dump(ds.nodes, f)
     card = ModelCard(version=version or os.path.basename(os.path.normpath(out)), timebase=asdict(tb),

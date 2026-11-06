@@ -5,7 +5,8 @@ As in DSO4's agent/core.py, but online and on seconds:
 2. self_evaluate : every candidate's absolute error on forecasts whose target has now been observed, over the last
                    `eval_window` matured forecasts per horizon; the best candidate per horizon is used;
 3. decide        : forecast fill per approach and horizon;
-4. act           : an alert for an approach still under `low` now and forecast at `full` or more:
+4. act           : an alert for an approach still under its `low` now and forecast at its `full` or more
+                   (per approach, from the model's thresholds.json; fixed 0.6 / 0.85 for older models):
                    `propagation` when a downstream approach is already full (the queue spills back), else
                    `spillback_soon`; cooldown per approach. With GO-FLOW on, an alert also needs her state to be
                    congested or severe (the PEMS08 confirmation rule); without her answer it goes out unconfirmed.
@@ -45,6 +46,13 @@ class ModelBundle:
         self.use_goflow = bool(self.card.get("use_goflow", False))
         self.models = {h: lgb.Booster(model_file=os.path.join(folder, f"lgbm_{h}s.txt")) for h in self.tb.steps}
         self.version = self.card["version"]
+        th = os.path.join(folder, "thresholds.json")
+        self.thresholds = None
+        if os.path.isfile(th):
+            with open(th, encoding="utf-8") as f:
+                t = json.load(f)
+            self.thresholds = (np.array([t["full"][n] for n in self.nodes]),
+                               np.array([t["low"][n] for n in self.nodes]))
         self.name = "lgbm_gf" if self.use_goflow else "lgbm"
 
 
@@ -64,6 +72,11 @@ class ForecastAgent:
         self.down = [np.flatnonzero(m0.adj[k] > 0) for k in range(self.N)]   # k -> j: traffic from k enters j
         self.down = [d[d != k] for k, d in enumerate(self.down)]
         self.rules = rules or AlertRules()
+        if m0.thresholds is not None and rules is None:   # per approach (decision A)
+            self.full, self.low = m0.thresholds
+        else:                                            # fixed (older models, or rules given)
+            self.full = np.full(self.N, self.rules.full)
+            self.low = np.full(self.N, self.rules.low)
         self.keep = max(self.tb.n_in, self.tb.cycle_steps + 1)
         self.reset()
 
@@ -185,11 +198,11 @@ class ForecastAgent:
         r = self.rules
         now = self.buf[-1]["fill"]
         states = self.buf[-1]["goflow_state"]
-        full_now = np.nan_to_num(now, nan=-1) >= r.full
+        full_now = np.nan_to_num(now, nan=-1) >= self.full
         alerts = []
         for h in self.tb.steps:
             p = pred[h]
-            cand = (np.nan_to_num(p, nan=-1) >= r.full) & (np.nan_to_num(now, nan=9) < r.low)
+            cand = (np.nan_to_num(p, nan=-1) >= self.full) & (np.nan_to_num(now, nan=9) < self.low)
             for j in np.flatnonzero(cand):
                 if t - self.last_alert[j] < r.cooldown_s:
                     continue
@@ -283,7 +296,7 @@ def replay(agent: ForecastAgent, ds, seeds, goflow_states=None):
             prev_run = ds.run[i]
         out = agent.step(obs_from_dataset(ds, i, seq, goflow_states))
         seq += 1
-        alerts += out["alerts"]
+        alerts += [dict(a, row=int(i)) for a in out["alerts"]]   # the dataset row (offline scoring only)
         if out["forecast"] is not None:
             forecasts[int(i)] = out["forecast"]
     return alerts, forecasts

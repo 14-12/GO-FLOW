@@ -32,29 +32,45 @@ def onsets(fill: np.ndarray, run: np.ndarray, full: float, low: float, hold: int
 
 
 def event_metrics(alerts: list[dict], onset_mask: np.ndarray, t: np.ndarray, nodes: list[str], fill: np.ndarray,
-                  full: float, dt_s: float) -> dict:
-    """alerts: {t, node, horizon_s} (SUMO s). An alert is right if its approach reaches `full` within its horizon
-    plus one step. An onset is caught if an alert on its approach came within the largest horizon before it."""
-    idx_t = {float(v): i for i, v in enumerate(t)}
+                  full, dt_s: float, rows=None, run: np.ndarray | None = None) -> dict:
+    """alerts: {t, node, horizon_s, row} (SUMO s). An alert is right if its approach reaches its `full` (a number,
+    or one per approach) within its horizon plus one step, in the same run. An onset is caught if an alert on its
+    approach came within the largest horizon before it. `rows`: the dataset rows evaluated (for the hours)."""
+    full = np.broadcast_to(np.asarray(full, dtype=float), (len(nodes),))
     col = {n: j for j, n in enumerate(nodes)}
     right = 0
     for a in alerts:
-        i, j = idx_t.get(float(a["t"])), col[a["node"]]
+        i, j = a.get("row"), col[a["node"]]
+        if i is None:   # older callers: match the time (only safe on one run)
+            i = int(np.flatnonzero(np.isclose(t, float(a["t"])))[0])
         k = int(round(a["horizon_s"] / dt_s)) + 1
-        seg = fill[i + 1:i + 1 + k, j] if i is not None else np.array([])
-        right += bool(np.nanmax(seg, initial=-1) >= full)
+        stop = i + 1 + k
+        if run is not None:
+            same = np.flatnonzero(run[i + 1:stop] == run[i])
+            stop = i + 1 + (same[-1] + 1 if len(same) else 0)
+        seg = fill[i + 1:stop, j]
+        right += bool(np.nanmax(seg, initial=-1) >= full[j])
     hmax = max([a["horizon_s"] for a in alerts], default=0)
     by_node: dict[int, list[float]] = {}
     for a in alerts:
         by_node.setdefault(col[a["node"]], []).append(float(a["t"]))
+    by_node_rows: dict[int, list[int]] = {}
+    for a in alerts:
+        if a.get("row") is not None:
+            by_node_rows.setdefault(col[a["node"]], []).append(int(a["row"]))
     leads, caught = [], 0
     ti, tj = np.nonzero(onset_mask)
     for i, j in zip(ti, tj):
-        ts = [x for x in by_node.get(j, []) if t[i] - hmax - dt_s <= x < t[i]]
+        if run is not None and by_node_rows:
+            rs = [r for r in by_node_rows.get(j, []) if run[r] == run[i] and t[i] - hmax - dt_s <= t[r] < t[i]]
+            ts = [t[r] for r in rs]
+        else:
+            ts = [x for x in by_node.get(j, []) if t[i] - hmax - dt_s <= x < t[i]]
         if ts:
             caught += 1
             leads.append(t[i] - min(ts))
-    hours = (len(t) * dt_s) / 3600.0
+    n_rows = len(t) if rows is None else len(rows)
+    hours = (n_rows * dt_s) / 3600.0
     n_junctions = len({n.split("-")[0] for n in nodes}) or 1
     return dict(alerts=len(alerts), precision=right / len(alerts) if alerts else np.nan,
                 onsets=int(onset_mask.sum()), caught=caught,

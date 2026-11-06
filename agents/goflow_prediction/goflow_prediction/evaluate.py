@@ -18,7 +18,6 @@ import pandas as pd
 
 from .agent import ForecastAgent, ModelBundle, replay
 from .baselines import cycle_persistence, last_value
-from .config import AlertRules
 from .data import load_dataset
 from .leakage import TestGuard
 from .metrics import event_metrics, masked_metrics, onsets
@@ -56,10 +55,11 @@ def evaluate(model_dirs, dataset, seeds, out, open_test=None, lock_path=None):
         for name, p in (("agent", agent_pred), ("last_value", last_value(fill, tt)),
                         ("cycle_persistence", cycle_persistence(fill, tt, k, tb, ds.run))):
             table.append(dict(model=name, horizon_s=int(h), **masked_metrics(p, truth)))
-    rules = AlertRules()
     sel = np.isin(ds.seed, list(seeds))
-    om = onsets(fill, ds.run, rules.full, rules.low) & sel[:, None]
-    ev = event_metrics(alerts, om, ds.t, ds.nodes, fill, rules.full, tb.dt_s)
+    full, low = agent.full, agent.low      # the thresholds the agent alerts with
+    om = onsets(fill, ds.run, full, low) & sel[:, None]
+    ev = event_metrics(alerts, om, ds.t, ds.nodes, fill, full, tb.dt_s, rows=np.flatnonzero(sel), run=ds.run)
+    ev["thresholds"] = "per approach (thresholds.json)" if bundles[0].thresholds is not None else "fixed 0.85 / 0.6"
     os.makedirs(out)
     pd.DataFrame(table).to_csv(os.path.join(out, "forecast_metrics.csv"), index=False)
     with open(os.path.join(out, "events.json"), "w", encoding="utf-8") as f:
