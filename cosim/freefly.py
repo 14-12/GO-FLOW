@@ -197,6 +197,12 @@ def parse_args(argv=None):
     ap.add_argument("--clock-speed", type=float, default=None,
                     help="game seconds per real second (default cosim/daily.GAME_SPEED, 60: a day in 24 min); "
                          "1 = real time, the light stays as it is during a recording")
+    ap.add_argument("--crash-focus", type=float, default=0.0, metavar="P",
+                    help="with --record-clips (option A of the GO-FLOW delivery, 6 Nov): a car heading into a place a "
+                         "recorded camera sees clearly (within 30 m, whole in the picture) becomes careless with this "
+                         "chance, and careless drivers there look away more often (cosim/incidents.py FOCUS_*). The "
+                         "town's careless share is unchanged; each incident says whether the focus had a hand in it "
+                         "(crash_source). 0: off")
     ap.add_argument("--max-incidents", type=int, default=None,
                     help="incidents open at a time at most (cosim/incidents.py MAX_ACTIVE, 3); the scenes' people, "
                          "police cars and recovery trucks are made ready for that many")
@@ -3058,6 +3064,11 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
         orig = ff.in_view
         ff.in_view = lambda x, y: orig(x, y) or rec.near_recorded(x, y)  # nobody appears or vanishes on film
         record_eyes(ff, rec)
+        if args.crash_focus > 0:  # (6 Nov) option A: crashes made likelier where the recorded cameras see clearly
+            ff.incidents.focus = cr.Focus([(n, rec.recs[rec.index_of(n)].spec) for n in names], rec.w, rec.h, rec.fov,
+                                          ff.scen.frame.to_carla_xy)
+            ff.incidents.focus_p = args.crash_focus
+            log.info("clips: crash focus %.2f on %s", args.crash_focus, names)
         st.update(rec=rec, out=out, t0=now, last=0.0, incs={}, seen={}, dynamic=0, stamp=stamp,
                   sim0=ff.sim_now, game0=clock.game_s)
         cr.write_json(out / "run.json", {
@@ -3103,7 +3114,9 @@ def demo_record_clips(ff, st: dict, args, clock) -> bool:
                     speeding=[w.vid for w in inc.wrecks if w.speeding],
                     # (3 Nov) the moment the cars touched, as drawn (t0 is the SUMO step that saw it, up to 0.5 s later),
                     # and the police: when they were due, sent, on scene (None: not yet / never), and how they got there
-                    t_contact=inc.t_contact, police=dict(inc.police_record))
+                    t_contact=inc.t_contact, police=dict(inc.police_record),
+                    # (6 Nov) "camera focus": option A had a hand in it (its rate in front of the cameras is not real)
+                    crash_source=inc.crash_source)
         for w in inc.wrecks:  # the seconds each recorded camera has a wreck in its picture
             if w.removed:
                 continue

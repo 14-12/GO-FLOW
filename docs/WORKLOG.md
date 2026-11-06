@@ -1501,3 +1501,57 @@ four cameras):
 * no errors in the viewer or the pose process (118 reports, 0 errors); CARLA 8.1 to 12.9 pictures a second, median
   9.3, as before;
 * one recovery truck was held up on its way and replaced.
+
+## Option A: crashes where the cameras see them (6 Nov)
+
+The GO-FLOW team asked for 30 crashes or more clearly visible to a fixed camera (2 Nov). At the town's normal share of
+careless drivers that would take about 100 recording runs. Of the three ways discussed, the project owner chose A:
+the town's careless share stays the normal 10 %, and only where a recorded camera sees clearly are crashes made
+likelier. The normal traffic elsewhere stays as it is.
+
+**How.** `cosim/clip_recorder.Focus` says whether a car standing at a point would be whole in a camera's picture,
+6 to 30 m ahead, at least 24 pixels from its edge (the team's "within about 30 m and fully in frame"). While the
+cameras record (`--crash-focus P`), `IncidentManager._focus_step` looks at every car within 80 m of a camera, once a
+step:
+
+* it works out where the car would hit: the back of the car ahead if one is within 40 m, else where the car will be in
+  1.5 and 3 s;
+* if that point is in a camera's clear view, the car is made careless with chance P (decided once per car, only
+  while a new incident may start, from a generator of its own so the town's own draws stay as they were);
+* a careless driver there looks away 6 times as often (`FOCUS_BOOST`). A car made careless this way looks away only
+  there; elsewhere it drives like everyone else.
+
+Whether a crash follows, and how, is still the traffic's. Each incident says whether the focus had a hand in it
+(`crash_source`: "camera focus" or "natural", in the snapshot, `incidents.json` and `tools/check_accidents.py`).
+**Crashes in front of the cameras are far more frequent than in reality: never read a rate from these recordings.**
+
+**Measured** (`tools/check_accidents.py --ring --buses --focus-cams "..." --crash-focus P`, SUMO alone, seeds 7 and 11,
+60 min each; "seen clearly" = a wreck where it came to rest is in a camera's clear view):
+
+| Cameras | P | Crashes | Seen clearly | Cars standing over 2 min, not part of an incident |
+| --- | --- | --- | --- | --- |
+| Ring road (2014-2, 2014-3, 2328-2, 2328-1) | 0 (natural) | 6 | 1 | 22 |
+| Ring road | 0.5 | 30 | 24 | 123 |
+| Ring road | 1 | 30 | 21 | 156 |
+| Junctions (1126-1, 1427-3, 838-2, 979-4) | 0 | 6 | 0 | 22 |
+| Junctions | 0.5 | 20 | 11 | 130 |
+| Junctions | 1 | 31 | 16 | 111 |
+| Unseen: 2014-1, 2328-3, 1292-1, 2086-1 | 0.5 | 14 | 6 | 76 |
+| Unseen: 2240-1, 1882-1, 1126-2, 53-1 | 0.5 | 14 | 5 | 42 |
+
+A first version left the cars made careless careless for their whole trip and looked only at where a car itself
+would be: 40 crashes on the ring road at P = 0.5 but only 13 seen clearly. Aiming at where it would hit, and letting
+it look away only in front of the camera, made it 24 of 30.
+
+The cost: more incidents mean more queues around them (cars standing over 2 minutes: 22 → 42 to 156). The normal
+traffic far from the cameras is as before, but the stretch before a crash may show another incident's queue. Clips of
+normal traffic for the team are better taken from runs without the focus (as the v2 training runs of 31 Oct).
+
+**The recordings.** `tools\record_stage2.bat`, P = 0.5, six 50-minute runs with four cameras each:
+* train: the ring road at 09:00 and 17:30, junctions at 12:00;
+* test: two sets of cameras never used before (15:00, 16:30), and the ring road at 10:30.
+
+The estimate from the table is about 38 crashes seen clearly. `record_stage2.bat trial` records 25 minutes on the ring
+road first, to check the yield in CARLA.
+
+Tests: `tests/test_crash_focus.py` (5).

@@ -69,6 +69,63 @@ def near_view(spec: CamSpec, fov: float, x: float, y: float, reach_m: float = 14
     return abs(ang) <= fov / 2 + 15.0
 
 
+# (6 Nov) Option A of the GO-FLOW crash delivery: where a crash is "clearly visible" to a camera (the team's request,
+# 2 Nov: the wreck within about 30 m and fully in the picture). A vehicle's middle and both its ends project into the
+# picture at least FOCUS_EDGE_PX from its edge, FOCUS_MIN_M to FOCUS_MAX_M ahead.
+FOCUS_MAX_M = 30.0
+FOCUS_MIN_M = 6.0
+FOCUS_EDGE_PX = 24
+FOCUS_HALF_LEN_M = 2.4
+
+
+class Focus:
+    """The places clearly visible to some cameras (option A, cosim/incidents.IncidentManager.focus): called with a SUMO
+    point and the heading there (degrees, SUMO: 0 north, clockwise), it tells whether a car standing there would be
+    whole in a camera's picture, within FOCUS_MAX_M; `seen_by` names that camera. to_carla: SUMO (x, y) -> CARLA."""
+
+    def __init__(self, cams: list[tuple[str, CamSpec]], width: int, height: int, fov: float, to_carla,
+                 max_m: float = FOCUS_MAX_M, min_m: float = FOCUS_MIN_M):
+        self.cams = list(cams)
+        self.w, self.h, self.fov = width, height, fov
+        self.to_carla = to_carla
+        self.max_m, self.min_m = max_m, min_m
+
+    def seen_by(self, x: float, y: float, angle: float | None = None) -> str | None:
+        cx, cy = self.to_carla(x, y)
+        pts = [(cx, cy)]
+        if angle is not None:  # SUMO heading -> CARLA (x east, y south): the car's two ends
+            a = math.radians(angle)
+            hx, hy = self.to_carla(x + math.sin(a), y + math.cos(a))
+            ux, uy = hx - cx, hy - cy
+            n = math.hypot(ux, uy) or 1.0
+            ux, uy = ux / n, uy / n
+            pts += [(cx + ux * FOCUS_HALF_LEN_M, cy + uy * FOCUS_HALF_LEN_M),
+                    (cx - ux * FOCUS_HALF_LEN_M, cy - uy * FOCUS_HALF_LEN_M)]
+        for name, spec in self.cams:
+            dx, dy = cx - spec.x, cy - spec.y
+            if math.hypot(dx, dy) > self.max_m + 3.0:
+                continue
+            ang = (math.degrees(math.atan2(dy, dx)) - spec.yaw + 180.0) % 360.0 - 180.0
+            if abs(ang) > self.fov / 2 + 5.0:
+                continue
+            z = spec.z - CAM_HEIGHT_M + WRECK_Z_M
+            px, depth = project(np.array([[px_, py_, z] for px_, py_ in pts]), spec, self.w, self.h, self.fov)
+            if not all(self.min_m <= float(d) <= self.max_m for d in depth):
+                continue
+            e = FOCUS_EDGE_PX
+            if all(e <= float(u) <= self.w - e and e <= float(v) <= self.h - e for u, v in px):
+                return name
+        return None
+
+    def __call__(self, x: float, y: float, angle: float | None = None) -> bool:
+        return self.seen_by(x, y, angle) is not None
+
+    def near(self, x: float, y: float, reach_m: float) -> bool:
+        """SUMO (x, y) within reach_m of a camera (a cheap test before the others)."""
+        cx, cy = self.to_carla(x, y)
+        return any(math.hypot(cx - spec.x, cy - spec.y) <= reach_m for _, spec in self.cams)
+
+
 def slug(name: str) -> str:
     return "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in name).strip("_")
 

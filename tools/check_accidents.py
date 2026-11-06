@@ -54,6 +54,11 @@ def main(argv=None) -> int:
                     help="no breakdowns, speeders, pile-ups or look-alikes (the incidents before 31 Oct)")
     ap.add_argument("--no-breakdowns", dest="breakdowns", action="store_false")
     ap.add_argument("--no-lookalikes", dest="lookalikes", action="store_false")
+    ap.add_argument("--focus-cams", default="",
+                    help="(6 Nov) cameras (layout names, ';' between) as when recording: crashes they see clearly are "
+                         "counted, and with --crash-focus option A makes them likelier there")
+    ap.add_argument("--crash-focus", type=float, default=0.0, metavar="P",
+                    help="option A's chance (cosim/freefly.py --crash-focus); needs --focus-cams")
     ap.add_argument("--max-incidents", type=int, default=None,
                     help="incidents open at a time at most (cosim/incidents.py MAX_ACTIVE)")
     ap.add_argument("--police-delay", default=None, metavar="MEDIAN[:SPREAD]",
@@ -99,6 +104,17 @@ def main(argv=None) -> int:
         kw["max_active"] = a.max_incidents
     im = IncidentManager(c, scen.net_file, typer, seed=a.seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
+    focus = None
+    if a.focus_cams:  # (6 Nov) option A, measured
+        from cosim.camera_reports import Layout
+        from cosim.clip_recorder import Focus
+
+        lay = Layout.load(ROOT / "out" / "town05_cameras")
+        names = [n.strip() for n in a.focus_cams.split(";") if n.strip()]
+        cams = [(n, lay.cams[lay.names.index(n)].spec) for n in names]
+        focus = Focus(cams, lay.cams[0].width, lay.cams[0].height, lay.cams[0].fov, scen.frame.to_carla_xy)
+        if a.crash_focus > 0:
+            im.focus, im.focus_p = focus, a.crash_focus
     sod = a.hour * 3600
     bus = ring = None
     if a.buses:
@@ -231,6 +247,10 @@ def main(argv=None) -> int:
                      "closed": bool(at(i, "lane closed")), "last_load_s": max((t for t, e in i.events if "loaded onto" in e),
                                                                              default=None),
                      "reopened_s": at(i, "lane reopened"), "t_contact": i.t_contact, "police": dict(i.police_record),
+                     "crash_source": i.crash_source,
+                     # (6 Nov) the cameras of --focus-cams that see a wreck clearly where it came to rest
+                     "seen_clearly_by": sorted({cam for w in i.wrecks if focus is not None
+                                                and (cam := focus.seen_by(w.x, w.y, w.angle)) is not None}),
                      "events": i.events})
     done = [r for r in rows if r["reopened_s"] is not None]
     pol = [r["police"] for r in rows if r["police"]]
@@ -247,6 +267,12 @@ def main(argv=None) -> int:
                                     if p.get("on_scene") is not None and p.get("sent") is not None),
            "police_cars_over_one": sum(1 for p in pol if p.get("cars", 0) > 1),
            "max_incidents": im.max_active,
+           "focus": {"cams": a.focus_cams, "p": a.crash_focus,
+                     "crashes_seen_clearly": sum(1 for r in rows if r["seen_clearly_by"] and r["kind"] != "breakdown"),
+                     "of_them_camera_focus": sum(1 for r in rows if r["seen_clearly_by"] and r["kind"] != "breakdown"
+                                                 and r["crash_source"] == "camera focus"),
+                     "crashes": sum(1 for r in rows if r["kind"] != "breakdown"),
+                     "careless_made_by_focus": im.stats.get("focus_careless", 0)},
            "police_how": {h: sum(1 for p in pol if str(p.get("how")) == h) for h in sorted({str(p.get("how")) for p in pol})},
            "minutes": a.minutes, "hour": a.hour, "wall_s": round(time.time() - t_wall), "stats": im.stats, "near_misses_by_reason": im.near_why,
            "incidents": len(incs), "completed": len(done),

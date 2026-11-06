@@ -199,6 +199,7 @@ town05_freefly.bat
 | `--speeders` | 0.08 | Share of new cars driven 25 to 50 % over the limit (three times as often careless) |
 | `--pileups / --no-pileups`, `--ring-brake-every` | on, 400 | Pile-ups on the ring road; seconds between sudden hard brakings there on average |
 | `--lookalikes / --no-lookalikes` | on | Look-alikes that are not incidents: double-parked delivery vans, buses standing long at a stop |
+| `--crash-focus P` | 0 | With `--record-clips`: a car heading into a place a recorded camera sees clearly (within 30 m, whole in the picture) becomes careless with chance P and looks away there (option A of the GO-FLOW delivery); `crash_source` in `incidents.json` marks those crashes. Never read a crash rate from such a recording |
 | `--max-incidents` | 3 | Incidents open at a time at most (the scenes' people and vehicles are made ready for that many) |
 | `--police-delay MEDIAN[:SPREAD]` | 240:0.5 | Seconds from a crash to the police car being sent: the median and the spread of a log-normal (0: always the median). `6:0` is the response before 3 Nov |
 | `--emergency-every` | 45 | Seconds between ambulance / police runs |
@@ -239,7 +240,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Junction agents: tuning and final evaluation on held-out seeds | `tune_town05_agents.bat`, `eval_town05_agents.bat`, `eval_town05_final.bat`, `eval_town05_ablation.bat` | no |
 | Real camera reports against SUMO's truth (step 2) | `town05_cameras_plan.bat`, `town05_cameras_live.bat`, `town05_cameras_sim.bat` | live: yes |
 | Detector: dataset, fine-tuning, evaluation | `make_dataset_town05.bat`, `train_detector_town05.bat`, `eval_town05_detector.py` | dataset: yes |
-| Labelled traffic-camera video clips | `record_incident_clips.bat`, `record_city_crash_clips.bat`, `record_v2_training.bat` | yes |
+| Labelled traffic-camera video clips | `record_incident_clips.bat`, `record_city_crash_clips.bat`, `record_v2_training.bat`; the second GO-FLOW delivery: `record_stage2.bat` (option A, `trial` for a short first run) | yes |
 | Red-light camera: record a site (both cameras, the controller's log, the simulation's own record), live agent on | `record_enforcement.bat` | yes |
 | Red-light camera: grade the agent on a recording | `eval_redlight.bat out\enforcement\<recording>` | no |
 | Police office: review the cases, issue the notices | `police_office.bat` | no |

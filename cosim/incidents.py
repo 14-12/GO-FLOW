@@ -75,6 +75,20 @@ DISTRACT_PER_S = 1 / 8.0    # a careless driver looks away about every 8 s of dr
 # junction, it goes on at the speed it entered with, and its lapse lasts until it is out, at most this much longer: a
 # crash there happens at the speeds the two had.
 RED_THROUGH_MAX_S = 4.0
+# 6 Nov, option A of the GO-FLOW crash delivery (docs/WORKLOG.md): while cameras record, a car heading into a place
+# one of them sees clearly (`focus`, cosim/clip_recorder.Focus) is made careless with chance `focus_p` (once per car;
+# the town-wide share stays CARELESS_SHARE), and a careless driver there looks away FOCUS_BOOST times as often. Whether
+# a crash follows, and how, is still the traffic's. Each incident says whether the focus had a hand in it
+# (crash_source "camera focus"), so a crash rate in front of the cameras is never read as a real one.
+# Where it would hit: the car ahead, if there is one within FOCUS_LEAD_M, else where its middle will be in
+# FOCUS_AHEAD_S at its speed; only a car whose hit would be in the clear view counts. A car made careless this way
+# looks away only there (elsewhere it drives as the others): a first version left it careless for its whole trip,
+# and 2 crashes of 3 it caused were out of view (tools/check_accidents.py --focus-cams, 6 Nov).
+FOCUS_AHEAD_S = (1.5, 3.0)
+FOCUS_LEAD_M = 40.0
+FOCUS_BOOST = 6.0
+FOCUS_MIN_MS = 3.0
+FOCUS_NEAR_M = 80.0          # cars further than this from every camera are not looked at
 LAPSE_AHEAD = 10.0          # ... ten times as often when the car ahead is slower and close, or the light is red
 MAX_ACTIVE = 3                # (3 Nov: was 2) with the police minutes away an incident stays open 7-10 min, and 2 at a
                               # time held the crashes back: careless share 0.5, ring road and buses, 3 seeds x 60 min
@@ -290,6 +304,7 @@ class Incident:
     police_due: float | None = None  # (3 Nov) when the police are (next) to be sent
     police_record: dict = field(default_factory=dict)  # due, sent, on_scene (SUMO s), how, cars sent
     t_contact: float | None = None   # (3 Nov) the first hit, within the step SUMO saw it (t0 is that step)
+    crash_source: str = "natural"    # (6 Nov) "camera focus": a driver made careless or distracted by option A
     tows: list = field(default_factory=list)
     closed: list = field(default_factory=list)  # (lane, disallowed before)
     open_lane: str | None = None    # the lane traffic passes on (the officer points to it)
@@ -326,6 +341,7 @@ class Distraction:
 
     def __init__(self, vid: str, kind: str, until: float, speed: float):
         self.vid, self.kind, self.until, self.speed = vid, kind, until, speed
+        self.focus = False  # (6 Nov) looked away as it came into a camera's clear view (option A)
         self.blind = False  # (red light) in the junction, going on without braking for who crosses (3 Nov)
 
 
@@ -337,7 +353,7 @@ class IncidentManager:
                  max_active: int = MAX_ACTIVE, cooldown_s: float = COOLDOWN_S, visible=None, sinks=None,
                  breakdown_mean_s: float = BREAKDOWN_MEAN_S, speeder_share: float = SPEEDER_SHARE,
                  pileups: bool = True, lookalikes: bool = True, ring_brake_mean_s: float = RING_BRAKE_MEAN_S,
-                 police_delay_s: float = POLICE_MEDIAN_S, police_spread: float = POLICE_SPREAD):
+                 police_delay_s: float = POLICE_MEDIAN_S, police_spread: float = POLICE_SPREAD, focus_p: float = 0.0):
         import sumolib
 
         self.conn = conn
@@ -387,6 +403,13 @@ class IncidentManager:
         self.police_delay_s = police_delay_s
         self.police_spread = police_spread
         self.police_rng = random.Random(seed * 7919 + 17)
+        # 6 Nov, option A: the cameras' clear views (set by the viewer while recording), from their own generator
+        self.focus = None             # callable (SUMO x, y, angle) -> bool (cosim/clip_recorder.Focus)
+        self.focus_p = focus_p
+        self.focus_rng = random.Random(seed * 104729 + 3)
+        self.focus_seen: set = set()  # cars already decided
+        self.focus_made: set = set()  # cars made careless by it
+        self._approaching: set = set()
         self._before: dict = {}   # the step before's vehicles (where the cars that crash came from: _to_contact)
         self._last: dict = {}
         self._moved: dict = {}    # vid -> SUMO (x, y, angle) once put back to where it touched
@@ -448,6 +471,7 @@ class IncidentManager:
         for vid in [v for v in self.careless if v not in vehicles]:
             self.careless.pop(vid, None)
             self.distracted.pop(vid, None)
+        self._approaching = self._focus_step(vehicles) if self.focus is not None else set()
         for vid in [v for v in self.late_for if v not in vehicles or now - self._late_t.get(v, now) > 10.0
                     or v not in self.distracted and v not in self.halted and vehicles[v].speed < 0.1]:
             self.late_for.pop(vid, None)  # (gone, stopped in time, or long past)
@@ -941,6 +965,46 @@ class IncidentManager:
                  "t0": lk.t0, "t1": lk.t1, "seconds": lk.seconds, "stop": lk.stop}
                 for lk in self.lookalikes_done + self.lookalikes if lk.t0 is not None]
 
+    def _focus_step(self, vehicles: dict) -> set:
+        """Option A (FOCUS_*): the cars heading into a camera's clear view this step; those seen there for the first
+        time are made careless with chance focus_p. -> the set of those heading in (their lapses are FOCUS_BOOST times
+        as likely, _distractions)."""
+        out = set()
+        near = getattr(self.focus, "near", None)
+        for vid, v in vehicles.items():
+            if v.speed < FOCUS_MIN_MS or vid in self.role or vid.startswith("pt_") or v.vclass != "passenger":
+                continue
+            if near is not None and not near(v.x, v.y, FOCUS_NEAR_M):
+                continue
+            lead = None
+            try:
+                ld = self.conn.vehicle.getLeader(vid, FOCUS_LEAD_M) if self.conn is not None else None
+                lead = vehicles.get(ld[0]) if ld else None
+            except Exception:  # noqa: BLE001
+                lead = None
+            if lead is not None:  # it would run into the car ahead: where that one is
+                la = math.radians(lead.angle)
+                hit = [(lead.x - math.sin(la) * lead.length / 2, lead.y - math.cos(la) * lead.length / 2, lead.angle)]
+            else:
+                a = math.radians(v.angle)
+                ux, uy = math.sin(a), math.cos(a)
+                half = v.length / 2.0
+                hit = [(v.x + ux * (v.speed * t - half), v.y + uy * (v.speed * t - half), v.angle) for t in FOCUS_AHEAD_S]
+            if not any(self.focus(*h) for h in hit):
+                continue
+            out.add(vid)
+            if vid in self.focus_seen or not self.allowed():  # (decided when a new incident may start)
+                continue
+            self.focus_seen.add(vid)
+            if vid not in self.careless and self.focus_p > 0 and self.focus_rng.random() < self.focus_p:
+                self.careless[vid] = v.type_id
+                self.focus_made.add(vid)
+                self.stats["focus_careless"] = self.stats.get("focus_careless", 0) + 1
+        if len(self.focus_seen) > 20000:  # (long runs: forget the cars long gone)
+            self.focus_seen &= set(vehicles)
+            self.focus_made &= set(vehicles) | set(self.role)
+        return out
+
     def _in_junction(self, vid: str) -> bool:
         try:
             return self.conn.vehicle.getLaneID(vid).startswith(":")
@@ -999,6 +1063,11 @@ class IncidentManager:
                 walk = self.walk is not None and tls.get(tid) and self.walk.is_walk(tid, tls[tid])
                 if state in "rR" and 8.0 < dist < 45.0 and not walk:
                     kind, boost = "red light", LAPSE_AHEAD
+            focus = vid in self._approaching
+            if focus:  # (6 Nov, option A) heading into a camera's clear view
+                boost = max(boost, FOCUS_BOOST)
+            elif vid in self.focus_made:  # made careless there: only there
+                continue
             if self.rng.random() >= p * boost:
                 continue
             try:
@@ -1010,6 +1079,7 @@ class IncidentManager:
             except Exception:  # noqa: BLE001
                 continue
             self.distracted[vid] = Distraction(vid, kind, now + self.rng.uniform(1.5, 3.0), v.speed)
+            self.distracted[vid].focus = focus
             self.stats["distractions"] += 1
 
     # ------------------------------------------------------------------ collisions
@@ -1118,6 +1188,9 @@ class IncidentManager:
         self.stats["incidents"] += 1
         d = self.distracted.get(a)
         inc.cause = d.kind if d else None
+        if a in self.focus_made or b in self.focus_made or (d is not None and d.focus):
+            inc.crash_source = "camera focus"
+            self.stats["focus_incidents"] = self.stats.get("focus_incidents", 0) + 1
         if a in self.late_for or b in self.late_for:
             inc.cause = "late to react to a car braking hard"
         fast = [x for x in (a, b) if x in self.speeders]
@@ -3611,7 +3684,7 @@ class IncidentManager:
                 "x": i.x, "y": i.y, "edge": i.edge, "lane": i.lane, "open_lane": i.open_lane,
                 "closed": [ln for ln, _ in i.closed], "police": i.police, "police_t": i.police_t,
                 "police_at": getattr(i, "police_at", None), "police_record": dict(i.police_record),
-                "t_contact": i.t_contact,
+                "t_contact": i.t_contact, "crash_source": i.crash_source,
                 "wrecks": [{"vid": w.vid, "model": w.model, "role": w.role, "lane": w.lane, "pos": w.pos, "x": w.x,
                             "y": w.y, "angle": w.angle, "length": w.length, "damage": w.damage, "removed": w.removed,
                             "speed": w.speed, "t_hit": w.t_hit,
