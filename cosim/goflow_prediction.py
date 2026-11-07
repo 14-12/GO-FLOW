@@ -33,6 +33,34 @@ log = logging.getLogger("goflow_prediction")
 
 HORIZONS_S = (60, 120, 300)
 RESTART_S = (5.0, 20.0, 60.0)
+# the shipped models and graph (models/goflow/, in git); tools/goflow_prediction_build.bat makes new ones in out/
+SHIPPED = ROOT / "models" / "goflow"
+DEFAULT_GRAPH = SHIPPED / "graph" if (SHIPPED / "graph" / "nodes.json").is_file() else \
+    ROOT / "out" / "goflow_prediction" / "graph"
+
+
+def default_models(with_goflow: bool) -> tuple[list[str], str | None]:
+    """The shipped models (models/goflow/) when present, else those tools/goflow_prediction_build.bat made in out/."""
+    if (SHIPPED / "dso4" / "model_card.json").is_file():
+        dso4 = [str(SHIPPED / "dso4")] + ([str(SHIPPED / "dso4_goflow")] if with_goflow else [])
+        return dso4, (str(SHIPPED / "goflow_xgb") if with_goflow else None)
+    out = ROOT / "out"
+    dso4 = [str(out / "goflow_prediction" / "models" / "lgbm_real_v2")]
+    if with_goflow:
+        dso4.append(str(out / "goflow_prediction" / "models" / "lgbm_gf_v2"))
+    return dso4, (str(out / "goflow_traffic" / "models" / "xgb_120s_v1") if with_goflow else None)
+
+
+def trained_clock_speed(model_dir) -> float | None:
+    """The clock speed (town seconds per SUMO second) of the data a model was trained on, from its card."""
+    d = Path(model_dir)
+    for card, key in (("model_card.json", "dataset_meta"), ("xgboost_export_metadata.json", "dataset_meta")):
+        p = d / card
+        if p.is_file():
+            meta = json.loads(p.read_text(encoding="utf-8")).get(key) or {}
+            cs = meta.get("clock_speed")
+            return float(cs) if cs is not None else None
+    return None
 GOFLOW_WAIT_S = 1.0
 ALERT_SHOW_S = 60.0          # an alert stays on the overlay this long (simulated seconds)
 
@@ -223,8 +251,16 @@ class GoflowPrediction:
                  nodes_file: Path | None = None, python_dso4: Path | None = None, python_goflow: Path | None = None,
                  clock_speed: float = 60.0, dt_s: float = 30.0, out_dir: Path | None = None,
                  log_dir: Path | None = None, dso4_args: list[str] | None = None):
-        """dso4_args: the DSO4 child's command after its Python (tests run a fake agent through it)."""
-        nodes_file = Path(nodes_file or ROOT / "out" / "goflow_prediction" / "graph" / "nodes.json")
+        """dso4_args: the DSO4 child's command after its Python (tests run a fake agent through it).
+        Refuses (ValueError) a clock speed the models were not trained at: their demand features and their horizons
+        in town hours assume it."""
+        for m in list(model_dirs) + ([goflow_model] if goflow_model else []):
+            trained = trained_clock_speed(m)
+            if trained is not None and abs(trained - clock_speed) > 1e-6:
+                raise ValueError(f"the model in {m} was trained with the clock at {trained:g}x and the viewer runs it at "
+                                 f"{clock_speed:g}x: run with --clock-speed {trained:g} (or train a model at "
+                                 f"{clock_speed:g}x with tools/goflow_prediction_dataset.py --clock-speed)")
+        nodes_file = Path(nodes_file or DEFAULT_GRAPH / "nodes.json")
         self.nodes = json.loads(nodes_file.read_text(encoding="utf-8"))
         self.names = [n["node"] for n in self.nodes]
         self.tls = {n["node"]: n["tls"] for n in self.nodes}

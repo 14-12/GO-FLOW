@@ -31,9 +31,9 @@ from .leakage import check_seed_splits, check_windows
 from .metrics import masked_metrics
 
 SEED = 42
-PARAMS = dict(objective="regression", metric="l1", learning_rate=0.05, num_leaves=63, min_data_in_leaf=100,
-              feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=1.0,
-              seed=SEED, deterministic=True, force_row_wise=True, verbose=-1)
+PARAMS = {"objective": "regression", "metric": "l1", "learning_rate": 0.05, "num_leaves": 63, "min_data_in_leaf": 100,
+              "feature_fraction": 0.8, "bagging_fraction": 0.8, "bagging_freq": 1, "lambda_l2": 1.0,
+              "seed": SEED, "deterministic": True, "force_row_wise": True, "verbose": -1}
 
 
 def seeds_arg(s: str) -> list[int]:
@@ -55,7 +55,7 @@ def targets(ds, t0, k):
 def git_commit() -> str:
     try:
         return subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
-                              timeout=10).stdout.strip()
+                              timeout=10, check=False).stdout.strip()
     except Exception:  # noqa: BLE001
         return ""
 

@@ -1,4 +1,5 @@
 """Tests on a toy corridor (a test fixture, NOT Town05 data and not her results)."""
+import itertools
 import json
 import os
 import subprocess
@@ -10,10 +11,10 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from goflow_traffic.agent import GoFlowTown05  # noqa: E402
-from goflow_traffic.features import FEATURE_COLUMNS, build  # noqa: E402
-from goflow_traffic.policy import rule_based_decision  # noqa: E402
-from goflow_traffic.train import train  # noqa: E402
+from goflow_traffic.agent import GoFlowTown05
+from goflow_traffic.features import FEATURE_COLUMNS, build
+from goflow_traffic.policy import rule_based_decision
+from goflow_traffic.train import train
 
 PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NODES = ["a-1", "b-1", "c-1", "d-1"]
@@ -33,13 +34,13 @@ def toy(path, seeds, steps=150):
             cols[k].append(v)
     c = {k: np.concatenate(v) for k, v in cols.items()}
     T = len(c["t"])
-    meta = dict(dt_s=30.0, horizons_s=[60, 120, 300], source="exact", note="test fixture")
+    meta = {"dt_s": 30.0, "horizons_s": [60, 120, 300], "source": "exact", "note": "test fixture"}
     np.savez_compressed(path, nodes=np.array(NODES), storage=np.full(N, 20.0), t=c["t"], run=c["run"],
                         seed=c["seed"], tod_s=c["tod"], demand=np.full(T, 0.5), demand_at=np.full((T, 3), 0.5),
                         halt=c["occ"] * 20, veh=c["veh"], speed=c["speed"], occ=c["occ"],
                         green=np.full((T, N), 0.5), meta=json.dumps(meta))
     g = os.path.join(os.path.dirname(path), "distance.csv")
-    pd.DataFrame([{"from": a, "to": b, "cost": 100.0} for a, b in zip(NODES, NODES[1:])]).to_csv(g, index=False)
+    pd.DataFrame([{"from": a, "to": b, "cost": 100.0} for a, b in itertools.pairwise(NODES)]).to_csv(g, index=False)
     return path, g
 
 
@@ -125,7 +126,7 @@ def test_serve_process(model):
     lines = ["garbage", json.dumps({"type": "hello", "v": 1, "nodes": NODES, "dt_s": 30})]
     lines += [json.dumps(obs(z, i, s)) for s, i in enumerate(rows)]
     p = subprocess.run([sys.executable, "-m", "goflow_traffic.serve", "--model", str(out)],
-                       input="\n".join(lines) + "\n", capture_output=True, text=True, cwd=PKG, timeout=120)
+                       input="\n".join(lines) + "\n", capture_output=True, text=True, cwd=PKG, timeout=120, check=False)
     assert p.returncode == 0, p.stderr
     msgs = [json.loads(x) for x in p.stdout.splitlines()]
     assert msgs[0]["type"] == "ready" and msgs[0]["horizons_s"] == [120]
@@ -136,7 +137,7 @@ def test_serve_process(model):
 
 def test_missing_model_is_an_error(tmp_path):
     p = subprocess.run([sys.executable, "-m", "goflow_traffic.serve", "--model", str(tmp_path)],
-                       input="", capture_output=True, text=True, cwd=PKG, timeout=60)
+                       input="", capture_output=True, text=True, cwd=PKG, timeout=60, check=False)
     assert p.returncode == 2 and json.loads(p.stdout.splitlines()[0])["type"] == "error"
 
 

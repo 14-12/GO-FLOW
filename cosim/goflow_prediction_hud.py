@@ -1,9 +1,9 @@
 """DSO4's spill-back alerts on the free-fly overlay (--goflow-prediction), drawn as the junction agents' decisions are
 (cosim/agent_hud.py, whose pills and projection it reuses):
 
-* over the junction, for ALERT_SHOW_S simulated seconds after an alert, a pill: "QUEUE SPILLING BACK IN 120 S" with
-  the approach, the forecast fill and, for a propagation, the full approach downstream;
-* top right, under the agents' list, one line with the forecasters' state ("DSO4 ok · GO-FLOW ok", "warming up",
+* with --goflow-hud, over the junction, for ALERT_SHOW_S simulated seconds after an alert, a pill:
+  "QUEUE SPILLING BACK IN 120 S" with the approach, the forecast fill and, for a propagation, the full approach downstream;
+* bottom right, whenever the forecasters run, one line with the forecasters' state ("DSO4 ok · GO-FLOW ok", "warming up",
   "OFFLINE") and the number of alerts of the last minute.
 """
 from __future__ import annotations
@@ -34,8 +34,10 @@ class ForecastHud(AgentHud):
         return (f"DSO4 forecast  ·  {a['node']}  ·  fill {a['fill_now']:.2f} -> {a['pred_fill']:.2f}{src}{gf}  ·  "
                 f"{max(0, int(now - a['t']))} s ago")
 
-    def draw_alerts(self, screen, size, view_tf, centres: dict, alerts: list, status: str, now: float) -> list:
-        """centres: tls -> CARLA (x, y, z); alerts: GoflowPrediction.recent_alerts(now). -> rectangles drawn."""
+    def draw_alerts(self, screen, size, view_tf, centres: dict, alerts: list, status: str, now: float,
+                    alerts_last_minute: int | None = None) -> list:
+        """centres: tls -> CARLA (x, y, z); alerts: the ones to draw as pills (empty without --goflow-hud);
+        alerts_last_minute: the count for the status line. -> rectangles drawn."""
         rects: list = []
         w, h = size
         loc = view_tf.location
@@ -53,7 +55,8 @@ class ForecastHud(AgentHud):
             px = min(max(p[0] - pill.get_width() / 2, 8), w - pill.get_width() - 8)
             py = min(max(p[1] - pill.get_height(), 8), h - pill.get_height() - 8)
             rects.append(screen.blit(pill, (px, py)))
-        line = self.f_small.render(f"FORECAST  ·  {status}  ·  last minute: {len(alerts)} alerts", True,
+        n = len(alerts) if alerts_last_minute is None else alerts_last_minute
+        line = self.f_small.render(f"FORECAST  ·  {status}  ·  last minute: {n} alerts", True,
                                    (226, 230, 238), BG)
         rects.append(screen.blit(line, (w - line.get_width() - 16, h - line.get_height() - 16)))
         return rects

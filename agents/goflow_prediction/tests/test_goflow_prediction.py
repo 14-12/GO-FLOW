@@ -6,8 +6,8 @@ import sys
 import numpy as np
 import pandas as pd
 import pytest
-
-from goflow_prediction.agent import ForecastAgent, ModelBundle, obs_from_dataset, replay
+from conftest import NODES
+from goflow_prediction.agent import ForecastAgent, ModelBundle, obs_from_dataset
 from goflow_prediction.config import TimeBase
 from goflow_prediction.data import anchors, load_dataset, load_graph
 from goflow_prediction.evaluate import evaluate
@@ -15,8 +15,6 @@ from goflow_prediction.leakage import TestGuard, check_seed_splits
 from goflow_prediction.metrics import onsets
 from goflow_prediction.schema import check_in
 from goflow_prediction.train_lgbm import seeds_arg, train
-
-from conftest import NODES
 
 PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -148,7 +146,7 @@ def test_serve_process_json_lines(toy, trained):
              json.dumps({"type": "obs", "v": 1, "t": "x"})]
     lines += [json.dumps(obs_from_dataset(ds, i, s)) for s, i in enumerate(rows)]
     p = subprocess.run([sys.executable, "-m", "goflow_prediction.serve", "--model", str(trained)],
-                       input="\n".join(lines) + "\n", capture_output=True, text=True, cwd=PKG, timeout=120)
+                       input="\n".join(lines) + "\n", capture_output=True, text=True, cwd=PKG, timeout=120, check=False)
     assert p.returncode == 0, p.stderr
     msgs = [json.loads(x) for x in p.stdout.splitlines()]
     assert msgs[0]["type"] == "ready" and msgs[0]["horizons_s"] == [60, 120, 300]
@@ -159,7 +157,7 @@ def test_serve_process_json_lines(toy, trained):
 
 def test_serve_reports_missing_model(tmp_path):
     p = subprocess.run([sys.executable, "-m", "goflow_prediction.serve", "--model", str(tmp_path / "none")],
-                       input="", capture_output=True, text=True, cwd=PKG, timeout=60)
+                       input="", capture_output=True, text=True, cwd=PKG, timeout=60, check=False)
     assert p.returncode == 2
     assert json.loads(p.stdout.splitlines()[0])["type"] == "error"
 
@@ -207,3 +205,21 @@ def test_event_metrics_scores_each_alert_in_its_own_run():
     alert_run1 = {"t": 30.0, "node": "a-1", "horizon_s": 60, "row": 3}
     assert event_metrics([alert_run0], om, t, ["a-1"], fill, 0.85, 30.0, run=run)["precision"] == 0.0
     assert event_metrics([alert_run1], om, t, ["a-1"], fill, 0.85, 30.0, run=run)["precision"] == 1.0
+
+
+def test_merge_keeps_runs_apart_and_parts_selectable(tmp_path):
+    from conftest import toy_dataset
+    from goflow_prediction.data import merge, save_dataset
+
+    a, b = toy_dataset([101, 11]), toy_dataset([102, 12])
+    a.meta["clock_speed"] = b.meta["clock_speed"] = 60.0
+    save_dataset(a, tmp_path / "a.npz")
+    save_dataset(b, tmp_path / "b.npz")
+    merge([tmp_path / "a.npz", tmp_path / "b.npz"], tmp_path / "m.npz")
+    m = load_dataset(tmp_path / "m.npz")
+    assert m.T == a.T + b.T and sorted(set(m.run)) == [0, 1, 2, 3]
+    assert m.meta["clock_speed"] == 60.0 and len(m.meta["parts"]) == 2
+    one = m.subset(np.flatnonzero(m.part == 1))
+    assert sorted(set(one.seed)) == [12, 102] and np.allclose(one.x["halt"], b.x["halt"])
+    with pytest.raises(FileExistsError):
+        merge([tmp_path / "a.npz"], tmp_path / "m.npz")

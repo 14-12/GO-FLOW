@@ -24,7 +24,7 @@ class TimeBase:
     @property
     def steps(self) -> dict[str, int]:
         """'60' -> 2 steps, ... (keys are strings: they are JSON keys too)."""
-        return {str(h): int(round(h / self.dt_s)) for h in self.horizons_s}
+        return {str(h): round(h / self.dt_s) for h in self.horizons_s}
 
     @property
     def max_steps(self) -> int:
@@ -32,7 +32,7 @@ class TimeBase:
 
     @property
     def cycle_steps(self) -> int:
-        return max(1, int(round(CYCLE_S / self.dt_s)))
+        return max(1, round(CYCLE_S / self.dt_s))
 
 
 @dataclass(frozen=True)

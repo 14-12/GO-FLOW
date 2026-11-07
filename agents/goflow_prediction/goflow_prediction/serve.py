@@ -18,8 +18,8 @@ import traceback
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")     # never compete with CARLA for the GPU
 
-from .agent import ForecastAgent, ModelBundle  # noqa: E402
-from .schema import check_in, error, ready  # noqa: E402
+from .agent import ForecastAgent, ModelBundle
+from .schema import check_in, error, ready
 
 
 def emit(out, msg: dict) -> None:

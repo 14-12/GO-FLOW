@@ -24,7 +24,7 @@ from .metrics import event_metrics, masked_metrics, onsets
 from .train_lgbm import git_commit, seeds_arg
 
 
-def evaluate(model_dirs, dataset, seeds, out, open_test=None, lock_path=None):
+def evaluate(model_dirs, dataset, seeds, out, open_test=None, lock_path=None, part=None):
     if os.path.exists(out):
         raise FileExistsError(f"{out} exists: results are never overwritten")
     bundles = [ModelBundle(d) for d in model_dirs]
@@ -37,6 +37,10 @@ def evaluate(model_dirs, dataset, seeds, out, open_test=None, lock_path=None):
             raise ValueError("these are not the dev seeds: pass --open-test REASON to open the test (once)")
         TestGuard(lock_path or os.path.join(os.path.dirname(os.path.abspath(out)), "TEST_OPENED.lock")).open(open_test)
     ds = load_dataset(dataset)
+    if part is not None:                 # one dataset of a merged file (data.merge)
+        if ds.part is None:
+            raise ValueError("--part needs a merged dataset (python -m goflow_prediction.data merge)")
+        ds = ds.subset(np.flatnonzero(ds.part == part))
     agent = ForecastAgent(bundles)
     if ds.nodes != agent.nodes:
         raise ValueError("dataset nodes differ from the model's")
@@ -65,11 +69,10 @@ def evaluate(model_dirs, dataset, seeds, out, open_test=None, lock_path=None):
     with open(os.path.join(out, "events.json"), "w", encoding="utf-8") as f:
         json.dump(ev, f, indent=1, default=float)
     with open(os.path.join(out, "alerts.jsonl"), "w", encoding="utf-8") as f:
-        for a in alerts:
-            f.write(json.dumps(a) + "\n")
+        f.writelines(json.dumps(a) + "\n" for a in alerts)
     with open(os.path.join(out, "run.json"), "w", encoding="utf-8") as f:
-        json.dump(dict(models=[b.version for b in bundles], seeds=list(seeds), dataset=os.path.abspath(dataset),
-                       dataset_meta=ds.meta, test=is_test, git_commit=git_commit()), f, indent=1)
+        json.dump({"models": [b.version for b in bundles], "seeds": list(seeds), "dataset": os.path.abspath(dataset), "part": part,
+                       "dataset_meta": ds.meta, "test": is_test, "git_commit": git_commit()}, f, indent=1)
     print(pd.DataFrame(table).to_string(index=False))
     print(json.dumps(ev, indent=1, default=float))
     return pd.DataFrame(table), ev
@@ -82,8 +85,9 @@ def main(argv=None):
     ap.add_argument("--seeds", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--open-test", default=None, metavar="REASON")
+    ap.add_argument("--part", type=int, default=None, help="in a merged dataset, score only this part")
     a = ap.parse_args(argv)
-    evaluate(a.model, a.dataset, seeds_arg(a.seeds), a.out, a.open_test)
+    evaluate(a.model, a.dataset, seeds_arg(a.seeds), a.out, a.open_test, part=a.part)
 
 
 if __name__ == "__main__":

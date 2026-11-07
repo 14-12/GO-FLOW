@@ -179,3 +179,22 @@ def test_restarted_child_gets_its_history_back(tmp_path, monkeypatch):
     after = [m for m in lines if m["seq"] > 4]
     assert after and after[0]["seen"] >= 3   # the restarted child had history at once (no 3-step warm-up)
     fp.close()
+
+
+def test_refuses_a_clock_speed_the_models_were_not_trained_at(tmp_path):
+    m = tmp_path / "model"
+    m.mkdir()
+    (m / "model_card.json").write_text(json.dumps({"dataset_meta": {"clock_speed": 60.0}}), encoding="utf-8")
+    nodes = tmp_path / "nodes.json"
+    nodes.write_text(json.dumps(NODES), encoding="utf-8")
+    assert gp.trained_clock_speed(m) == 60.0
+    with pytest.raises(ValueError, match="--clock-speed 60"):
+        gp.GoflowPrediction(FakeConn(), model_dirs=[str(m)], nodes_file=nodes, clock_speed=1.0,
+                            out_dir=tmp_path / "live", log_dir=tmp_path)
+
+
+def test_pills_have_their_own_option():
+    from cosim.freefly import parse_args
+
+    assert parse_args(["--goflow-prediction"]).goflow_hud is False
+    assert parse_args(["--goflow-prediction", "--goflow-hud"]).goflow_hud is True

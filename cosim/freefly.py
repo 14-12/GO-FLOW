@@ -72,13 +72,16 @@ def parse_args(argv=None):
                          "every 30 s the 55 approaches' state goes to it, its spill-back alerts are drawn over the "
                          "junctions (cosim/goflow_prediction.py). Off by default; the town never waits for it")
     ap.add_argument("--goflow-prediction-model", action="append", default=None, metavar="DIR",
-                    help="trained model folder(s) (default out/goflow_prediction/models/lgbm_real_v2, plus "
-                         "lgbm_gf_v2 with --goflow-traffic)")
+                    help="trained model folder(s) (default the shipped models/goflow/dso4, plus dso4_goflow with "
+                         "--goflow-traffic; cosim/goflow_prediction.default_models)")
     ap.add_argument("--goflow-traffic", action=argparse.BooleanOptionalAction, default=False,
                     help="with --goflow-prediction: GO-FLOW's traffic agent too (agents/goflow_traffic), whose "
                          "occupancy forecast and state DSO4 reads")
     ap.add_argument("--goflow-traffic-model", default=None, metavar="DIR",
-                    help="GO-FLOW's model folder (default out/goflow_traffic/models/xgb_120s_v1)")
+                    help="GO-FLOW's model folder (default the shipped models/goflow/goflow_xgb)")
+    ap.add_argument("--goflow-hud", action=argparse.BooleanOptionalAction, default=False,
+                    help="with --goflow-prediction: DSO4's alerts as pills over the junctions (cosim/goflow_prediction_hud.py). "
+                         "Off by default, as --agent-hud; the forecasters' status line shows whenever they run")
     ap.add_argument("--radius", type=float, default=500.0, help="draw the vehicles within this many metres of you")
     ap.add_argument("--rate", type=float, default=60.0,
                     help="vehicle updates per second sent to CARLA (the picture's own rate is the GPU's)")
@@ -2155,14 +2158,11 @@ class FreeFly:
         """--goflow-prediction: DSO4's forecaster (and with --goflow-traffic GO-FLOW's agent) in their own processes.
         Any failure to start is logged and the viewer goes on without them."""
         try:
-            from cosim.goflow_prediction import GoflowPrediction
+            from cosim.goflow_prediction import GoflowPrediction, default_models
 
-            out = ROOT / "out"
-            models = a.goflow_prediction_model or (
-                [str(out / "goflow_prediction" / "models" / "lgbm_real_v2")]
-                + ([str(out / "goflow_prediction" / "models" / "lgbm_gf_v2")] if a.goflow_traffic else []))
-            gf = (a.goflow_traffic_model or str(out / "goflow_traffic" / "models" / "xgb_120s_v1")) \
-                if a.goflow_traffic else None
+            models, gf = default_models(a.goflow_traffic)
+            models = a.goflow_prediction_model or models
+            gf = (a.goflow_traffic_model or gf) if a.goflow_traffic else None
             self.forecast = GoflowPrediction(self.sumo.conn, model_dirs=models, goflow_model=gf,
                                              clock_speed=self.clock.speed)
             log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
@@ -3629,9 +3629,10 @@ def main(argv=None) -> int:
             rects = agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
             if ms:
                 rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
-            if fc is not None:
-                rects += forecast_hud.draw_alerts(scr, tuple(size), tf, centres, fc.recent_alerts(now), fc.status(),
-                                                  now)
+            if fc is not None:  # pills only with --goflow-hud; the status line always
+                rects += forecast_hud.draw_alerts(scr, tuple(size), tf, centres,
+                                                  fc.recent_alerts(now) if args.goflow_hud else [], fc.status(), now,
+                                                  alerts_last_minute=len(fc.recent_alerts(now)))
             return rects
 
         return paint

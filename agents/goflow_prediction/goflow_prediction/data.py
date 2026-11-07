@@ -21,6 +21,7 @@ Graph file: `distance.csv` with columns from,to,cost (road metres, i -> j = traf
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 
 import numpy as np
@@ -45,6 +46,16 @@ class Dataset:
     meta: dict
     goflow: np.ndarray | None = None   # [T, N]
     goflow_state: np.ndarray | None = None   # [T, N] her traffic_state ("" = none yet)
+    part: np.ndarray | None = None           # [T] which dataset a row came from, in a merged file (merge())
+
+    def subset(self, rows: np.ndarray) -> Dataset:
+        """The given rows (whole runs), as a dataset of its own."""
+        rows = np.asarray(rows)
+        sel = lambda a: None if a is None else a[rows]
+        return Dataset(nodes=self.nodes, storage=self.storage, t=self.t[rows], run=self.run[rows], seed=self.seed[rows],
+                       tod_s=self.tod_s[rows], demand=self.demand[rows], demand_at=self.demand_at[rows],
+                       x={c: v[rows] for c, v in self.x.items()}, meta=self.meta, goflow=sel(self.goflow),
+                       goflow_state=sel(self.goflow_state), part=sel(self.part))
 
     @property
     def fill(self) -> np.ndarray:
@@ -73,9 +84,50 @@ def load_dataset(path) -> Dataset:
                  tod_s=z["tod_s"].astype(np.float64), demand=z["demand"].astype(np.float64),
                  demand_at=z["demand_at"].astype(np.float64), x=x, meta=meta,
                  goflow=z["goflow_pred_occ"].astype(np.float64) if "goflow_pred_occ" in z.files else None,
-                 goflow_state=z["goflow_state"].astype(str) if "goflow_state" in z.files else None)
+                 goflow_state=z["goflow_state"].astype(str) if "goflow_state" in z.files else None,
+                 part=z["part"].astype(np.int64) if "part" in z.files else None)
     check_dataset(ds)
     return ds
+
+
+def merge(paths, out) -> None:
+    """Several datasets into one file: runs renumbered, a `part` array (0, 1, ... in the order given) so each can be
+    scored on its own (evaluate.py --part), meta["parts"] = their metas. Same nodes, step and horizons required.
+    The clock speed is kept at the top of meta when they all share it (the connector checks it)."""
+    if os.path.exists(out):
+        raise FileExistsError(f"{out} exists: results are never overwritten")
+    zs = [dict(np.load(p, allow_pickle=False)) for p in paths]
+    metas = [json.loads(str(z["meta"])) for z in zs]
+    for z, m in zip(zs[1:], metas[1:]):
+        if list(z["nodes"]) != list(zs[0]["nodes"]):
+            raise ValueError("the datasets have different approaches")
+        if m["dt_s"] != metas[0]["dt_s"] or list(m["horizons_s"]) != list(metas[0]["horizons_s"]):
+            raise ValueError("the datasets have different steps or horizons")
+    keys = [k for k in zs[0] if k not in ("nodes", "storage", "meta", "run") and all(k in z for z in zs)]
+    res = {k: np.concatenate([z[k] for z in zs]) for k in keys}
+    runs, base = [], 0
+    for z in zs:
+        runs.append(z["run"] + base)
+        base += int(z["run"].max()) + 1
+    res["run"] = np.concatenate(runs)
+    res["part"] = np.concatenate([np.full(len(z["t"]), i) for i, z in enumerate(zs)])
+    clocks = {m.get("clock_speed") for m in metas}
+    meta = {"dt_s": metas[0]["dt_s"], "horizons_s": metas[0]["horizons_s"], "source": metas[0].get("source", "exact"),
+            "clock_speed": clocks.pop() if len(clocks) == 1 else None, "merged_from": [str(p) for p in paths],
+            "parts": metas}
+    np.savez_compressed(out, nodes=zs[0]["nodes"], storage=zs[0]["storage"], meta=json.dumps(meta), **res)
+    print(f"[ok] {out}: {len(paths)} datasets, {len(res['t'])} steps, {base} runs")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="python -m goflow_prediction.data merge OUT A.npz B.npz ...")
+    ap.add_argument("cmd", choices=["merge"])
+    ap.add_argument("out")
+    ap.add_argument("inputs", nargs="+")
+    a = ap.parse_args()
+    merge(a.inputs, a.out)
 
 
 def save_dataset(ds: Dataset, path) -> None:

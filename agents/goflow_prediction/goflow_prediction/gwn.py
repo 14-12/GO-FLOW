@@ -3,8 +3,8 @@ convolutions temporelles dilatées à porte (TCN) + diffusion de graphe sur 2 ma
 (avant / arrière, depuis adj_mx) + 1 matrice adaptative apprise (E1 E2^T)."""
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 def transition_matrices(adj):

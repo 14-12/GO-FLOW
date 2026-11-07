@@ -8,9 +8,9 @@ def masked_metrics(pred, true) -> dict:
     pred, true = np.asarray(pred, float), np.asarray(true, float)
     m = np.isfinite(true) & np.isfinite(pred)
     if not m.any():
-        return dict(MAE=np.nan, RMSE=np.nan, n=0)
+        return {"MAE": np.nan, "RMSE": np.nan, "n": 0}
     e = pred[m] - true[m]
-    return dict(MAE=float(np.abs(e).mean()), RMSE=float(np.sqrt((e ** 2).mean())), n=int(m.sum()))
+    return {"MAE": float(np.abs(e).mean()), "RMSE": float(np.sqrt((e ** 2).mean())), "n": int(m.sum())}
 
 
 def horizon_table(preds: dict, trues: dict, model: str, split: str) -> list[dict]:
@@ -43,7 +43,7 @@ def event_metrics(alerts: list[dict], onset_mask: np.ndarray, t: np.ndarray, nod
         i, j = a.get("row"), col[a["node"]]
         if i is None:   # older callers: match the time (only safe on one run)
             i = int(np.flatnonzero(np.isclose(t, float(a["t"])))[0])
-        k = int(round(a["horizon_s"] / dt_s)) + 1
+        k = round(a["horizon_s"] / dt_s) + 1
         stop = i + 1 + k
         if run is not None:
             same = np.flatnonzero(run[i + 1:stop] == run[i])
@@ -72,8 +72,8 @@ def event_metrics(alerts: list[dict], onset_mask: np.ndarray, t: np.ndarray, nod
     n_rows = len(t) if rows is None else len(rows)
     hours = (n_rows * dt_s) / 3600.0
     n_junctions = len({n.split("-")[0] for n in nodes}) or 1
-    return dict(alerts=len(alerts), precision=right / len(alerts) if alerts else np.nan,
-                onsets=int(onset_mask.sum()), caught=caught,
-                recall=caught / onset_mask.sum() if onset_mask.sum() else np.nan,
-                median_lead_s=float(np.median(leads)) if leads else np.nan,
-                false_per_junction_hour=(len(alerts) - right) / (hours * n_junctions) if hours else np.nan)
+    return {"alerts": len(alerts), "precision": right / len(alerts) if alerts else np.nan,
+                "onsets": int(onset_mask.sum()), "caught": caught,
+                "recall": caught / onset_mask.sum() if onset_mask.sum() else np.nan,
+                "median_lead_s": float(np.median(leads)) if leads else np.nan,
+                "false_per_junction_hour": (len(alerts) - right) / (hours * n_junctions) if hours else np.nan}

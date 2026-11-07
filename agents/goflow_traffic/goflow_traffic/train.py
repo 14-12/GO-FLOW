@@ -22,7 +22,7 @@ import pandas as pd
 from .features import FEATURE_COLUMNS, HISTORY, build
 from .policy import fit_thresholds
 
-PARAMS = dict(n_estimators=300, max_depth=6, learning_rate=0.1, min_child_weight=10)
+PARAMS = {"n_estimators": 300, "max_depth": 6, "learning_rate": 0.1, "min_child_weight": 10}
 
 
 def seeds_arg(s: str) -> list[int]:
@@ -85,7 +85,7 @@ def train(dataset, graph, out, train_seeds, dev_seeds, horizon_s=120, version=No
     if meta.get("source", "exact") != "exact":
         raise ValueError("her model needs speed and occupancy, which only the exact source gives (decision 4)")
     dt = float(meta["dt_s"])
-    k = int(round(horizon_s / dt))
+    k = round(horizon_s / dt)
     if abs(k * dt - horizon_s) > 1e-9 or k < 1:
         raise ValueError(f"horizon {horizon_s} s is not a whole number of {dt} s steps")
     nodes = [str(n) for n in z["nodes"]]
@@ -104,18 +104,18 @@ def train(dataset, graph, out, train_seeds, dev_seeds, horizon_s=120, version=No
     it = (0, model.best_iteration + 1)
     pred = model.predict(F_dev, iteration_range=it)
     last = occ[t_dev].reshape(-1)
-    mae = lambda p: float(np.abs(p[m_dev] - y_dev[m_dev]).mean())  # noqa: E731
+    mae = lambda p: float(np.abs(p[m_dev] - y_dev[m_dev]).mean())
     rows_tr = np.flatnonzero(np.isin(seed, list(train_seeds)))
     th = fit_thresholds(occ[rows_tr].reshape(-1), z["speed"][rows_tr].astype(np.float64).reshape(-1),
                         np.abs(occ[t_tr + k] - occ[t_tr]).reshape(-1))
     os.makedirs(out)
     model.save_model(os.path.join(out, "xgboost_model.json"))
-    pd.DataFrame([dict(model="xgboost", split="dev", horizon_s=horizon_s, MAE=mae(pred), n=int(m_dev.sum())),
-                  dict(model="last_value", split="dev", horizon_s=horizon_s, MAE=mae(last), n=int(m_dev.sum()))]
+    pd.DataFrame([{"model": "xgboost", "split": "dev", "horizon_s": horizon_s, "MAE": mae(pred), "n": int(m_dev.sum())},
+                  {"model": "last_value", "split": "dev", "horizon_s": horizon_s, "MAE": mae(last), "n": int(m_dev.sum())}]
                  ).to_csv(os.path.join(out, "dev_metrics.csv"), index=False)
     try:
         commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True,
-                                timeout=10).stdout.strip()
+                                timeout=10, check=False).stdout.strip()
     except Exception:  # noqa: BLE001
         commit = ""
     metadata = {"version": version or os.path.basename(os.path.normpath(out)), "features": list(FEATURE_COLUMNS),

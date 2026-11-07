@@ -107,9 +107,9 @@ class ForecastAgent:
             if j is None:
                 problems.append(f"unknown node {n}")
                 continue
-            for c in arr:
+            for c, values in arr.items():
                 x = v.get(c)
-                arr[c][j] = np.nan if x is None else float(x)
+                values[j] = np.nan if x is None else float(x)
         missing = [n for n in self.nodes if n not in nodes]
         if missing:
             problems.append(f"{len(missing)} nodes missing from obs, e.g. {missing[0]}")
@@ -126,10 +126,10 @@ class ForecastAgent:
                     if v.get("pred_occ") is not None:
                         g[j] = float(v["pred_occ"])
                     states[j] = v.get("traffic_state")
-        self.buf.append(dict(t=t, fill=arr["halt"] / st, veh=arr["veh"], speed=arr["speed"], occ=arr["occ"],
-                             green=arr["green"], demand=float(obs.get("demand", np.nan)),
-                             demand_at=np.array([float(da.get(h, np.nan)) for h in self.tb.steps]),
-                             goflow=g, goflow_state=states))
+        self.buf.append({"t": t, "fill": arr["halt"] / st, "veh": arr["veh"], "speed": arr["speed"], "occ": arr["occ"],
+                             "green": arr["green"], "demand": float(obs.get("demand", np.nan)),
+                             "demand_at": np.array([float(da.get(h, np.nan)) for h in self.tb.steps]),
+                             "goflow": g, "goflow_state": states})
         self.last_t = t
         self.step_i += 1
         return problems
@@ -167,7 +167,7 @@ class ForecastAgent:
     # ------------------------------------------------------------------ 3. decide
     def window(self) -> Window:
         b = list(self.buf)[-self.tb.n_in:]
-        stack = lambda k: np.stack([x[k] for x in b])[None]  # noqa: E731
+        stack = lambda k: np.stack([x[k] for x in b])[None]
         last = b[-1]
         return Window(fill=stack("fill"), veh=stack("veh"), speed=stack("speed"), occ=stack("occ"),
                       green=stack("green"), demand=np.array([last["demand"]]), demand_at=last["demand_at"][None],
@@ -289,13 +289,12 @@ def replay(agent: ForecastAgent, ds, seeds, goflow_states=None):
     """Runs the agent over the runs of `seeds`, one observation at a time. -> (alerts, forecasts by row index)."""
     alerts, forecasts = [], {}
     rows = np.flatnonzero(np.isin(ds.seed, list(seeds)))
-    seq, prev_run = 0, None
-    for i in rows:
+    prev_run = None
+    for seq, i in enumerate(rows):
         if ds.run[i] != prev_run:
             agent.reset()
             prev_run = ds.run[i]
         out = agent.step(obs_from_dataset(ds, i, seq, goflow_states))
-        seq += 1
         alerts += [dict(a, row=int(i)) for a in out["alerts"]]   # the dataset row (offline scoring only)
         if out["forecast"] is not None:
             forecasts[int(i)] = out["forecast"]

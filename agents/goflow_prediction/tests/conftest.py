@@ -6,6 +6,7 @@ every 2 steps, as a queue does. Enough structure for a model to learn and for th
 """
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import sys
@@ -16,7 +17,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from goflow_prediction.data import Dataset, save_dataset  # noqa: E402
+from goflow_prediction.data import Dataset, save_dataset
 
 NODES = ["a-1", "b-1", "c-1", "d-1", "e-1", "f-1"]
 DT = 30.0
@@ -50,7 +51,7 @@ def toy_dataset(seeds, steps=160, goflow=False) -> Dataset:
                      ("occ", occ), ("green", green), ("gf", np.roll(occ, -4, axis=0))):
             rows[k].append(v)
     cat = {k: np.concatenate(v) for k, v in rows.items()}
-    meta = dict(dt_s=DT, horizons_s=list(HORIZONS), source="exact", controller="toy", note="test fixture")
+    meta = {"dt_s": DT, "horizons_s": list(HORIZONS), "source": "exact", "controller": "toy", "note": "test fixture"}
     return Dataset(nodes=list(NODES), storage=storage, t=cat["t"], run=cat["run"], seed=cat["seed"],
                    tod_s=cat["tod"], demand=cat["dem"], demand_at=cat["dem_at"],
                    x={c: cat[c] for c in ("halt", "veh", "speed", "occ", "green")}, meta=meta,
@@ -58,7 +59,7 @@ def toy_dataset(seeds, steps=160, goflow=False) -> Dataset:
 
 
 def toy_graph(path) -> str:
-    rows = [dict(**{"from": a, "to": b}, cost=150.0) for a, b in zip(NODES, NODES[1:])]
+    rows = [dict(**{"from": a, "to": b}, cost=150.0) for a, b in itertools.pairwise(NODES)]
     pd.DataFrame(rows).to_csv(path, index=False)
     return str(path)
 

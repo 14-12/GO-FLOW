@@ -13,7 +13,7 @@ import traceback
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 
-from .agent import GoFlowTown05  # noqa: E402
+from .agent import GoFlowTown05
 
 
 def emit(out, msg):
