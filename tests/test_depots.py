@@ -175,3 +175,71 @@ def test_no_accident_at_a_depot_on_a_tiny_road_or_beside_one_under_way():
     im.incidents = [NS(phase="secured", x=20.0, y=0.0)]
     crash("6_4")                    # 20 m from an accident under way
     assert halted == ["a", "a", "a"] and im.stats["near_misses"] == 3
+
+
+def test_a_vehicle_back_in_its_slot_is_set_straight_in_the_lane():
+    """7 Nov: police cars and ambulances back from a call stood up to 1 m off the parking lane's middle (they may not
+    move sideways once standing), up to 0.96 m into the traffic lane, and cars waited behind them up to 22 minutes.
+    park_straight puts one that stopped off the middle back on it (front at the same place, along the lane)."""
+    moved = []
+
+    class Veh:
+        def getLaneID(self, vid):
+            return "e_2"
+
+        def getLateralLanePosition(self, vid):
+            return {"off": 1.0, "ok": 0.1}[vid]
+
+        def getLanePosition(self, vid):
+            return 30.0
+
+        def moveToXY(self, vid, edge, idx, x, y, angle, keepRoute):
+            moved.append((vid, edge, idx, round(x, 2), round(y, 2), round(angle, 1), keepRoute))
+
+    conn = NS(vehicle=Veh(), lane=NS(getShape=lambda ln: [(0.0, 0.0), (100.0, 0.0)], getLength=lambda ln: 100.0))
+    assert dp.park_straight(conn, "off") == 1.0
+    assert moved == [("off", "e", 2, 30.0, 0.0, 90.0, 1)]       # SUMO's angle: east = 90
+    assert dp.park_straight(conn, "ok") is None and len(moved) == 1
+
+
+def test_a_vehicle_beside_its_slot_turns_in_or_is_put_in():
+    """7 Nov: a police car reached its slot on the 61 m road still in the traffic lane and stood there for good (no
+    sideways move while standing); 34 minutes of queue behind it. On its spot's road it may move sideways while
+    standing; still beside its slot after TURN_IN_STUCK_S, it is put in; parked, the town's rule is back."""
+    calls = []
+
+    class Veh:
+        lane_i, wait, road, stopped = 3, 0.0, "-52", False
+
+        def getRoadID(self, vid):
+            return self.road
+
+        def isStopped(self, vid):
+            return self.stopped
+
+        def setParameter(self, vid, key, value):
+            calls.append(("param", key, value))
+
+        def getLaneIndex(self, vid):
+            return self.lane_i
+
+        def getWaitingTime(self, vid):
+            return self.wait
+
+        def moveToXY(self, vid, edge, idx, x, y, angle, keepRoute):
+            calls.append(("move", edge, idx, round(x, 1), round(y, 1)))
+
+    v = Veh()
+    conn = NS(vehicle=v, lane=NS(getShape=lambda ln: [(0.0, 0.0), (61.0, 0.0)], getLength=lambda ln: 61.0))
+    seen = set()
+    assert dp.turn_in(conn, "p", "-52", 2, 48.1, seen) is None           # on its road: may move over standing
+    assert calls == [("param", "laneChangeModel.lcMaxSpeedLatStanding", str(dp.TURN_IN_LAT_MS))]
+    v.wait = dp.TURN_IN_STUCK_S + 1
+    assert dp.turn_in(conn, "p", "-52", 2, 48.1, seen) == "put in"       # stuck beside it: put in
+    assert calls[-1] == ("move", "-52", 2, 48.1, 0.0) and len(calls) == 2    # the parameter set once only
+    v.lane_i = 2
+    assert dp.turn_in(conn, "p", "-52", 2, 48.1, seen) is None           # in its lane: nothing to do
+    dp.turned_in(conn, "p", seen)
+    assert calls[-1] == ("param", "laneChangeModel.lcMaxSpeedLatStanding", "0") and "p" not in seen
+    v.road = "other"
+    assert dp.turn_in(conn, "q", "-52", 2, 48.1, seen) is None and "q" not in seen   # not on its road yet

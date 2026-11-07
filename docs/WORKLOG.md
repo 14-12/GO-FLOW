@@ -1677,3 +1677,64 @@ noise. At x2 (`--demand-scale 2`, 11:00 into the evening rush), six "long queue 
 1722-3, 207-4, 1126-2), one did not (2086-4). A chip read "SEVERE · QUEUE 11 · LONG QUEUE IN 3 MIN: 0 %" over a queue
 that was long already (the classifier gives 0 there): each forecast now marks those (`long_now`) and their chip says
 "LONG QUEUE NOW". Tests: 1 more on each side.
+
+## A rear-end crash drawn one car inside the other; vehicles parked half on the road (7 Nov, night)
+
+**The crash.** In CARLA (ring road, 45 km/h): `live301` and `hw13` came to rest with their centres 3.1 m apart, in
+line, a metre of one car inside the other. From `out/freefly/crash_trace.csv`: at the hit they touched (4.5 m apart);
+then `hw13`, behind and doing 72 km/h, moved on 1.4 m while `live301`, ahead at 27 km/h, hardly moved. SUMO had named
+`live301` the collider and `hw13` the victim, and the shove of the impact (`_damage`: the victim is pushed on 0.25 to
+1.45 m) went to the car behind. `_touching` already put the cars bumper to bumper by their places on the lane; now
+`IncidentManager._order_rear_end` gives the roles by place too (the car behind hit; along the lane, else along the
+heading) and logs it when SUMO said the other way. 2 x 60 min SUMO alone: 13 rear-end crashes, none the wrong way
+round, so it is rare; when it happens, the car ahead is shoved on and the one behind stays.
+
+**Parking at the depots.** With the depots and the emergency calls (SUMO alone, 40 min from 16:30, seed 7; vehicles in
+the depots' parking lanes sampled every 10 s, cars on the depot's road waiting over 20 s counted):
+
+| | Parked sticking into the next lane | Deepest | Cars stuck beside a depot (samples) | Longest wait |
+| --- | --- | --- | --- | --- |
+| before | 103 of 1546 | 0.96 m (hospital), 0.39 m (police) | 688 (police 616) | 1298 s |
+| straightened when parked | 0 | | 836 (police 779) | 2034 s |
+| + turn in / put in | 0 | | 591 (police 347) | 920 s |
+| + buses too | 1 of 1640 (caught before it was straightened) | | 120 (at the red light at the road's end) | 44 s |
+
+Three causes, all the town's rule that no vehicle moves sideways while standing (cosim/vmodels.py):
+1. a vehicle back from a call stopped in its slot before it had finished moving over (up to 1 m off the lane's
+   middle): `depots.park_straight` sets it straight in the lane's middle once stopped (depot slots and call places);
+2. on the police station's 61 m road a police car reached its slot still in the traffic lane and stood there 0.9 m
+   across: on the last road to its spot a vehicle may now move sideways at 0.5 m/s while standing
+   (`laneChangeModel.lcMaxSpeedLatStanding`, back to 0 once it is parked), and one standing beside its spot for 15 s is
+   put in (`depots.turn_in`);
+3. bus line L2's first stop is in that same parking lane: the bus stood beside it, then across it pulling out with a
+   police car parked ahead: `BusLines.turn_in` lets a bus move sideways while standing on the roads of its stops, puts
+   one standing beside its stop in, and sets one standing across two lanes straight in its lane.
+
+**The clock card** said "1 MIN = 1 HOUR" at any `--clock-speed`; it now says how fast the day goes ("2 MIN = 1 HOUR"
+at 30, "REAL TIME" at 1).
+
+Tests: `tests/test_crash_moment.py` (2 more), `tests/test_depots.py` (2 more), `tests/test_hud_speed.py` (new).
+
+## The clock at 2 real minutes a town hour; the forecasters retrained for it (7 Nov, night)
+
+`cosim/daily.GAME_SPEED` is 30 (was 60): a town hour lasts 2 real minutes, a day 48. At 60 the evening rush went by in
+2.5 minutes, the forecasters' 6-minute warm-up took 6 town hours, and the police "came" 4 town hours after a crash.
+`--clock-speed` still sets any other speed for a run (the stage-2 recordings set 1, real time). The clock card shows it
+("2 MIN = 1 HOUR").
+
+The forecasters run only at the speed they were trained at (their demand inputs look ahead in town hours), so they
+were retrained at 30 (v4): `D4_c30_x1_acc`, `D4_c30_x2_acc`, `D4_c30_x3_acc` (crashes on: 59, 88 and 137 incidents in
+40 runs each, no gridlock; made on the project PC, 8 jobs, about 35 minutes), seeds 101-130 train, 11-20 dev, 21-30 not
+opened, the same recipe as v3. Dev seeds, all levels together: DSO4's queue fill at +120 s, MAE 0.0419 against 0.0553
+for the last value; GO-FLOW's occupancy at +120 s, 0.0280 against 0.0348. Long queues, alert at 0.7:
+
+| Traffic | Long queues | Caught before they start | Alerts right | Median warning |
+| --- | --- | --- | --- | --- |
+| x1 | 5 | 2 | 2 of 2 | 45 s |
+| x2 | 48 | 31 | 31 of 49 | 60 s |
+| x3 | 134 | 102 | 107 of 203 | 60 s |
+
+The connector's default clock is now `GAME_SPEED`; the dataset tool and the live check default to it too. v3 (clock
+60) is in git history.
+
+Tests: `tests/test_daily.py` (the clock's speed).

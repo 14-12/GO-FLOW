@@ -117,7 +117,9 @@ def main(argv=None) -> int:
     ap.add_argument("--goflow", action="store_true", help="GO-FLOW's agent too")
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--start-hour", type=float, default=7.0)
-    ap.add_argument("--clock-speed", type=float, default=60.0)
+    from cosim.daily import GAME_SPEED
+
+    ap.add_argument("--clock-speed", type=float, default=GAME_SPEED)
     ap.add_argument("--scale", type=float, default=1.0)
     ap.add_argument("--slow", type=float, default=0.0, help="seconds of sleep per SUMO step (closer to the viewer)")
     ap.add_argument("--port", type=int, default=8960)

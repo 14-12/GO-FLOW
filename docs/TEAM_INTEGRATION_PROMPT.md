@@ -49,7 +49,7 @@ wins; tell me where they disagree.
   - careless drivers who really crash, followed by police, lane closure and a recovery truck;
   - three bus lines, pedestrians on signalised crosswalks, a raised ring road;
   - ambulances and police on emergency runs, with signal pre-emption;
-  - a day and night clock (1 real minute = 1 town hour) that drives the demand;
+  - a day and night clock (2 real minutes = 1 town hour since 7 Nov; 1 minute before) that drives the demand;
   - an LLM brief.
 - **Main folders:**
   - `cosim/`: the co-simulation, a Python package;
@@ -236,8 +236,8 @@ inference environment.
   data.
 - **Places.** Does it predict per road, lane, junction or zone? Map its places to SUMO edges and lanes and to the
   15 signalised junctions.
-- **Time.** Its horizon and step against the 0.5 s SUMO step, the 115 s signal cycle and the clock (1 real minute
-  = 1 town hour). Demand changes fast in real seconds.
+- **Time.** Its horizon and step against the 0.5 s SUMO step, the 115 s signal cycle and the clock (2 real minutes
+  = 1 town hour since 7 Nov). Demand changes fast in real seconds.
 - **Domain.** What was it trained on? Real traffic data or another network transfers poorly to Town05's small grid
   and ring road. Plan to retrain on SUMO-only runs: many seeds, demand levels and times of day.
 - **Use.** Who consumes the prediction? The junction agents or the coordination (signal timing), the overlay, or

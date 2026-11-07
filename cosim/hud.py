@@ -99,6 +99,14 @@ def _font(name: str, size: int) -> pygame.font.Font:
     return pygame.font.Font(str(path) if path.is_file() else None, size)
 
 
+def speed_label(speed: float) -> str:
+    """The card's line under the weekday: how fast the day goes ("1 MIN = 1 HOUR" at 60, "2 MIN = 1 HOUR" at 30)."""
+    if speed <= 1.0001:
+        return "REAL TIME"
+    m = 60.0 / speed
+    return f"{m:g} MIN = 1 HOUR" if abs(m - round(m, 1)) < 1e-6 else f"{speed:g} X REAL TIME"
+
+
 @dataclass
 class HudState:
     game_s: float
@@ -111,6 +119,7 @@ class HudState:
     status: str = ""        # replaces LIVE / PAUSED in the strip (e.g. LOADING)
     note: str = ""          # a short message (e.g. "Screenshot saved"), shown in the strip
     help_alpha: int = 0     # 0..255: the key help at the bottom
+    speed: float = daily.GAME_SPEED  # game seconds per real second (--clock-speed): the card's "2 MIN = 1 HOUR"
 
     @property
     def hour(self) -> float:
@@ -148,7 +157,7 @@ class Hud:
         self._card = None
         # the weekday column stands right of the widest time, so it never moves or runs off the card
         self.col_x = 182 + max(self.f_time.size(f"{d}{d}:{d}{d}")[0] for d in "0123456789") + 10
-        widest = max(self._spaced(self.f_small, t, (0, 0, 0), 1.6).get_width() for t in ("1 MIN = 1 HOUR", "PAUSED"))
+        widest = max(self._spaced(self.f_small, t, (0, 0, 0), 1.6).get_width() for t in ("1 MIN = 1 HOUR", "2.5 MIN = 1 HOUR", "PAUSED"))
         self.W = max(self.W, self.col_x + widest + 18)
 
     # ------------------------------------------------------------ text helpers
@@ -264,7 +273,7 @@ class Hud:
         return pygame.transform.smoothscale(s, (self.W, self.H))
 
     def card(self, st: HudState) -> pygame.Surface:
-        key = (int(st.game_s // 60), st.paused, st.sun_elevation > -3.0)
+        key = (int(st.game_s // 60), st.paused, st.sun_elevation > -3.0, st.speed)
         if key == self._cache_key and self._card is not None:
             return self._card
         card = self._shapes(st)
@@ -281,7 +290,7 @@ class Hud:
         wk = self._spaced(self.f_week, st.weekday[:3], (226, 232, 245), 2.2)
         tx = self.col_x
         card.blit(wk, (tx, 24))
-        sub = self._spaced(self.f_small, "PAUSED" if st.paused else "1 MIN = 1 HOUR", (255, 196, 84) if st.paused
+        sub = self._spaced(self.f_small, "PAUSED" if st.paused else speed_label(st.speed), (255, 196, 84) if st.paused
                            else (150, 160, 182), 1.6)
         card.blit(sub, (tx, 50))
         # traffic pill

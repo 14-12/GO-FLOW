@@ -1,5 +1,5 @@
 {
- "version": "xgb_mix_v3",
+ "version": "xgb_c30_v4",
  "features": [
   "location",
   "slot_in_day",
@@ -93,7 +93,7 @@
   "1126-3",
   "1126-4"
  ],
- "best_iteration": 275,
+ "best_iteration": 178,
  "neighbours": {
   "1427-1": [
    "1126-1",
@@ -685,12 +685,12 @@
   "min_child_weight": 10
  },
  "thresholds_train_only": {
-  "occupancy_median": 0.010093710385262966,
-  "occupancy_high": 0.24502910524606722,
-  "occupancy_severe": 0.42759026467800104,
-  "speed_low": 6.208760380744934,
-  "speed_median": 9.767565727233887,
-  "strong_change": 0.10135567784309389
+  "occupancy_median": 0.018262173980474472,
+  "occupancy_high": 0.286209046840668,
+  "occupancy_severe": 0.4603857493400566,
+  "speed_low": 5.0933332443237305,
+  "speed_median": 9.723333358764648,
+  "strong_change": 0.09777176789939404
  },
  "train_seeds": [
   101,
@@ -736,7 +736,7 @@
   19,
   20
  ],
- "dataset": "/home/claude/gf/out/goflow_prediction/datasets/D3_mix_acc/dataset.npz",
+ "dataset": "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_mix_acc/dataset.npz",
  "dataset_meta": {
   "dt_s": 30.0,
   "horizons_s": [
@@ -745,11 +745,11 @@
    300
   ],
   "source": "exact",
-  "clock_speed": 60.0,
+  "clock_speed": 30.0,
   "merged_from": [
-   "/home/claude/gf/out/goflow_prediction/datasets/D3_x1_acc/dataset.npz",
-   "/home/claude/gf/out/goflow_prediction/datasets/D3_x2_acc/dataset.npz",
-   "/home/claude/gf/out/goflow_prediction/datasets/D3_x3_acc/dataset.npz"
+   "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x1_acc/dataset.npz",
+   "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x2_acc/dataset.npz",
+   "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x3_acc/dataset.npz"
   ],
   "parts": [
    {
@@ -761,7 +761,7 @@
     ],
     "source": "exact",
     "controller": "coordinated",
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "start_hour": 6.0,
     "scale": 1.0,
     "minutes": 30.0,
@@ -771,59 +771,57 @@
     "buses": true,
     "ring": true,
     "junction_blocker": 60.0,
-    "git_commit": "a184d86",
+    "git_commit": "7c5598a",
     "tool": "tools/goflow_prediction_dataset.py",
     "runs": [
      {
       "seed": 101,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
+      "wall_s": 123,
+      "vehicles_end": 23,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 102,
-      "steps": 60,
-      "wall_s": 36,
-      "vehicles_end": 111,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       "37_3": 2
-      },
       "gridlock": false,
       "incidents": 2
      },
      {
-      "seed": 103,
+      "seed": 102,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 110,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
-      "seed": 104,
-      "steps": 60,
-      "wall_s": 32,
-      "vehicles_end": 108,
+      "wall_s": 98,
+      "vehicles_end": 25,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 0
      },
      {
+      "seed": 103,
+      "steps": 60,
+      "wall_s": 105,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 104,
+      "steps": 60,
+      "wall_s": 100,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
       "seed": 105,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 109,
+      "wall_s": 102,
+      "vehicles_end": 24,
       "stuck_over_300s": 1,
       "stuck_lanes": {
-       "37_3": 1
+       "-5_4": 1
       },
       "gridlock": false,
       "incidents": 2
@@ -831,8 +829,8 @@
      {
       "seed": 106,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 110,
+      "wall_s": 101,
+      "vehicles_end": 25,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -841,8 +839,8 @@
      {
       "seed": 107,
       "steps": 60,
-      "wall_s": 32,
-      "vehicles_end": 109,
+      "wall_s": 94,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -851,38 +849,38 @@
      {
       "seed": 108,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
+      "wall_s": 96,
+      "vehicles_end": 21,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 1
      },
      {
       "seed": 109,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 101,
+      "vehicles_end": 23,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 1
      },
      {
       "seed": 110,
       "steps": 60,
-      "wall_s": 33,
-      "vehicles_end": 107,
+      "wall_s": 100,
+      "vehicles_end": 22,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 1
      },
      {
       "seed": 111,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
+      "wall_s": 98,
+      "vehicles_end": 24,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -891,18 +889,18 @@
      {
       "seed": 112,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 108,
+      "wall_s": 101,
+      "vehicles_end": 25,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 1
      },
      {
       "seed": 113,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 112,
+      "wall_s": 97,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -911,28 +909,34 @@
      {
       "seed": 114,
       "steps": 60,
-      "wall_s": 36,
-      "vehicles_end": 111,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 118,
+      "vehicles_end": 25,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-36_4": 1,
+       "-36_5": 1,
+       "-14_4": 1
+      },
       "gridlock": false,
-      "incidents": 2
+      "incidents": 4
      },
      {
       "seed": 115,
       "steps": 60,
-      "wall_s": 37,
-      "vehicles_end": 112,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 112,
+      "vehicles_end": 25,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "35_4": 3
+      },
       "gridlock": false,
       "incidents": 2
      },
      {
       "seed": 116,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 107,
+      "vehicles_end": 25,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -941,20 +945,18 @@
      {
       "seed": 117,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 110,
-      "stuck_over_300s": 1,
-      "stuck_lanes": {
-       "35_4": 1
-      },
+      "wall_s": 98,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 1
      },
      {
       "seed": 118,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 105,
+      "vehicles_end": 23,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -963,8 +965,8 @@
      {
       "seed": 119,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 109,
+      "vehicles_end": 23,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -973,38 +975,40 @@
      {
       "seed": 120,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 121,
-      "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 117,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 3
      },
      {
+      "seed": 121,
+      "steps": 60,
+      "wall_s": 122,
+      "vehicles_end": 25,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-20_4": 2
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
       "seed": 122,
       "steps": 60,
-      "wall_s": 32,
-      "vehicles_end": 111,
+      "wall_s": 110,
+      "vehicles_end": 22,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 1
      },
      {
       "seed": 123,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
+      "wall_s": 105,
+      "vehicles_end": 23,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1013,18 +1017,18 @@
      {
       "seed": 124,
       "steps": 60,
-      "wall_s": 33,
-      "vehicles_end": 110,
+      "wall_s": 106,
+      "vehicles_end": 24,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 2
      },
      {
       "seed": 125,
       "steps": 60,
-      "wall_s": 31,
-      "vehicles_end": 110,
+      "wall_s": 95,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1033,48 +1037,50 @@
      {
       "seed": 126,
       "steps": 60,
-      "wall_s": 33,
-      "vehicles_end": 109,
+      "wall_s": 111,
+      "vehicles_end": 24,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 2
      },
      {
       "seed": 127,
       "steps": 60,
-      "wall_s": 32,
-      "vehicles_end": 111,
+      "wall_s": 110,
+      "vehicles_end": 25,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 2
      },
      {
       "seed": 128,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 106,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 1
      },
      {
       "seed": 129,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 108,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 106,
+      "vehicles_end": 24,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "35_3": 1
+      },
       "gridlock": false,
-      "incidents": 0
+      "incidents": 2
      },
      {
       "seed": 130,
       "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 101,
+      "vehicles_end": 24,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1083,106 +1089,103 @@
      {
       "seed": 11,
       "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 108,
+      "wall_s": 105,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 0
+      "incidents": 2
      },
      {
       "seed": 12,
       "steps": 60,
-      "wall_s": 40,
-      "vehicles_end": 111,
-      "stuck_over_300s": 4,
-      "stuck_lanes": {
-       "35_2": 2,
-       "-14_3": 1,
-       "35_3": 1
-      },
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 13,
-      "steps": 60,
-      "wall_s": 33,
-      "vehicles_end": 111,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 14,
-      "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 108,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 15,
-      "steps": 60,
-      "wall_s": 34,
-      "vehicles_end": 111,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 16,
-      "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 109,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 17,
-      "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 110,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 18,
-      "steps": 60,
-      "wall_s": 40,
-      "vehicles_end": 111,
-      "stuck_over_300s": 4,
-      "stuck_lanes": {
-       "37_3": 2,
-       "-28_5": 1,
-       "37_4": 1
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 19,
-      "steps": 60,
-      "wall_s": 35,
-      "vehicles_end": 111,
+      "wall_s": 107,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 1
      },
      {
+      "seed": 13,
+      "steps": 60,
+      "wall_s": 109,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 14,
+      "steps": 60,
+      "wall_s": 105,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 104,
+      "vehicles_end": 24,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "33_3": 1
+      },
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 102,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 105,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 98,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 104,
+      "vehicles_end": 22,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "-36_3": 3,
+       "-36_4": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
       "seed": 20,
       "steps": 60,
-      "wall_s": 52,
-      "vehicles_end": 111,
+      "wall_s": 92,
+      "vehicles_end": 26,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1199,7 +1202,7 @@
     ],
     "source": "exact",
     "controller": "coordinated",
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "start_hour": 6.0,
     "scale": 2.0,
     "minutes": 30.0,
@@ -1209,117 +1212,123 @@
     "buses": true,
     "ring": true,
     "junction_blocker": 60.0,
-    "git_commit": "9f72d2c",
+    "git_commit": "7c5598a",
     "tool": "tools/goflow_prediction_dataset.py",
     "runs": [
      {
       "seed": 101,
       "steps": 60,
-      "wall_s": 120,
-      "vehicles_end": 214,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 102,
-      "steps": 60,
-      "wall_s": 112,
-      "vehicles_end": 212,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 103,
-      "steps": 60,
-      "wall_s": 106,
-      "vehicles_end": 216,
+      "wall_s": 153,
+      "vehicles_end": 35,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 2
      },
      {
-      "seed": 104,
+      "seed": 102,
       "steps": 60,
-      "wall_s": 133,
-      "vehicles_end": 216,
-      "stuck_over_300s": 4,
-      "stuck_lanes": {
-       "3_4": 3,
-       "3_3": 1
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 105,
-      "steps": 60,
-      "wall_s": 104,
-      "vehicles_end": 215,
+      "wall_s": 136,
+      "vehicles_end": 43,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 0
      },
      {
+      "seed": 103,
+      "steps": 60,
+      "wall_s": 169,
+      "vehicles_end": 45,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "35_2": 3,
+       "-14_3": 1,
+       "35_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 104,
+      "steps": 60,
+      "wall_s": 181,
+      "vehicles_end": 38,
+      "stuck_over_300s": 7,
+      "stuck_lanes": {
+       "3_3": 3,
+       "-20_4": 2,
+       "3_4": 1,
+       "-20_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 105,
+      "steps": 60,
+      "wall_s": 142,
+      "vehicles_end": 41,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
       "seed": 106,
       "steps": 60,
-      "wall_s": 117,
-      "vehicles_end": 215,
+      "wall_s": 145,
+      "vehicles_end": 38,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 107,
+      "steps": 60,
+      "wall_s": 144,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 108,
+      "steps": 60,
+      "wall_s": 130,
+      "vehicles_end": 35,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 0
+     },
+     {
+      "seed": 109,
+      "steps": 60,
+      "wall_s": 140,
+      "vehicles_end": 37,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 110,
+      "steps": 60,
+      "wall_s": 151,
+      "vehicles_end": 43,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 3
      },
      {
-      "seed": 107,
-      "steps": 60,
-      "wall_s": 103,
-      "vehicles_end": 215,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 108,
-      "steps": 60,
-      "wall_s": 107,
-      "vehicles_end": 210,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 109,
-      "steps": 60,
-      "wall_s": 113,
-      "vehicles_end": 203,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 110,
-      "steps": 60,
-      "wall_s": 107,
-      "vehicles_end": 213,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
       "seed": 111,
       "steps": 60,
-      "wall_s": 113,
-      "vehicles_end": 211,
+      "wall_s": 150,
+      "vehicles_end": 34,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1328,34 +1337,30 @@
      {
       "seed": 112,
       "steps": 60,
-      "wall_s": 115,
-      "vehicles_end": 213,
+      "wall_s": 149,
+      "vehicles_end": 38,
       "stuck_over_300s": 1,
       "stuck_lanes": {
-       "35_2": 1
+       "35_4": 1
       },
       "gridlock": false,
-      "incidents": 4
+      "incidents": 2
      },
      {
       "seed": 113,
       "steps": 60,
-      "wall_s": 140,
-      "vehicles_end": 212,
-      "stuck_over_300s": 9,
-      "stuck_lanes": {
-       "-20_3": 5,
-       "-20_4": 3,
-       "19_4": 1
-      },
+      "wall_s": 156,
+      "vehicles_end": 38,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 4
+      "incidents": 3
      },
      {
       "seed": 114,
       "steps": 60,
-      "wall_s": 133,
-      "vehicles_end": 211,
+      "wall_s": 173,
+      "vehicles_end": 44,
       "stuck_over_300s": 4,
       "stuck_lanes": {
        "19_4": 3,
@@ -1367,21 +1372,20 @@
      {
       "seed": 115,
       "steps": 60,
-      "wall_s": 125,
-      "vehicles_end": 212,
-      "stuck_over_300s": 2,
+      "wall_s": 171,
+      "vehicles_end": 39,
+      "stuck_over_300s": 1,
       "stuck_lanes": {
-       ":2062_5_0": 1,
-       "-28_4": 1
+       ":2062_5_0": 1
       },
       "gridlock": false,
-      "incidents": 3
+      "incidents": 4
      },
      {
       "seed": 116,
       "steps": 60,
-      "wall_s": 114,
-      "vehicles_end": 212,
+      "wall_s": 145,
+      "vehicles_end": 47,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1390,18 +1394,18 @@
      {
       "seed": 117,
       "steps": 60,
-      "wall_s": 115,
-      "vehicles_end": 212,
+      "wall_s": 155,
+      "vehicles_end": 43,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 4
      },
      {
       "seed": 118,
       "steps": 60,
-      "wall_s": 119,
-      "vehicles_end": 211,
+      "wall_s": 155,
+      "vehicles_end": 37,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1410,113 +1414,104 @@
      {
       "seed": 119,
       "steps": 60,
-      "wall_s": 119,
-      "vehicles_end": 204,
+      "wall_s": 162,
+      "vehicles_end": 45,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 1
+      "incidents": 3
      },
      {
       "seed": 120,
       "steps": 60,
-      "wall_s": 112,
-      "vehicles_end": 213,
+      "wall_s": 144,
+      "vehicles_end": 44,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 0
      },
      {
       "seed": 121,
       "steps": 60,
-      "wall_s": 121,
-      "vehicles_end": 207,
+      "wall_s": 161,
+      "vehicles_end": 38,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 3
      },
      {
       "seed": 122,
       "steps": 60,
-      "wall_s": 142,
-      "vehicles_end": 218,
-      "stuck_over_300s": 3,
-      "stuck_lanes": {
-       ":562_19_0": 1,
-       "-43_4": 1,
-       "-43_3": 1
-      },
+      "wall_s": 160,
+      "vehicles_end": 41,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
       "incidents": 3
      },
      {
       "seed": 123,
       "steps": 60,
-      "wall_s": 153,
-      "vehicles_end": 214,
-      "stuck_over_300s": 6,
+      "wall_s": 178,
+      "vehicles_end": 40,
+      "stuck_over_300s": 4,
       "stuck_lanes": {
        "3_4": 3,
-       ":2062_5_0": 1,
-       "3_3": 1,
-       "-28_4": 1
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 124,
-      "steps": 60,
-      "wall_s": 128,
-      "vehicles_end": 208,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
-      "seed": 125,
-      "steps": 60,
-      "wall_s": 126,
-      "vehicles_end": 211,
-      "stuck_over_300s": 6,
-      "stuck_lanes": {
-       "19_4": 3,
-       "35_2": 2,
-       "19_3": 1
+       "3_3": 1
       },
       "gridlock": false,
       "incidents": 2
      },
      {
-      "seed": 126,
+      "seed": 124,
       "steps": 60,
-      "wall_s": 133,
-      "vehicles_end": 215,
+      "wall_s": 152,
+      "vehicles_end": 36,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 4
+      "incidents": 2
      },
      {
-      "seed": 127,
+      "seed": 125,
       "steps": 60,
-      "wall_s": 117,
-      "vehicles_end": 210,
-      "stuck_over_300s": 1,
+      "wall_s": 168,
+      "vehicles_end": 45,
+      "stuck_over_300s": 4,
       "stuck_lanes": {
-       "-20_4": 1
+       "19_4": 3,
+       "19_3": 1
       },
       "gridlock": false,
       "incidents": 3
      },
      {
+      "seed": 126,
+      "steps": 60,
+      "wall_s": 160,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 127,
+      "steps": 60,
+      "wall_s": 140,
+      "vehicles_end": 39,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
       "seed": 128,
       "steps": 60,
-      "wall_s": 116,
-      "vehicles_end": 219,
+      "wall_s": 153,
+      "vehicles_end": 43,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1525,116 +1520,18 @@
      {
       "seed": 129,
       "steps": 60,
-      "wall_s": 116,
-      "vehicles_end": 217,
+      "wall_s": 142,
+      "vehicles_end": 41,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 2
      },
      {
       "seed": 130,
       "steps": 60,
-      "wall_s": 105,
-      "vehicles_end": 215,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 11,
-      "steps": 60,
-      "wall_s": 139,
-      "vehicles_end": 212,
-      "stuck_over_300s": 5,
-      "stuck_lanes": {
-       "2_3": 3,
-       "-43_3": 1,
-       "44_4": 1
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 12,
-      "steps": 60,
-      "wall_s": 114,
-      "vehicles_end": 209,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 13,
-      "steps": 60,
-      "wall_s": 124,
-      "vehicles_end": 213,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       "-20_4": 2
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 14,
-      "steps": 60,
-      "wall_s": 111,
-      "vehicles_end": 212,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 15,
-      "steps": 60,
-      "wall_s": 106,
-      "vehicles_end": 211,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 0
-     },
-     {
-      "seed": 16,
-      "steps": 60,
-      "wall_s": 113,
-      "vehicles_end": 204,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 17,
-      "steps": 60,
-      "wall_s": 105,
-      "vehicles_end": 210,
-      "stuck_over_300s": 1,
-      "stuck_lanes": {
-       "-19_3": 1
-      },
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 18,
-      "steps": 60,
-      "wall_s": 101,
-      "vehicles_end": 213,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 19,
-      "steps": 60,
-      "wall_s": 100,
-      "vehicles_end": 217,
+      "wall_s": 158,
+      "vehicles_end": 36,
       "stuck_over_300s": 2,
       "stuck_lanes": {
        ":2062_5_0": 1,
@@ -1644,14 +1541,104 @@
       "incidents": 3
      },
      {
-      "seed": 20,
+      "seed": 11,
       "steps": 60,
-      "wall_s": 91,
-      "vehicles_end": 210,
+      "wall_s": 145,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 12,
+      "steps": 60,
+      "wall_s": 146,
+      "vehicles_end": 36,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 13,
+      "steps": 60,
+      "wall_s": 149,
+      "vehicles_end": 35,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 14,
+      "steps": 60,
+      "wall_s": 149,
+      "vehicles_end": 45,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 3
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 157,
+      "vehicles_end": 32,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 146,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 141,
+      "vehicles_end": 38,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 132,
+      "vehicles_end": 40,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 134,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 20,
+      "steps": 60,
+      "wall_s": 138,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
      }
     ]
    },
@@ -1664,7 +1651,7 @@
     ],
     "source": "exact",
     "controller": "coordinated",
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "start_hour": 6.0,
     "scale": 3.0,
     "minutes": 30.0,
@@ -1674,59 +1661,59 @@
     "buses": true,
     "ring": true,
     "junction_blocker": 60.0,
-    "git_commit": "9f72d2c",
+    "git_commit": "7c5598a",
     "tool": "tools/goflow_prediction_dataset.py",
     "runs": [
      {
       "seed": 101,
       "steps": 60,
-      "wall_s": 140,
-      "vehicles_end": 296,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 217,
+      "vehicles_end": 63,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "37_5": 1
+      },
       "gridlock": false,
-      "incidents": 2
+      "incidents": 7
      },
      {
       "seed": 102,
       "steps": 60,
-      "wall_s": 156,
-      "vehicles_end": 293,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       "6_4": 1,
-       "17_3": 1
-      },
+      "wall_s": 176,
+      "vehicles_end": 59,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
       "incidents": 2
      },
      {
       "seed": 103,
       "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 308,
+      "wall_s": 196,
+      "vehicles_end": 64,
       "stuck_over_300s": 2,
       "stuck_lanes": {
-       "37_4": 2
+       ":2062_5_0": 1,
+       "-28_4": 1
       },
       "gridlock": false,
-      "incidents": 3
+      "incidents": 4
      },
      {
       "seed": 104,
       "steps": 60,
-      "wall_s": 140,
-      "vehicles_end": 296,
+      "wall_s": 179,
+      "vehicles_end": 47,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 4
      },
      {
       "seed": 105,
       "steps": 60,
-      "wall_s": 144,
-      "vehicles_end": 304,
+      "wall_s": 176,
+      "vehicles_end": 51,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1735,8 +1722,8 @@
      {
       "seed": 106,
       "steps": 60,
-      "wall_s": 157,
-      "vehicles_end": 302,
+      "wall_s": 191,
+      "vehicles_end": 55,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1745,119 +1732,119 @@
      {
       "seed": 107,
       "steps": 60,
-      "wall_s": 163,
-      "vehicles_end": 293,
-      "stuck_over_300s": 3,
-      "stuck_lanes": {
-       ":2296_0_2": 1,
-       "-14_3": 1,
-       ":2296_0_1": 1
-      },
+      "wall_s": 187,
+      "vehicles_end": 52,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 4
+      "incidents": 3
      },
      {
       "seed": 108,
       "steps": 60,
-      "wall_s": 150,
-      "vehicles_end": 296,
+      "wall_s": 202,
+      "vehicles_end": 46,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 4
+      "incidents": 5
      },
      {
       "seed": 109,
       "steps": 60,
-      "wall_s": 142,
-      "vehicles_end": 299,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
-      "seed": 110,
-      "steps": 60,
-      "wall_s": 162,
-      "vehicles_end": 290,
-      "stuck_over_300s": 3,
-      "stuck_lanes": {
-       ":1930_8_0": 1,
-       "3_4": 1,
-       "3_3": 1
-      },
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 111,
-      "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 304,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
-      "seed": 112,
-      "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 301,
+      "wall_s": 173,
+      "vehicles_end": 50,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 2
      },
      {
-      "seed": 113,
+      "seed": 110,
       "steps": 60,
-      "wall_s": 153,
-      "vehicles_end": 300,
+      "wall_s": 183,
+      "vehicles_end": 66,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "35_2": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 111,
+      "steps": 60,
+      "wall_s": 201,
+      "vehicles_end": 57,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 4
      },
      {
+      "seed": 112,
+      "steps": 60,
+      "wall_s": 210,
+      "vehicles_end": 59,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":1930_8_0": 1,
+       ":1930_13_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 113,
+      "steps": 60,
+      "wall_s": 199,
+      "vehicles_end": 61,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-36_5": 1,
+       "-28_5": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
       "seed": 114,
       "steps": 60,
-      "wall_s": 163,
-      "vehicles_end": 293,
-      "stuck_over_300s": 7,
+      "wall_s": 184,
+      "vehicles_end": 46,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 115,
+      "steps": 60,
+      "wall_s": 213,
+      "vehicles_end": 65,
+      "stuck_over_300s": 3,
       "stuck_lanes": {
-       "-36_5": 5,
-       "-27_3": 2
+       "-4_3": 2,
+       ":1882_7_0": 1
       },
       "gridlock": false,
       "incidents": 4
      },
      {
-      "seed": 115,
-      "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 299,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
       "seed": 116,
       "steps": 60,
-      "wall_s": 146,
-      "vehicles_end": 288,
+      "wall_s": 188,
+      "vehicles_end": 49,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 2
      },
      {
       "seed": 117,
       "steps": 60,
-      "wall_s": 159,
-      "vehicles_end": 307,
+      "wall_s": 205,
+      "vehicles_end": 65,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1866,8 +1853,8 @@
      {
       "seed": 118,
       "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 296,
+      "wall_s": 178,
+      "vehicles_end": 56,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1876,34 +1863,33 @@
      {
       "seed": 119,
       "steps": 60,
-      "wall_s": 144,
-      "vehicles_end": 298,
+      "wall_s": 190,
+      "vehicles_end": 57,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 120,
-      "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 314,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       "37_3": 2
-      },
       "gridlock": false,
       "incidents": 3
      },
      {
+      "seed": 120,
+      "steps": 60,
+      "wall_s": 184,
+      "vehicles_end": 58,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
       "seed": 121,
       "steps": 60,
-      "wall_s": 169,
-      "vehicles_end": 295,
-      "stuck_over_300s": 2,
+      "wall_s": 232,
+      "vehicles_end": 51,
+      "stuck_over_300s": 3,
       "stuck_lanes": {
-       ":2062_5_0": 1,
-       ":2062_8_0": 1
+       ":1930_8_0": 1,
+       "3_4": 1,
+       "3_3": 1
       },
       "gridlock": false,
       "incidents": 5
@@ -1911,71 +1897,68 @@
      {
       "seed": 122,
       "steps": 60,
-      "wall_s": 148,
-      "vehicles_end": 295,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 123,
-      "steps": 60,
-      "wall_s": 157,
-      "vehicles_end": 301,
+      "wall_s": 209,
+      "vehicles_end": 57,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 4
      },
      {
-      "seed": 124,
+      "seed": 123,
       "steps": 60,
-      "wall_s": 150,
-      "vehicles_end": 304,
+      "wall_s": 198,
+      "vehicles_end": 58,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
       "incidents": 3
+     },
+     {
+      "seed": 124,
+      "steps": 60,
+      "wall_s": 212,
+      "vehicles_end": 52,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
      },
      {
       "seed": 125,
       "steps": 60,
-      "wall_s": 157,
-      "vehicles_end": 313,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       ":2062_5_0": 1,
-       "-28_4": 1
-      },
+      "wall_s": 167,
+      "vehicles_end": 54,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 3
+      "incidents": 1
      },
      {
       "seed": 126,
       "steps": 60,
-      "wall_s": 150,
-      "vehicles_end": 296,
+      "wall_s": 201,
+      "vehicles_end": 48,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 5
+      "incidents": 4
      },
      {
       "seed": 127,
       "steps": 60,
-      "wall_s": 147,
-      "vehicles_end": 294,
+      "wall_s": 185,
+      "vehicles_end": 58,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
-      "incidents": 2
+      "incidents": 4
      },
      {
       "seed": 128,
       "steps": 60,
-      "wall_s": 146,
-      "vehicles_end": 294,
+      "wall_s": 188,
+      "vehicles_end": 61,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
       "gridlock": false,
@@ -1984,105 +1967,46 @@
      {
       "seed": 129,
       "steps": 60,
-      "wall_s": 143,
-      "vehicles_end": 300,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 199,
+      "vehicles_end": 57,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "3_3": 2,
+       ":2062_5_0": 1,
+       ":1930_8_0": 1,
+       "-28_4": 1
+      },
       "gridlock": false,
-      "incidents": 3
+      "incidents": 4
      },
      {
       "seed": 130,
       "steps": 60,
-      "wall_s": 165,
-      "vehicles_end": 309,
-      "stuck_over_300s": 3,
+      "wall_s": 204,
+      "vehicles_end": 59,
+      "stuck_over_300s": 4,
       "stuck_lanes": {
-       "-43_3": 2,
-       "-43_4": 1
+       "-20_4": 3,
+       "-20_3": 1
       },
       "gridlock": false,
-      "incidents": 4
+      "incidents": 2
      },
      {
       "seed": 11,
       "steps": 60,
-      "wall_s": 142,
-      "vehicles_end": 310,
+      "wall_s": 210,
+      "vehicles_end": 59,
       "stuck_over_300s": 0,
       "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 12,
-      "steps": 60,
-      "wall_s": 157,
-      "vehicles_end": 299,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 4
-     },
-     {
-      "seed": 13,
-      "steps": 60,
-      "wall_s": 132,
-      "vehicles_end": 298,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
-      "gridlock": false,
-      "incidents": 1
-     },
-     {
-      "seed": 14,
-      "steps": 60,
-      "wall_s": 165,
-      "vehicles_end": 281,
-      "stuck_over_300s": 9,
-      "stuck_lanes": {
-       "-28_4": 2,
-       "-36_5": 2,
-       "31_3": 2,
-       "31_4": 1,
-       "-28_5": 1,
-       ":2062_8_1": 1
-      },
-      "gridlock": false,
-      "incidents": 2
-     },
-     {
-      "seed": 15,
-      "steps": 60,
-      "wall_s": 172,
-      "vehicles_end": 303,
-      "stuck_over_300s": 5,
-      "stuck_lanes": {
-       "-43_3": 2,
-       "35_3": 2,
-       ":562_19_0": 1
-      },
       "gridlock": false,
       "incidents": 5
      },
      {
-      "seed": 16,
+      "seed": 12,
       "steps": 60,
-      "wall_s": 152,
-      "vehicles_end": 292,
-      "stuck_over_300s": 2,
-      "stuck_lanes": {
-       ":2062_5_0": 1,
-       "-28_4": 1
-      },
-      "gridlock": false,
-      "incidents": 3
-     },
-     {
-      "seed": 17,
-      "steps": 60,
-      "wall_s": 149,
-      "vehicles_end": 295,
+      "wall_s": 195,
+      "vehicles_end": 51,
       "stuck_over_300s": 3,
       "stuck_lanes": {
        ":1930_8_0": 1,
@@ -2093,38 +2017,103 @@
       "incidents": 3
      },
      {
-      "seed": 18,
+      "seed": 13,
       "steps": 60,
-      "wall_s": 139,
-      "vehicles_end": 299,
-      "stuck_over_300s": 0,
-      "stuck_lanes": {},
+      "wall_s": 186,
+      "vehicles_end": 45,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-20_4": 2,
+       "-20_3": 1
+      },
       "gridlock": false,
       "incidents": 2
      },
      {
-      "seed": 19,
+      "seed": 14,
       "steps": 60,
-      "wall_s": 147,
-      "vehicles_end": 311,
+      "wall_s": 187,
+      "vehicles_end": 47,
       "stuck_over_300s": 1,
       "stuck_lanes": {
-       "-29_4": 1
+       ":2062_5_0": 1
       },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 200,
+      "vehicles_end": 49,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 193,
+      "vehicles_end": 66,
+      "stuck_over_300s": 7,
+      "stuck_lanes": {
+       "37_4": 4,
+       "37_3": 3
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 188,
+      "vehicles_end": 46,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "-20_4": 2,
+       "-20_3": 1,
+       "17_3": 1,
+       "6_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 176,
+      "vehicles_end": 50,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-43_3": 2,
+       ":562_19_0": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 176,
+      "vehicles_end": 66,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
       "gridlock": false,
       "incidents": 6
      },
      {
       "seed": 20,
       "steps": 60,
-      "wall_s": 150,
-      "vehicles_end": 306,
-      "stuck_over_300s": 4,
+      "wall_s": 176,
+      "vehicles_end": 56,
+      "stuck_over_300s": 7,
       "stuck_lanes": {
+       "-18_3": 2,
+       "-28_4": 2,
        ":2086_11_1": 1,
        "-36_5": 1,
-       "-28_5": 1,
-       "17_4": 1
+       "-28_5": 1
       },
       "gridlock": false,
       "incidents": 3
@@ -2133,6 +2122,6 @@
    }
   ]
  },
- "git_commit": "a184d86",
+ "git_commit": "6dff868",
  "based_on": "feature/traffic-prediction-agent 392fbae (src/prediction/xgboost_predictor.py)"
 }

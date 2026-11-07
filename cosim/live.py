@@ -3,7 +3,7 @@
     python -m cosim.live                      # the clock continues from where it was left
     python -m cosim.live --set-time 06:30     # start the clock at 06:30 (day kept)
 
-GTA time: 1 real minute = 1 game hour (cosim/daily.GAME_SPEED). The clock drives the sun (and
+Town time: 2 real minutes = 1 game hour (cosim/daily.GAME_SPEED). The clock drives the sun (and
 with it CARLA's street lights, which switch themselves on in the dark, and the cars' headlights)
 and how much traffic the city carries. The cars themselves drive at normal speed: SUMO runs in
 real time (one 0.5 s step per 0.5 s of wall time, if the PC keeps up), as in every run here.

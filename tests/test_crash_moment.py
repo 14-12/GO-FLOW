@@ -214,3 +214,44 @@ def test_the_crash_trace_never_breaks_the_posing(tmp_path):
     assert tr.picture(None, {"t": 1.0, "start": 0.0, "veh": [(1, "a", *([None] * 14), {"t_hit": 0.9})]}, 0.1) == 0
     assert tr.failed
     assert tr.picture(None, None, 0.0) == 0
+
+
+def test_rear_end_roles_follow_who_is_behind():
+    """7 Nov, CARLA (ring road): SUMO named the car ahead (27 km/h) the collider of the car right behind it (72 km/h);
+    the shove of the impact (_damage: the victim dx) went to the car behind, drawn a metre inside the one ahead.
+    The car behind is the collider, whatever SUMO said: on one lane by position, across lanes along the heading."""
+    from types import SimpleNamespace
+
+    from cosim.incidents import Incident, IncidentManager, Wreck
+
+    def wreck(vid, role, lane, pos, x, y, angle=90.0):
+        return Wreck(vid, None, role, lane, pos, x, y, angle, 4.0, 10.0)
+
+    def run(ws):
+        inc = Incident(3, 0.0, "rear-end", 12.5, "severe", "e", ws[0].lane, 0.0, 0.0)
+        inc.wrecks = ws
+        me = SimpleNamespace(stats={}, now=10.0)
+        IncidentManager._order_rear_end(me, inc)
+        return {w.vid: w.role for w in ws}, me.stats.get("rear_end_roles_swapped", 0)
+
+    # the case seen: SUMO's collider is the car ahead (pos 50 > 46)
+    assert run([wreck("live301", "collider", "e_0", 50.0, 50, 0), wreck("hw13", "victim", "e_0", 46.0, 46, 0)]) == \
+        ({"live301": "victim", "hw13": "collider"}, 1)
+    # SUMO right: nothing changes
+    assert run([wreck("a", "collider", "e_0", 40.0, 40, 0), wreck("b", "victim", "e_0", 45.0, 45, 0)]) == \
+        ({"a": "collider", "b": "victim"}, 0)
+    # different lanes (a lane change): along the heading, angle 90 = east, so the larger x is ahead
+    assert run([wreck("a", "collider", "e_1", 10.0, 60, 1.5), wreck("b", "victim", "e_0", 30.0, 56, 0)])[0] == \
+        {"a": "victim", "b": "collider"}
+
+
+def test_only_the_car_ahead_is_shoved_on():
+    from types import SimpleNamespace
+
+    from cosim.incidents import Incident, IncidentManager, Wreck
+
+    inc = Incident(1, 0.0, "rear-end", 12.5, "severe", "e", "e_0", 0.0, 0.0)
+    for role in ("collider", "victim"):
+        w = Wreck(role, None, role, "e_0", 0.0, 0.0, 0.0, 0.0, 4.0, 10.0)
+        d = IncidentManager._damage(SimpleNamespace(), 12.5, "rear-end", w, inc)
+        assert (d["dx"] > 1.0) if role == "victim" else (d["dx"] == 0.0)

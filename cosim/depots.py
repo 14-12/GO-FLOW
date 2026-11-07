@@ -94,6 +94,72 @@ def lane_point(shape, length: float, pos: float, lateral: float = 0.0):
     return x - dy / n * lateral, y + dx / n * lateral, math.degrees(math.atan2(dy, dx))
 
 
+PARK_STRAIGHT_M = 0.15    # off its lane's middle by more than this when it stops: set straight in the middle
+
+
+def park_straight(conn, vid: str) -> float | None:
+    """A vehicle that just stopped in a parking lane (a depot's slot, a call's place), set straight in the lane's middle.
+    It turns in while it slows down, and it may not move sideways once standing (cosim/vmodels.py,
+    lcMaxSpeedLatStanding=0): a police car back from a call stood 1 m off the middle, 0.4 m into the next lane, and the
+    traffic there waited behind it, up to 22 minutes (7 Nov, SUMO with the depots and the calls). -> how far it was
+    off (m), or None when it was not moved."""
+    try:
+        ln = conn.vehicle.getLaneID(vid)
+        lat = conn.vehicle.getLateralLanePosition(vid)
+        if not ln or ln.startswith(":") or abs(lat) <= PARK_STRAIGHT_M:
+            return None
+        pos = conn.vehicle.getLanePosition(vid)
+        x, y, hdg = lane_point(conn.lane.getShape(ln), conn.lane.getLength(ln), pos)
+        edge, idx = ln.rsplit("_", 1)
+        conn.vehicle.moveToXY(vid, edge, int(idx), x, y, (90.0 - hdg) % 360.0, keepRoute=1)
+        return lat
+    except Exception as e:  # noqa: BLE001
+        log.debug("park straight %s: %s", vid, e)
+        return None
+
+
+TURN_IN_LAT_MS = 0.5      # sideways m/s a vehicle may still move while standing, on the last road to its parking spot
+TURN_IN_STUCK_S = 15.0    # standing that long beside its spot, not in its lane: it is put in
+
+
+def turn_in(conn, vid: str, edge: str, lane_index: int, pos: float, set_lat: set) -> str | None:
+    """A vehicle on the road of its stop (a depot's slot, a call's place, a bus stop), not stopped there yet: it may finish
+    moving over into the parking lane while it slows down (SUMO's sublane model, lcMaxSpeedLatStanding, which is 0 for
+    every type: cosim/vmodels.py), and one standing beside its spot for TURN_IN_STUCK_S is put in. 7 Nov (SUMO with the
+    depots): a police car on the police station's 61 m road reached its slot still in the traffic lane, stopped, could
+    not move sideways, and stood there 0.9 m across, the traffic behind it waiting up to 34 minutes; bus line L2 did the
+    same at its first stop, on that road (up to 7 minutes).
+    set_lat: the vehicles already allowed (once each). -> "put in" when moved there, else None."""
+    try:
+        if conn.vehicle.getRoadID(vid) != edge or conn.vehicle.isStopped(vid):
+            return None
+        if vid not in set_lat:
+            set_lat.add(vid)
+            try:
+                conn.vehicle.setParameter(vid, "laneChangeModel.lcMaxSpeedLatStanding", str(TURN_IN_LAT_MS))
+            except Exception as e:  # noqa: BLE001 - an older SUMO: the fallback below still does it
+                log.debug("turn in %s: %s", vid, e)
+        if conn.vehicle.getLaneIndex(vid) == lane_index or conn.vehicle.getWaitingTime(vid) < TURN_IN_STUCK_S:
+            return None
+        ln = f"{edge}_{lane_index}"
+        x, y, hdg = lane_point(conn.lane.getShape(ln), conn.lane.getLength(ln), pos)
+        conn.vehicle.moveToXY(vid, edge, lane_index, x, y, (90.0 - hdg) % 360.0, keepRoute=1)
+        return "put in"
+    except Exception as e:  # noqa: BLE001
+        log.debug("turn in %s: %s", vid, e)
+        return None
+
+
+def turned_in(conn, vid: str, set_lat: set) -> None:
+    """Stopped at its spot: back to the town's rule (no sideways move while standing, cosim/vmodels.py)."""
+    if vid in set_lat:
+        set_lat.discard(vid)
+        try:
+            conn.vehicle.setParameter(vid, "laneChangeModel.lcMaxSpeedLatStanding", "0")
+        except Exception as e:  # noqa: BLE001
+            log.debug("turned in %s: %s", vid, e)
+
+
 def sign_spot(net, plan: DepotPlan):
     """Where the sign stands (SUMO x, y) and the direction it faces (towards the road, SUMO heading in degrees): on
     the pavement right of the parking lane, past its shoulder."""
@@ -203,6 +269,7 @@ class Depots:
     def __init__(self, conn, net, plans=TOWN05):
         self.conn = conn
         self.net = net
+        self.turn_lat: set = set()     # vehicles allowed to move sideways while standing, on their last road (turn_in)
         self.depots: dict[str, Depot] = {}
         for p in plans:
             if not net.hasEdge(p.edge):
@@ -350,6 +417,9 @@ class Depots:
                         d.coming.pop(vid, None)
                         self._forget(vid)
                     continue
+                if turn_in(c, vid, d.plan.edge, d.plan.lane, slot, self.turn_lat) is not None:
+                    self.stats["put_in"] = self.stats.get("put_in", 0) + 1
+                    log.info("depot %s: %s put into its slot (it stood beside it in the traffic lane)", d.plan.name, vid)
                 try:
                     there = c.vehicle.isStopped(vid) and c.vehicle.getRoadID(vid) == d.plan.edge
                 except Exception:  # noqa: BLE001
@@ -358,6 +428,9 @@ class Depots:
                     d.coming.pop(vid, None)
                     d.parked[slot] = vid
                     self.stats["back"] += 1
+                    turned_in(c, vid, self.turn_lat)
+                    if park_straight(c, vid) is not None:
+                        self.stats["straightened"] = self.stats.get("straightened", 0) + 1
             for slot, vid in list(d.parked.items()):
                 if vid not in vehicles:
                     try:
@@ -462,7 +535,7 @@ class EmergencyCalls:
         from cosim.extras import EmergencyRecord
 
         self.extras.emergency[vid] = EmergencyRecord(vid, kind, True, now, r.length)
-        self.calls[vid] = {"kind": kind, "edge": edge, "until": None, "t_out": now}
+        self.calls[vid] = {"kind": kind, "edge": edge, "until": None, "t_out": now, "lane": lane, "pos": pos}
         self.stats["calls"] += 1
         log.info("%s leaves the %s on a run to %s (%.0f m)", vid, depot, edge, r.length)
         return True
@@ -483,8 +556,14 @@ class EmergencyCalls:
                 call["until"] = now
                 self.stats["called_off"] = self.stats.get("called_off", 0) + 1
             if call["until"] is None:
+                if not stopped and "lane" in call and turn_in(c, vid, call["edge"], call["lane"], call["pos"],
+                                                              self.depots.turn_lat) is not None:
+                    self.stats["put_in"] = self.stats.get("put_in", 0) + 1
                 if stopped and road == call["edge"]:
                     call["until"] = now + self.rng.uniform(*CALL_S)
+                    turned_in(c, vid, self.depots.turn_lat)
+                    if park_straight(c, vid) is not None:
+                        self.stats["straightened"] = self.stats.get("straightened", 0) + 1
                     self.stats["attended"] += 1
                     rec = self.extras.emergency.get(vid)
                     if rec is not None:

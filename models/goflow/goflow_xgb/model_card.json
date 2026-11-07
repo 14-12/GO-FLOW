@@ -1,5 +1,5 @@
 {
- "version": "xgb_mix_v3",
+ "version": "xgb_c30_v4",
  "task": "GO-FLOW occupancy forecast",
  "horizon_s": 120,
  "dt_s": 30.0,
@@ -56,13 +56,13 @@
   20
  ],
  "dataset_meta": {
-  "clock_speed": 60.0,
+  "clock_speed": 30.0,
   "parts": [
    {
     "scale": 1.0,
     "accidents": true,
     "careless_share": null,
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "minutes": 30.0,
     "controller": "coordinated"
    },
@@ -70,7 +70,7 @@
     "scale": 2.0,
     "accidents": true,
     "careless_share": null,
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "minutes": 30.0,
     "controller": "coordinated"
    },
@@ -78,13 +78,13 @@
     "scale": 3.0,
     "accidents": true,
     "careless_share": null,
-    "clock_speed": 60.0,
+    "clock_speed": 30.0,
     "minutes": 30.0,
     "controller": "coordinated"
    }
   ]
  },
  "notes": [
-  "Retrained 7 Nov on D3_x1_acc + D3_x2_acc + D3_x3_acc (crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; 21-30 not opened), tools/goflow_prediction_dataset.py --accidents --scale."
+  "Retrained 7 Nov (v4) on D4_c30_x1_acc + D4_c30_x2_acc + D4_c30_x3_acc: the clock at 30 (2 real minutes a town hour), crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; 21-30 not opened."
  ]
 }

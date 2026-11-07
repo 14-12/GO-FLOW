@@ -4,7 +4,7 @@
 
 The viewer's traffic as tools/check_accidents.py builds it (the day's curve held by cosim/live.Population, the bus
 lines, the ring road's cars), the viewer's SUMO options, and the clock MOVING: town time = start hour + SUMO seconds x
---clock-speed (60 as in the viewer). Signals: --controller (default coordinated, the viewer's). Accidents off unless
+--clock-speed (the viewer's, cosim/daily.GAME_SPEED: 30 since 7 Nov). Signals: --controller (default coordinated, the viewer's). Accidents off unless
 --accidents. Demand levels: --scale multiplies the day's curve (the viewer has no scale; decision of the plan).
 
 Every second each approach (tools/goflow_prediction_graph.py: one per camera) is sampled through TraCI lane
@@ -212,7 +212,9 @@ def main(argv=None) -> int:
     ap.add_argument("--minutes", type=float, default=30.0, help="SUMO minutes kept per run (after the warm-up)")
     ap.add_argument("--warmup", type=float, default=5.0, help="SUMO minutes dropped at the start")
     ap.add_argument("--start-hour", type=float, default=6.0)
-    ap.add_argument("--clock-speed", type=float, default=60.0)
+    from cosim.daily import GAME_SPEED
+
+    ap.add_argument("--clock-speed", type=float, default=GAME_SPEED)
     ap.add_argument("--dt", type=float, default=30.0)
     ap.add_argument("--controller", default="coordinated")
     ap.add_argument("--scale", type=float, default=1.0, help="multiplies the day's vehicle curve")

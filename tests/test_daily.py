@@ -45,17 +45,19 @@ class FakeTime:
         return self.t
 
 
-def test_clock_runs_sixty_times_faster_and_pauses():
+def test_clock_runs_thirty_times_faster_and_pauses():
+    """2 real minutes a town hour (daily.GAME_SPEED 30 since 7 Nov; 60 before)."""
     now = FakeTime()
     c = daily.GameClock(7 * 3600, now=now)
+    assert daily.GAME_SPEED == 30.0
     assert c.hhmm() == "07:00" and c.day == 1 and c.weekday == "MONDAY"
-    now.t += 60  # one real minute
+    now.t += 120  # two real minutes
     assert c.hhmm() == "08:00"
     c.pause(True)
     now.t += 600
     assert c.hhmm() == "08:00"
     c.pause(False)
-    now.t += 17 * 60  # 17 real minutes: past midnight
+    now.t += 34 * 60  # 34 real minutes, 17 town hours: past midnight
     assert c.hhmm() == "01:00" and c.day == 2 and c.weekday == "TUESDAY"
     c.shift(-3600)
     assert c.hhmm() == "00:00" and c.day == 2
@@ -66,7 +68,7 @@ def test_clock_saved_and_restored(tmp_path: Path):
     f = tmp_path / "clock.json"
     c = daily.GameClock.load(f, default_s=7 * 3600, now=now)  # no file yet: the default
     assert c.hhmm() == "07:00"
-    now.t += 10 * 60 + 30  # 10.5 real minutes: 17:30
+    now.t += 21 * 60  # 21 real minutes, 10.5 town hours: 17:30
     c.save()
     saved = json.loads(f.read_text())
     assert saved["time"] == "17:30" and saved["day"] == 1

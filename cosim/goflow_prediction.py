@@ -264,11 +264,15 @@ class Child:
 class GoflowPrediction:
     def __init__(self, conn, *, model_dirs: list[str], goflow_model: str | None = None,
                  nodes_file: Path | None = None, python_dso4: Path | None = None, python_goflow: Path | None = None,
-                 clock_speed: float = 60.0, dt_s: float = 30.0, out_dir: Path | None = None,
+                 clock_speed: float | None = None, dt_s: float = 30.0, out_dir: Path | None = None,
                  log_dir: Path | None = None, dso4_args: list[str] | None = None, demand_scale: float = 1.0):
         """dso4_args: the DSO4 child's command after its Python (tests run a fake agent through it).
         Refuses (ValueError) a clock speed the models were not trained at: their demand features and their horizons
-        in town hours assume it."""
+        in town hours assume it. clock_speed: None = the viewer's default (cosim/daily.GAME_SPEED)."""
+        if clock_speed is None:
+            from cosim.daily import GAME_SPEED
+
+            clock_speed = GAME_SPEED
         for m in list(model_dirs) + ([goflow_model] if goflow_model else []):
             trained = trained_clock_speed(m)
             if trained is not None and abs(trained - clock_speed) > 1e-6:

@@ -30,13 +30,13 @@ A queue sampled every 30 s swings with the signal (cycle 115 s), so `congestion.
 long queue *starts* when the mean reaches the level after a whole cycle under it, from under 0.6 x the level. A
 LightGBM classifier (the forecast's features plus the approach against its level) gives the chance of a start within
 6 steps (3 minutes); trained with `python -m goflow_prediction.congestion --dataset ... --model DIR --train-seeds ...
---dev-seeds ...`. Dev seeds 11-20 (5 h per traffic level), alert at 0.7:
+--dev-seeds ...`. Dev seeds 11-20 (5 h per traffic level), alert at 0.7, the shipped model (v4, the clock at 30):
 
 | Traffic | Long queues | Caught before they start | Alerts right | Median warning |
 | --- | --- | --- | --- | --- |
-| x1 | 6 | 3 | 3 of 5 | 30 s |
-| x2 | 40 | 27 | 27 of 50 | 60 s |
-| x3 | 136 | 101 | 116 of 227 | 60 s |
+| x1 | 5 | 2 | 2 of 2 | 45 s |
+| x2 | 48 | 31 | 31 of 49 | 60 s |
+| x3 | 134 | 102 | 107 of 203 | 60 s |
 
 The candidates are LightGBM (and LightGBM + GO-FLOW when her real forecast is in the message), last value, and the
 value one signal cycle (115 s) ago.

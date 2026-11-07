@@ -1174,6 +1174,7 @@ class IncidentManager:
             self.role[vid] = (inc.id, "wreck")
         if kind == "rear-end":
             self._touching(inc)
+            self._order_rear_end(inc)
         for w in inc.wrecks:
             w.damage = self._damage(sev, kind, w, inc)
             self._fit_in_lane(w)
@@ -1194,7 +1195,8 @@ class IncidentManager:
         if a in self.late_for or b in self.late_for:
             inc.cause = "late to react to a car braking hard"
         fast = [x for x in (a, b) if x in self.speeders]
-        inc.log(now, f"{kind} crash, {inc.label} ({sev * 3.6:.0f} km/h): {a} into {b}"
+        hitter = next((w.vid for w in inc.wrecks if w.role == "collider"), a)
+        inc.log(now, f"{kind} crash, {inc.label} ({sev * 3.6:.0f} km/h): {hitter} into {b if hitter == a else a}"
                      + (f" ({d.kind})" if d else "") + (f" (speeding: {', '.join(fast)})" if fast else ""))
         for vid in (a, b):
             self.careless.pop(vid, None)
@@ -1400,6 +1402,26 @@ class IncidentManager:
                 inc.log(self.now, f"{foll.vid} put back {-gap:.2f} m (bumper to bumper)")
             except Exception as e:  # noqa: BLE001
                 log.debug("touching: %s", e)
+
+    def _order_rear_end(self, inc: Incident) -> None:
+        """Rear-end: the car behind is the one that hit (the collider), the car ahead is shoved on (the victim, _damage).
+        SUMO's collider / victim do not always say so: on the ring road (7 Nov, CARLA) it named a car doing 27 km/h the
+        collider of the car doing 72 km/h right behind it; the shove went to the car behind, and it was drawn a metre
+        inside the one ahead. Who is ahead: along the lane when both are on it, else along the hit car's heading."""
+        ws = [w for w in inc.wrecks if w.role in ("collider", "victim")]
+        if len(ws) != 2:
+            return
+        a, b = ws
+        if a.lane and a.lane == b.lane:
+            a_ahead = a.pos > b.pos
+        else:  # SUMO's angle: degrees clockwise from north
+            h = math.radians(b.angle)
+            a_ahead = (a.x - b.x) * math.sin(h) + (a.y - b.y) * math.cos(h) > 0.0
+        lead, foll = (a, b) if a_ahead else (b, a)
+        if lead.role == "collider":
+            lead.role, foll.role = "victim", "collider"
+            self.stats["rear_end_roles_swapped"] = self.stats.get("rear_end_roles_swapped", 0) + 1
+            inc.log(self.now, f"{foll.vid} is behind {lead.vid}: it hit, {lead.vid} was hit (SUMO said the other way)")
 
     def _lane_pose(self, lane: str, pos: float) -> tuple[float, float, float]:
         """SUMO (x, y, angle) at `pos` along `lane`: its middle, its direction (degrees, 0 north, clockwise)."""

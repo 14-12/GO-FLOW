@@ -192,7 +192,7 @@ town05_freefly.bat
 | --- | --- | --- |
 | `--controller` | `coordinated` | Who runs the signals: `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents_observed` (junction agents fed by the cameras), `agents` (the same agents on exact counts) |
 | `--set-time HH:MM` | saved clock | Start the clock at this time |
-| `--clock-speed` | 60 | Town seconds per real second |
+| `--clock-speed` | 30 | Town seconds per real second: 30 = 2 real minutes a town hour, a day in 48 minutes (60 until 7 Nov); 1 = real time. The GO-FLOW forecasters run only at the speed they were trained at (30) |
 | `--accidents / --no-accidents` | on | Careless drivers crash; the police and recovery trucks respond |
 | `--careless-share` | 0.10 | Share of new cars driven carelessly |
 | `--breakdowns / --no-breakdowns`, `--breakdown-every` | on, 2400 | Cars that break down and stop in their lane; seconds between breakdowns on average |
@@ -251,6 +251,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Rebuild the SUMO scenario from CARLA's map | `build_town05.bat` | no |
 | Checks on signals, junction stops, pedestrians, overlaps, accidents | `audit_town05_signals.py`, `check_*.py` | no |
 | Every kind of incident, SUMO only, with the ring road and the bus lines | `.venv\Scripts\python tools\check_accidents.py --ring --buses --minutes 60` | no |
+| Fly with the GO-FLOW forecasters on (forecast panel, road chips, long-queue alerts, F10), traffic x2 (`normal`: as it is) | `town05_freefly_forecast.bat` | yes |
 | GO-FLOW forecasters: datasets, the live connector checked (agents answer, a killed one restarts, live = offline replay) | `tools\goflow_prediction_graph.py`, `goflow_prediction_dataset.py`, `goflow_prediction_live_check.py --goflow` | no |
 
 `run_cosim.bat` and `python -m cosim.run --help` run the co-simulation as a recorder, in synchronous mode with
@@ -464,7 +465,7 @@ or timed: whether they reach the line on amber or red depends only on where they
 
 | Part | Source |
 | --- | --- |
-| Clock: one real minute is one game hour; demand follows a daily curve (Little's law on the mean trip); day and night lighting | `cosim/daily.py`, `solar.py` |
+| Clock: two real minutes are one game hour; demand follows a daily curve (Little's law on the mean trip); day and night lighting | `cosim/daily.py`, `solar.py` |
 | Demand: passenger cars, deliveries, trucks, motorcycles, about 2900 vehicles an hour at the peak | `scenarios/town05/*.rou.xml` |
 | Three bus lines on closed loops, with CARLA bus shelters at the stops | `tools/build_town05_pt.py`, `town05.pt.add.xml` |
 | Pedestrians on the pavements and crosswalks, with walk signals | `cosim/extras.py`, `ped_lights.py` |

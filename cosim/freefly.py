@@ -15,7 +15,7 @@ How it differs from cosim/live.py (the Town12 viewer, 2-3 FPS):
   W A S D to move, Q / E down / up. The vehicles drawn are those within --radius of where you are.
 * SUMO runs in real time beside it (0.5 s steps); every vehicle is moved --rate times a second along a
   smooth curve between two SUMO states (cosim/interp.py), traffic lights follow SUMO.
-* The clock (1 real minute = 1 game hour, cosim/daily.py) is drawn over the top-left corner of the
+* The clock (2 real minutes = 1 game hour, cosim/daily.py) is drawn over the top-left corner of the
   CARLA picture (cosim/overlay.py). It drives the sun (street lights and headlights at night) and how
   many vehicles the town carries (the day's demand curve; Little's law with the town's mean trip).
 
@@ -214,7 +214,7 @@ def parse_args(argv=None):
                     help="--record-clips: at most this many cameras started after a crash none of the recorded "
                          "ones sees (0: only the planned cameras)")
     ap.add_argument("--clock-speed", type=float, default=None,
-                    help="game seconds per real second (default cosim/daily.GAME_SPEED, 60: a day in 24 min); "
+                    help="game seconds per real second (default cosim/daily.GAME_SPEED, 30: a day in 48 min); "
                          "1 = real time, the light stays as it is during a recording")
     ap.add_argument("--crash-focus", type=float, default=0.0, metavar="P",
                     help="with --record-clips (option A of the GO-FLOW delivery, 6 Nov): a car heading into a place a "
@@ -608,6 +608,8 @@ class BusLines:
         self.n = 0
         self.buses: dict[str, list[str]] = {line: [] for line in self.lines}
         self.next_t = {line: 0.0 for line in self.lines}
+        self.turn_lat: set = set()     # buses allowed to move sideways while standing, beside their stop (turn_in)
+        self.stop_edges = {st["edge"] for d in self.lines.values() for st in d.get("stops", [])}
         for line, d in self.lines.items():
             conn.route.add(f"pt_{line}", d["edges"])
 
@@ -650,6 +652,39 @@ class BusLines:
                 except Exception as e:  # noqa: BLE001 - try again later
                     log.debug("bus %s not added: %s", vid, e)
                 self.next_t[line] = now + self.lap_s(line) / want
+        self.turn_in()
+
+    def turn_in(self) -> None:
+        """On the road of one of its stops a bus may move sideways while slow or standing, into the stop and out of it
+        again (the town's rule is no sideways move while standing, cosim/vmodels.py); one standing beside its stop is
+        put in (cosim/depots.turn_in), one standing across two lanes (pulling out, a parked car ahead in the stop's
+        lane) is set straight in its lane (cosim/depots.park_straight). 7 Nov (SUMO with the depots): line L2 stood
+        beside its first stop, at the police station, then across the stop's lane pulling out, up to 7 minutes,
+        the traffic behind it waiting."""
+        from cosim.depots import TURN_IN_LAT_MS, TURN_IN_STUCK_S, park_straight, turn_in, turned_in
+
+        c = self.conn
+        for vid in [v for line in self.buses.values() for v in line]:
+            try:
+                road = c.vehicle.getRoadID(vid)
+                if road not in self.stop_edges:
+                    turned_in(c, vid, self.turn_lat)        # away from its stops: the town's rule again
+                    continue
+                if vid not in self.turn_lat:
+                    self.turn_lat.add(vid)
+                    c.vehicle.setParameter(vid, "laneChangeModel.lcMaxSpeedLatStanding", str(TURN_IN_LAT_MS))
+                if c.vehicle.isStopped(vid):
+                    continue
+                stops = c.vehicle.getStops(vid, 1)
+                st = stops[0] if stops else None
+                if st is not None and st.lane.rsplit("_", 1)[0] == road:
+                    edge, idx = st.lane.rsplit("_", 1)
+                    if turn_in(c, vid, edge, int(idx), st.endPos, self.turn_lat) is not None:
+                        log.info("bus %s put into its stop on %s (it stood beside it)", vid, st.lane)
+                elif c.vehicle.getWaitingTime(vid) >= TURN_IN_STUCK_S and park_straight(c, vid) is not None:
+                    log.info("bus %s set straight in its lane on %s (it stood across two)", vid, road)
+            except Exception as e:  # noqa: BLE001 - gone, or no stop
+                log.debug("bus turn in %s: %s", vid, e)
 
     def is_bus(self, vid: str) -> bool:
         return vid.startswith("pt_")
@@ -3662,7 +3697,7 @@ def main(argv=None) -> int:
     def state(**kw) -> HudState:
         _, el = scenario_sun(clock.seconds_of_day, lat, lon)
         return HudState(game_s=clock.game_s, vehicles=ff.city_vehicles, target=int(ff.target), paused=clock.paused,
-                        sun_elevation=el, **kw)
+                        sun_elevation=el, speed=clock.speed, **kw)
 
     from cosim.cctv import CCTV, stamp_of
 

@@ -9,7 +9,8 @@
   at 17:00 the city carries exactly the demand every Town12 controller was compared on.
 * day_routes(): a 24-hour route file, each hour's vehicles drawn from the benchmark's own routes
   (all valid on the network; duarouter made them), in the benchmark's vehicle mix.
-* GameClock: 1 real minute = 1 game hour (60x), as in GTA. It is saved to a small JSON file while
+* GameClock: 2 real minutes = 1 game hour (30x; 60x, a GTA-like minute an hour, until 7 Nov: the evening rush
+  went by in 2.5 minutes, the forecasters' 6-minute warm-up took 6 town hours). It is saved to a small JSON file while
   it runs and when the viewer closes, and starts from there the next time.
 """
 
@@ -35,7 +36,7 @@ PHASES = ((0, "QUIET NIGHT"), (5, "EARLY MORNING"), (7, "MORNING RUSH"), (9, "DA
 
 WEEKDAYS = ("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
 DAY_S = 86400.0
-GAME_SPEED = 60.0  # game seconds per real second: 1 real minute = 1 game hour
+GAME_SPEED = 30.0  # game seconds per real second: 2 real minutes = 1 game hour (a day in 48 min)
 
 
 def peak_share() -> float:
