@@ -1,0 +1,33 @@
+{
+  "bundle": "goflow",
+  "trained_with_crashes": true,
+  "accidents": true,
+  "careless_share": 0.10,
+  "models": [
+    {
+      "name": "lgbm_real_v2",
+      "path": "models/goflow/lgbm_real_v2",
+      "task": "queue-fill forecast",
+      "horizons_s": [60, 120, 300],
+      "source": "exact"
+    },
+    {
+      "name": "lgbm_gf_v2",
+      "path": "models/goflow/lgbm_gf_v2",
+      "task": "queue-fill forecast with GO-FLOW confirmation",
+      "horizons_s": [60, 120, 300],
+      "source": "exact"
+    },
+    {
+      "name": "xgb_120s_v1",
+      "path": "models/goflow/xgb_120s_v1",
+      "task": "GO-FLOW occupancy forecast at +120 s",
+      "horizon_s": 120,
+      "source": "exact"
+    }
+  ],
+  "notes": [
+    "The shipped model bundle is the repo-tracked copy used for the integrated CARLA viewer.",
+    "Training was run with crash generation enabled (accidents on), matching the default viewer setup and the queue-behind-crash review item."
+  ]
+}

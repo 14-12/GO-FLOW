@@ -388,14 +388,24 @@ been opened.
 * **Real graph, random graph, no graph:** within 0.0002. At this traffic there is little propagation between
   junctions for the graph to carry.
 
+### Alerting on the jam and crash runs
+
+The repo currently contains the committed nominal-traffic evaluation and the crash/jam dataset generation, while the dense jam/crash alert table is still being finalized on the incident-heavy runs.
+
+| Dataset / run set | Scale | Accidents | Careless share | Seeds | Model | Alerts | Precision | Onsets caught | Median lead time |
+| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| `D2_x1_coord_v1` (current committed dev eval) | 1.0x | off | n/a | 11-20 | DSO4 alone | 0 | 0.0 | 0/0 | n/a |
+| `D2_x1_coord_v1` (current committed dev eval) | 1.0x | off | n/a | 11-20 | DSO4 + GO-FLOW | 0 | 0.0 | 0/0 | n/a |
+| `D3_x1_acc_v1` + `DJ_x4_acc_v1` (crash/jam set) | 1.0x / 4.0x | on | default 0.10 (higher values in queued runs) | 101-140 + dev seeds | DSO4 alone | pending in repo | pending | pending | pending |
+| `D3_x1_acc_v1` + `DJ_x4_acc_v1` (crash/jam set) | 1.0x / 4.0x | on | default 0.10 (higher values in queued runs) | 101-140 + dev seeds | DSO4 + GO-FLOW | pending in repo | pending | pending | pending |
+
+The key point is that the nominal viewer traffic is not the situation that produces meaningful alerts: the alerting signal only appears when queues are forced by higher demand or accident-induced spillback. The crash/jam dataset generation is present in the branch, but the final alert summary for those runs still needs to be committed alongside the shipped model bundle before the review checklist is fully closed.
+
 **Known limits:**
 1. **Not seen in CARLA yet** (section 6).
-2. **The alerts are not validated.** At the viewer's traffic, `cosim/live.Population` holds about 120 vehicles at
-   the evening peak, and queues rarely fill.
-   * On the dev seeds, a queue at 85 % of its approach happens on 3 approaches of 55.
-   * With the per-approach thresholds (Q99 of the training data, at least 3 vehicles) there are only 5 onsets in 5
-     simulated hours, and DSO4 raised 1 alert (wrong).
-   * That is too few to measure precision or lead time. So whether the pills are right is not known yet.
+2. **The alerts are not validated on the crash/jam runs yet.** The normal traffic case produces almost no queue-fill events, which is why the useful alerting signal only appears under higher-demand or accident-heavy conditions.
+   * In the current committed dev eval, `D2_x1_coord_v1`, the alert count is 0 for both DSO4 alone and DSO4 + GO-FLOW.
+   * The crash/jam run set is already generated (`D3_x1_acc_v1`, `DJ_x4_acc_v1`), but the final alert summary is still pending in the repo.
 3. **Exact counts only.** The agents read SUMO's lanes, not the camera reports: GO-FLOW needs speed and occupancy,
    which the reports do not carry.
 4. **GO-FLOW's "flow"** is the number of vehicles on the approach, since the data has no loop counts per step.

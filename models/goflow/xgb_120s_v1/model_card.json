@@ -1,0 +1,13 @@
+{
+  "version": "xgb_120s_v1",
+  "task": "GO-FLOW occupancy forecast",
+  "horizon_s": 120,
+  "dt_s": 30.0,
+  "trained_with_crashes": true,
+  "accidents": true,
+  "careless_share": 0.10,
+  "source": "exact",
+  "notes": [
+    "This GO-FLOW model was trained with crashes enabled to match the viewer's default incident setting and target the queue behind a crash."
+  ]
+}
