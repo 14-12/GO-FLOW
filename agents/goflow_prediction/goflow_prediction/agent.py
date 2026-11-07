@@ -287,6 +287,8 @@ class ForecastAgent:
             msg["long_queue_s"] = int(self.congestion.k * self.tb.dt_s)
             for j, n in enumerate(self.nodes):
                 msg["nodes"][n]["p_long"] = _r(p_long[j])
+                # already over its level: the classifier says 0 (a start is still to come only for the others)
+                msg["nodes"][n]["long_now"] = bool(c_now[j] >= self.congestion.level[j])
         return {"problems": problems, "forecast": msg, "alerts": alerts, "warming_up": False}
 
 

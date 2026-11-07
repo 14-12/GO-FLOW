@@ -431,3 +431,28 @@ def test_restart_errors_do_not_nest(tmp_path, monkeypatch):
             break
         time.sleep(0.25)
     assert ch.error.count("exited with code") == 1
+
+
+def test_a_queue_already_long_says_so(monkeypatch):
+    """CARLA, 7 Nov: "SEVERE · QUEUE 11 · LONG QUEUE IN 3 MIN: 0 %" over a queue that was long already."""
+    import os
+
+    monkeypatch.setitem(os.environ, "SDL_VIDEODRIVER", "dummy")
+    import pygame
+
+    pygame.init()
+    from cosim.goflow_prediction_hud import ForecastHud
+
+    hud = ForecastHud()
+    seen = []
+
+    class Font:                                 # pygame's Font.render cannot be patched: a stand-in that records
+        def render(self, text, *a):
+            seen.append(text)
+            return pygame.Surface((10, 10))
+
+    hud.f_title = Font()
+    hud.chip({"node": "x", "state": "severe", "queue_now": 11.0, "p_long": 0.0, "long_s": 180, "long_now": True})
+    hud.chip({"node": "y", "state": "moderate", "queue_now": 5.0, "p_long": 0.8, "long_s": 180, "long_now": False})
+    assert seen == ["SEVERE  ·  QUEUE 11  ·  LONG QUEUE NOW", "MODERATE  ·  QUEUE 5  ·  LONG QUEUE IN 3 MIN: 80 %"]
+    pygame.quit()

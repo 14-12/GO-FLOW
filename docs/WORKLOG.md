@@ -1669,3 +1669,11 @@ what it says changes, and chips and pills are reused by their text (0.04 ms per 
 messages no longer nest ("exited with code ...: exited with code ...").
 
 Tests: `agents/goflow_prediction/tests` (2 more), `tests/test_goflow_prediction.py` (3 more).
+
+**In CARLA (7 Nov, 19:20).** Frame rate in the 70 s demo, back to back: 29.4 fps with the forecasters (the cached
+panel; 26.9 and 27.0 before), 30.2 without (earlier runs without: 31.7 and 28.0), so the gap is under the run-to-run
+noise. At x2 (`--demand-scale 2`, 11:00 into the evening rush), six "long queue likely within 3 min" alerts in the first
+5 minutes of forecasts; of the five whose 3 minutes had passed, four queues reached their level in time (2086-1,
+1722-3, 207-4, 1126-2), one did not (2086-4). A chip read "SEVERE · QUEUE 11 · LONG QUEUE IN 3 MIN: 0 %" over a queue
+that was long already (the classifier gives 0 there): each forecast now marks those (`long_now`) and their chip says
+"LONG QUEUE NOW". Tests: 1 more on each side.

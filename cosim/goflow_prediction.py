@@ -500,7 +500,7 @@ class GoflowPrediction:
             full = self.full.get(node) or 0.85
             g = gfn.get(node) or {}
             rows.append({"node": node, "tls": self.tls.get(node), "risk": fill[horizon_i] / full,
-                         "p_long": v.get("p_long"), "long_s": fc.get("long_queue_s"),
+                         "p_long": v.get("p_long"), "long_s": fc.get("long_queue_s"), "long_now": v.get("long_now"),
                          "queue_now": (now_nodes.get(node) or {}).get("halt"),
                          "queue_then": halt[horizon_i] if len(halt) > horizon_i else None,
                          "horizon_s": HORIZONS_S[horizon_i], "state": g.get("traffic_state"),

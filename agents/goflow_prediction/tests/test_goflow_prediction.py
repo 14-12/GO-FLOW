@@ -265,6 +265,9 @@ def test_long_queue_classifier_makes_the_alerts(toy, trained, tmp_path):
     assert a["horizon_s"] == cg.K * 30 and a["p"] >= cg.THRESHOLD and "longer green" in a["action"]
     f = next(iter(fc.values()))
     assert f["long_queue_s"] == cg.K * 30 and all(0.0 <= v["p_long"] <= 1.0 for v in f["nodes"].values())
+    # a queue already over its level is marked (its chance of a start is 0, CARLA showed "0 %" on a long queue)
+    marked = [v for m in fc.values() for v in m["nodes"].values() if v["long_now"]]
+    assert marked and all(v["p_long"] == 0.0 for v in marked)
     dev = card["dev_scores_by_part"]["0"]["by_threshold"]
     at = next(e for e in dev if e["threshold"] == cg.THRESHOLD)
     assert at["starts"] > 0 and at["recall"] >= 0.5

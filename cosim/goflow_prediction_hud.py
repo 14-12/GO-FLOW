@@ -110,7 +110,9 @@ class ForecastHud(AgentHud):
         state = r.get("state")
         colour = STATE_COLOURS.get(state, NO_STATE)
         head = (STATE_TEXT.get(state) or "forecast").upper()
-        if r.get("p_long") is not None and r.get("long_s"):
+        if r.get("long_now"):              # its queue is long already (the classifier gives 0 for it)
+            text = f"{head}  ·  QUEUE {_cars(r.get('queue_now'))}  ·  LONG QUEUE NOW"
+        elif r.get("p_long") is not None and r.get("long_s"):
             text = (f"{head}  ·  QUEUE {_cars(r.get('queue_now'))}  ·  LONG QUEUE IN {r['long_s'] // 60} MIN: "
                     f"{r['p_long'] * 100:.0f} %")
         else:
@@ -130,10 +132,14 @@ class ForecastHud(AgentHud):
         w, h = size
         loc = view_tf.location
         shown = 0
-        for r in sorted(rows, key=lambda r: (-(r.get("p_long") or 0.0), -r.get("risk", 0.0))):
+
+        def rank(r):
+            return -(1.0 if r.get("long_now") else (r.get("p_long") or 0.0)), -r.get("risk", 0.0)
+
+        for r in sorted(rows, key=rank):
             if shown >= MAX_CHIPS:
                 break
-            risk = r["p_long"] if r.get("p_long") is not None else r.get("risk", 0.0)
+            risk = 1.0 if r.get("long_now") else (r["p_long"] if r.get("p_long") is not None else r.get("risk", 0.0))
             if not (r.get("state") in ("congested", "severe") or risk >= CHIP_RISK):
                 continue
             q = max(r.get("queue_now") or 0.0, r.get("queue_then") or 0.0)
@@ -145,7 +151,8 @@ class ForecastHud(AgentHud):
             p = self.project(view_tf, size, a[0], a[1], a[2] + 4.0)
             if p is None or not (EDGE <= p[0] <= w - EDGE and EDGE <= p[1] <= h - EDGE):
                 continue
-            c = self._cached(("chip", r["node"], r.get("state"), _cars(r.get("queue_now")), _cars(r.get("queue_then")),
+            c = self._cached(("chip", r["node"], r.get("state"), bool(r.get("long_now")), _cars(r.get("queue_now")),
+                              _cars(r.get("queue_then")),
                               None if r.get("p_long") is None else round(r["p_long"] * 100), r.get("long_s"),
                               r.get("horizon_s")), lambda r=r: self.chip(r))
             px = min(max(p[0] - c.get_width() / 2, 8), w - c.get_width() - 8)
