@@ -1738,3 +1738,16 @@ The connector's default clock is now `GAME_SPEED`; the dataset tool and the live
 60) is in git history.
 
 Tests: `tests/test_daily.py` (the clock's speed).
+
+### A fast car into a standing one, drawn inside it (8 Nov)
+
+In CARLA (ring road): `hw7` at 86 km/h into `live31`, standing. From the crash trace, `hw7` was drawn hitting with
+the two centres 0.4 m apart. At 24 m/s a car goes 12 m in a SUMO step; SUMO saw the crash at the step's end, `hw7`'s
+front past `live31`'s middle. `_to_contact` takes each car back along its way to where they touched, but no further
+than its lane's start, and `hw7` had come onto the lane in that step: it stayed where it was, and so did its drawn
+pose. By lane position it was then the car ahead: the roles (`_order_rear_end`) and the bumper-to-bumper order
+(`_touching`) came out the wrong way.
+
+Now: the drawn pose at the hit is always where they touched (SUMO goes as far back as its lane allows); who is ahead is
+decided from where they touched, not from SUMO's lane positions; `_touching` sets the follower (the collider) behind
+the leader, and when the follower's lane has no room behind it, the leader goes on instead.

@@ -1173,8 +1173,8 @@ class IncidentManager:
             inc.wrecks.append(w)
             self.role[vid] = (inc.id, "wreck")
         if kind == "rear-end":
-            self._touching(inc)
             self._order_rear_end(inc)
+            self._touching(inc)
         for w in inc.wrecks:
             w.damage = self._damage(sev, kind, w, inc)
             self._fit_in_lane(w)
@@ -1359,7 +1359,8 @@ class IncidentManager:
         if f >= 1.0:
             return 1.0
         for vid, v, p in ((a, va, pa), (b, vb, pb)):
-            back = (1.0 - f) * math.hypot(v.x - p.x, v.y - p.y)
+            went = math.hypot(v.x - p.x, v.y - p.y)
+            back = (1.0 - f) * went
             if back < 0.02:
                 continue
             try:
@@ -1367,12 +1368,16 @@ class IncidentManager:
             except Exception as e:  # noqa: BLE001
                 log.debug("to contact %s: %s", vid, e)
                 continue
-            back = min(back, max(pos - 0.1, 0.0))  # (it came onto this lane in the step: as far back as it goes)
-            if back < 0.02:
-                continue
-            k = back / math.hypot(v.x - p.x, v.y - p.y)  # back along the way it went in the step (as drawn)
+            # where it touched, as drawn: back along the way it went in the step, all the way (8 Nov: a car doing
+            # 86 km/h that had come onto this lane in the step went back only to the lane's start; it was drawn
+            # hitting from inside the other car, centres 0.4 m apart)
+            k = back / went
             d = (v.angle - p.angle + 180.0) % 360.0 - 180.0
             x, y, ang = v.x + (p.x - v.x) * k, v.y + (p.y - v.y) * k, (v.angle - d * k) % 360.0
+            self._moved[vid] = (x, y, ang, pos)
+            back = min(back, max(pos - 0.1, 0.0))  # SUMO: on this lane, as far back as it goes (_touching ends it)
+            if back < 0.02:
+                continue
             try:
                 if lane.startswith(":"):  # in a junction, where it is across its lane: the very place
                     edge, idx = lane.rsplit("_", 1)
@@ -1387,21 +1392,34 @@ class IncidentManager:
         return f
 
     def _touching(self, inc: Incident) -> None:
-        """Rear-end: SUMO noticed the crash a step late, the follower partly inside the leader; it is put back to
-        bumper to bumper."""
+        """Rear-end: SUMO noticed the crash a step late, the follower partly inside the leader (or past it); they are
+        set bumper to bumper, the follower (the collider, _order_rear_end) behind. The follower goes back; when its
+        lane has no room behind (it came onto it in the step), the leader goes on instead."""
         c = self.conn
         ws = [w for w in inc.wrecks if w.lane == inc.wrecks[0].lane and w.lane]
         if len(ws) != 2:
             return
-        lead, foll = sorted(ws, key=lambda w: -w.pos)
+        roles = {w.role: w for w in ws}
+        if set(roles) == {"collider", "victim"}:
+            lead, foll = roles["victim"], roles["collider"]
+        else:
+            lead, foll = sorted(ws, key=lambda w: -w.pos)
         gap = (lead.pos - lead.length) - foll.pos
-        if gap < -0.02:
-            try:
-                c.vehicle.moveTo(foll.vid, foll.lane, max(0.1, foll.pos + gap - 0.05))
-                foll.pos = max(0.1, foll.pos + gap - 0.05)
-                inc.log(self.now, f"{foll.vid} put back {-gap:.2f} m (bumper to bumper)")
-            except Exception as e:  # noqa: BLE001
-                log.debug("touching: %s", e)
+        if gap >= -0.02:
+            return
+        want = lead.pos - lead.length - 0.05
+        try:
+            if want >= 0.1:
+                c.vehicle.moveTo(foll.vid, foll.lane, want)
+                inc.log(self.now, f"{foll.vid} put back {foll.pos - want:.2f} m (bumper to bumper)")
+                foll.pos = want
+            else:
+                on = min(foll.pos + lead.length + 0.05, self.net.getLane(lead.lane).getLength() - 0.1)
+                c.vehicle.moveTo(lead.vid, lead.lane, on)
+                inc.log(self.now, f"{lead.vid} put on {on - lead.pos:.2f} m (bumper to bumper, no room behind)")
+                lead.pos = on
+        except Exception as e:  # noqa: BLE001
+            log.debug("touching: %s", e)
 
     def _order_rear_end(self, inc: Incident) -> None:
         """Rear-end: the car behind is the one that hit (the collider), the car ahead is shoved on (the victim, _damage).
@@ -1412,11 +1430,11 @@ class IncidentManager:
         if len(ws) != 2:
             return
         a, b = ws
-        if a.lane and a.lane == b.lane:
-            a_ahead = a.pos > b.pos
-        else:  # SUMO's angle: degrees clockwise from north
-            h = math.radians(b.angle)
-            a_ahead = (a.x - b.x) * math.sin(h) + (a.y - b.y) * math.cos(h) > 0.0
+        # where they touched (_to_contact: x, y), along the heading (SUMO's angle: degrees clockwise from north); not
+        # the lane positions, which SUMO took with the cars already inside each other, up to a step's travel deep
+        # (8 Nov: 86 km/h into a standing car, the follower's front past the other car's middle)
+        h = math.radians(b.angle)
+        a_ahead = (a.x - b.x) * math.sin(h) + (a.y - b.y) * math.cos(h) > 0.0
         lead, foll = (a, b) if a_ahead else (b, a)
         if lead.role == "collider":
             lead.role, foll.role = "victim", "collider"

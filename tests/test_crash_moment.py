@@ -255,3 +255,32 @@ def test_only_the_car_ahead_is_shoved_on():
         w = Wreck(role, None, role, "e_0", 0.0, 0.0, 0.0, 0.0, 4.0, 10.0)
         d = IncidentManager._damage(SimpleNamespace(), 12.5, "rear-end", w, inc)
         assert (d["dx"] > 1.0) if role == "victim" else (d["dx"] == 0.0)
+
+
+def test_a_fast_car_into_a_standing_one_ends_behind_it():
+    """8 Nov, CARLA (ring road): hw7 at 86 km/h into live31 standing. SUMO saw it a step late, hw7's front past
+    live31's middle; hw7 had come onto the lane in that step, so SUMO could not take it back far enough, and by lane
+    position it was the one ahead: the roles and the bumper-to-bumper order came out the wrong way, drawn one car
+    inside the other. Now: who is ahead from where they touched (x, y), and the leader goes on when the follower has no
+    room behind on its lane."""
+    from types import SimpleNamespace
+
+    from cosim.incidents import Incident, IncidentManager, Wreck
+
+    moved = []
+    conn = SimpleNamespace(vehicle=SimpleNamespace(moveTo=lambda vid, lane, pos: moved.append((vid, lane, round(pos, 2)))))
+    net = SimpleNamespace(getLane=lambda ln: SimpleNamespace(getLength=lambda: 120.0))
+    me = SimpleNamespace(stats={}, now=200.0, conn=conn, net=net)
+    me._order_rear_end = lambda inc: IncidentManager._order_rear_end(me, inc)
+    # heading east (SUMO angle 90). Where they touched: hw7 (4.6 m) at x 95.4, live31 (4.0 m) at x 100.0, its rear
+    # at 96.0: hw7's front just at it. In SUMO after the step: hw7 at pos 3.0 (it came onto the lane), live31 at 2.5
+    hw7 = Wreck("hw7", None, "victim", "37_3", 3.0, 95.4, 0.0, 90.0, 4.6, 24.0)
+    live31 = Wreck("live31", None, "collider", "37_3", 2.5, 100.0, 0.0, 90.0, 4.0, 0.0)
+    inc = Incident(2, 199.7, "rear-end", 24.0, "severe", "37", "37_3", 0.0, 0.0)
+    inc.wrecks = [live31, hw7]
+    IncidentManager._order_rear_end(me, inc)
+    assert hw7.role == "collider" and live31.role == "victim"
+    IncidentManager._touching(me, inc)
+    # no room behind hw7 (live31's rear would be at 2.5 - 4.0 < 0): live31 goes on, bumper to bumper ahead of hw7
+    assert moved == [("live31", "37_3", 7.05)] and live31.pos == pytest.approx(7.05)
+    assert live31.pos - live31.length > hw7.pos
