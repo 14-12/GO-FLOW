@@ -212,6 +212,7 @@ town05_freefly.bat
 | `--enforce-record SECONDS` | 0 | With `--enforce`: record both cameras for that long, then quit |
 | `--seed` | 42 | SUMO's random seed |
 | `--windowed` | | Keep CARLA in a window (set by `CARLA_RES`) |
+| `--goflow-prediction` / `--goflow-traffic` | off | The GO-FLOW team's forecasters in their own processes (`agents/`, their own venvs: `tools\setup_goflow_prediction.bat`, `setup_goflow_traffic.bat`): DSO4's spill-back alerts over the junctions, with GO-FLOW's occupancy forecast as its input (`cosim/goflow_prediction.py`). The town never waits for them |
 
 ### Signal sets
 
@@ -248,6 +249,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Rebuild the SUMO scenario from CARLA's map | `build_town05.bat` | no |
 | Checks on signals, junction stops, pedestrians, overlaps, accidents | `audit_town05_signals.py`, `check_*.py` | no |
 | Every kind of incident, SUMO only, with the ring road and the bus lines | `.venv\Scripts\python tools\check_accidents.py --ring --buses --minutes 60` | no |
+| GO-FLOW forecasters: datasets, the live connector checked (agents answer, a killed one restarts, live = offline replay) | `tools\goflow_prediction_graph.py`, `goflow_prediction_dataset.py`, `goflow_prediction_live_check.py --goflow` | no |
 
 `run_cosim.bat` and `python -m cosim.run --help` run the co-simulation as a recorder, in synchronous mode with
 camera sensors, instead of the free-fly viewer.
