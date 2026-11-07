@@ -1,0 +1,1263 @@
+{
+ "created": "2026-11-01T01:35:28",
+ "max_fa": 1.0,
+ "threshold": 535.0,
+ "passed": false,
+ "train": {
+  "windows": 6720,
+  "normal_hours": 9.12,
+  "false_alarm_episodes": 9,
+  "false_alarms_per_camera_hour": 0.99,
+  "normal_alarm_share": 0.19,
+  "events": 2,
+  "events_caught": 0,
+  "time_to_detect_median_s": null,
+  "window_precision": 0.0,
+  "window_recall": 0.0,
+  "window_f2": 0.0,
+  "average_precision": 0.0248,
+  "per_event": [
+   {
+    "stream": "20261031_003054|2014-2 looking W",
+    "start_sec": 170.0,
+    "end_sec": 335.0,
+    "caught": false,
+    "time_to_detect_s": null
+   },
+   {
+    "stream": "20261031_021915|1292 overview from 2296",
+    "start_sec": 910.0,
+    "end_sec": 1495.0,
+    "caught": false,
+    "time_to_detect_s": null
+   }
+  ]
+ },
+ "curve": [
+  {
+   "threshold": 30.0,
+   "false_alarms_per_camera_hour": 12.5,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.582
+  },
+  {
+   "threshold": 35.0,
+   "false_alarms_per_camera_hour": 12.39,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.5586
+  },
+  {
+   "threshold": 40.0,
+   "false_alarms_per_camera_hour": 12.06,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.535
+  },
+  {
+   "threshold": 45.0,
+   "false_alarms_per_camera_hour": 11.63,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.5128
+  },
+  {
+   "threshold": 50.0,
+   "false_alarms_per_camera_hour": 10.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.4947
+  },
+  {
+   "threshold": 55.0,
+   "false_alarms_per_camera_hour": 10.2,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.476
+  },
+  {
+   "threshold": 60.0,
+   "false_alarms_per_camera_hour": 10.31,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.4562
+  },
+  {
+   "threshold": 65.0,
+   "false_alarms_per_camera_hour": 9.1,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.4377
+  },
+  {
+   "threshold": 70.0,
+   "false_alarms_per_camera_hour": 8.45,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.4222
+  },
+  {
+   "threshold": 75.0,
+   "false_alarms_per_camera_hour": 7.79,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.4081
+  },
+  {
+   "threshold": 80.0,
+   "false_alarms_per_camera_hour": 6.14,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3936
+  },
+  {
+   "threshold": 85.0,
+   "false_alarms_per_camera_hour": 4.83,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3837
+  },
+  {
+   "threshold": 90.0,
+   "false_alarms_per_camera_hour": 3.73,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3766
+  },
+  {
+   "threshold": 95.0,
+   "false_alarms_per_camera_hour": 2.74,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3709
+  },
+  {
+   "threshold": 100.0,
+   "false_alarms_per_camera_hour": 2.19,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3665
+  },
+  {
+   "threshold": 105.0,
+   "false_alarms_per_camera_hour": 1.97,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3633
+  },
+  {
+   "threshold": 110.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3604
+  },
+  {
+   "threshold": 115.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3577
+  },
+  {
+   "threshold": 120.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3553
+  },
+  {
+   "threshold": 125.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3528
+  },
+  {
+   "threshold": 130.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3502
+  },
+  {
+   "threshold": 135.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3478
+  },
+  {
+   "threshold": 140.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 2,
+   "events": 2,
+   "normal_alarm_share": 0.3454
+  },
+  {
+   "threshold": 145.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3429
+  },
+  {
+   "threshold": 150.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3405
+  },
+  {
+   "threshold": 155.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3379
+  },
+  {
+   "threshold": 160.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3353
+  },
+  {
+   "threshold": 165.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3329
+  },
+  {
+   "threshold": 170.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3306
+  },
+  {
+   "threshold": 175.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3283
+  },
+  {
+   "threshold": 180.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.326
+  },
+  {
+   "threshold": 185.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3237
+  },
+  {
+   "threshold": 190.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3215
+  },
+  {
+   "threshold": 195.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3192
+  },
+  {
+   "threshold": 200.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3167
+  },
+  {
+   "threshold": 205.0,
+   "false_alarms_per_camera_hour": 1.75,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3143
+  },
+  {
+   "threshold": 210.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3117
+  },
+  {
+   "threshold": 215.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3093
+  },
+  {
+   "threshold": 220.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.307
+  },
+  {
+   "threshold": 225.0,
+   "false_alarms_per_camera_hour": 1.65,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3047
+  },
+  {
+   "threshold": 230.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3024
+  },
+  {
+   "threshold": 235.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.3003
+  },
+  {
+   "threshold": 240.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.298
+  },
+  {
+   "threshold": 245.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2959
+  },
+  {
+   "threshold": 250.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2938
+  },
+  {
+   "threshold": 255.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2916
+  },
+  {
+   "threshold": 260.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2895
+  },
+  {
+   "threshold": 265.0,
+   "false_alarms_per_camera_hour": 1.54,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2872
+  },
+  {
+   "threshold": 270.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2851
+  },
+  {
+   "threshold": 275.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.283
+  },
+  {
+   "threshold": 280.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.281
+  },
+  {
+   "threshold": 285.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.279
+  },
+  {
+   "threshold": 290.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.277
+  },
+  {
+   "threshold": 295.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.275
+  },
+  {
+   "threshold": 300.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2731
+  },
+  {
+   "threshold": 305.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2709
+  },
+  {
+   "threshold": 310.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2693
+  },
+  {
+   "threshold": 315.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2676
+  },
+  {
+   "threshold": 320.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2659
+  },
+  {
+   "threshold": 325.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2642
+  },
+  {
+   "threshold": 330.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2626
+  },
+  {
+   "threshold": 335.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2609
+  },
+  {
+   "threshold": 340.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2591
+  },
+  {
+   "threshold": 345.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2574
+  },
+  {
+   "threshold": 350.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2557
+  },
+  {
+   "threshold": 355.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.254
+  },
+  {
+   "threshold": 360.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2522
+  },
+  {
+   "threshold": 365.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2505
+  },
+  {
+   "threshold": 370.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2489
+  },
+  {
+   "threshold": 375.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2472
+  },
+  {
+   "threshold": 380.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2455
+  },
+  {
+   "threshold": 385.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2437
+  },
+  {
+   "threshold": 390.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2419
+  },
+  {
+   "threshold": 395.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.24
+  },
+  {
+   "threshold": 400.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2382
+  },
+  {
+   "threshold": 405.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2364
+  },
+  {
+   "threshold": 410.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2346
+  },
+  {
+   "threshold": 415.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2327
+  },
+  {
+   "threshold": 420.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2309
+  },
+  {
+   "threshold": 425.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 1,
+   "events": 2,
+   "normal_alarm_share": 0.2291
+  },
+  {
+   "threshold": 430.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2271
+  },
+  {
+   "threshold": 435.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2251
+  },
+  {
+   "threshold": 440.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2231
+  },
+  {
+   "threshold": 445.0,
+   "false_alarms_per_camera_hour": 1.43,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2212
+  },
+  {
+   "threshold": 450.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2192
+  },
+  {
+   "threshold": 455.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2174
+  },
+  {
+   "threshold": 460.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2155
+  },
+  {
+   "threshold": 465.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2137
+  },
+  {
+   "threshold": 470.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2119
+  },
+  {
+   "threshold": 475.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.21
+  },
+  {
+   "threshold": 480.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2082
+  },
+  {
+   "threshold": 485.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2064
+  },
+  {
+   "threshold": 490.0,
+   "false_alarms_per_camera_hour": 1.32,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2046
+  },
+  {
+   "threshold": 495.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2027
+  },
+  {
+   "threshold": 500.0,
+   "false_alarms_per_camera_hour": 1.21,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.2011
+  },
+  {
+   "threshold": 505.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1994
+  },
+  {
+   "threshold": 510.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1979
+  },
+  {
+   "threshold": 515.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1963
+  },
+  {
+   "threshold": 520.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1948
+  },
+  {
+   "threshold": 525.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1932
+  },
+  {
+   "threshold": 530.0,
+   "false_alarms_per_camera_hour": 1.1,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1915
+  },
+  {
+   "threshold": 535.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.19
+  },
+  {
+   "threshold": 540.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1886
+  },
+  {
+   "threshold": 545.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1872
+  },
+  {
+   "threshold": 550.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1858
+  },
+  {
+   "threshold": 555.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1845
+  },
+  {
+   "threshold": 560.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1831
+  },
+  {
+   "threshold": 565.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1817
+  },
+  {
+   "threshold": 570.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1804
+  },
+  {
+   "threshold": 575.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.179
+  },
+  {
+   "threshold": 580.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1776
+  },
+  {
+   "threshold": 585.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1763
+  },
+  {
+   "threshold": 590.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1749
+  },
+  {
+   "threshold": 595.0,
+   "false_alarms_per_camera_hour": 0.99,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1735
+  },
+  {
+   "threshold": 600.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1721
+  },
+  {
+   "threshold": 605.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1709
+  },
+  {
+   "threshold": 610.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1697
+  },
+  {
+   "threshold": 615.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1685
+  },
+  {
+   "threshold": 620.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1673
+  },
+  {
+   "threshold": 625.0,
+   "false_alarms_per_camera_hour": 0.88,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1661
+  },
+  {
+   "threshold": 630.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1648
+  },
+  {
+   "threshold": 635.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1638
+  },
+  {
+   "threshold": 640.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1627
+  },
+  {
+   "threshold": 645.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1616
+  },
+  {
+   "threshold": 650.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1606
+  },
+  {
+   "threshold": 655.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1595
+  },
+  {
+   "threshold": 660.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1584
+  },
+  {
+   "threshold": 665.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1572
+  },
+  {
+   "threshold": 670.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1562
+  },
+  {
+   "threshold": 675.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1551
+  },
+  {
+   "threshold": 680.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.154
+  },
+  {
+   "threshold": 685.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.153
+  },
+  {
+   "threshold": 690.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1519
+  },
+  {
+   "threshold": 695.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1508
+  },
+  {
+   "threshold": 700.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1498
+  },
+  {
+   "threshold": 705.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1487
+  },
+  {
+   "threshold": 710.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1476
+  },
+  {
+   "threshold": 715.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1466
+  },
+  {
+   "threshold": 720.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1455
+  },
+  {
+   "threshold": 725.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1444
+  },
+  {
+   "threshold": 730.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1434
+  },
+  {
+   "threshold": 735.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1423
+  },
+  {
+   "threshold": 740.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1412
+  },
+  {
+   "threshold": 745.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1402
+  },
+  {
+   "threshold": 750.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1391
+  },
+  {
+   "threshold": 755.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1381
+  },
+  {
+   "threshold": 760.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.137
+  },
+  {
+   "threshold": 765.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1359
+  },
+  {
+   "threshold": 770.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1349
+  },
+  {
+   "threshold": 775.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1338
+  },
+  {
+   "threshold": 780.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1327
+  },
+  {
+   "threshold": 785.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1317
+  },
+  {
+   "threshold": 790.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1306
+  },
+  {
+   "threshold": 795.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1295
+  },
+  {
+   "threshold": 800.0,
+   "false_alarms_per_camera_hour": 0.77,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1285
+  },
+  {
+   "threshold": 805.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1272
+  },
+  {
+   "threshold": 810.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1263
+  },
+  {
+   "threshold": 815.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1254
+  },
+  {
+   "threshold": 820.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1245
+  },
+  {
+   "threshold": 825.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1236
+  },
+  {
+   "threshold": 830.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1227
+  },
+  {
+   "threshold": 835.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1218
+  },
+  {
+   "threshold": 840.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1209
+  },
+  {
+   "threshold": 845.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1199
+  },
+  {
+   "threshold": 850.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.119
+  },
+  {
+   "threshold": 855.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1181
+  },
+  {
+   "threshold": 860.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1172
+  },
+  {
+   "threshold": 865.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1163
+  },
+  {
+   "threshold": 870.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1154
+  },
+  {
+   "threshold": 875.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1145
+  },
+  {
+   "threshold": 880.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1135
+  },
+  {
+   "threshold": 885.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1126
+  },
+  {
+   "threshold": 890.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1117
+  },
+  {
+   "threshold": 895.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1108
+  },
+  {
+   "threshold": 900.0,
+   "false_alarms_per_camera_hour": 0.66,
+   "events_caught": 0,
+   "events": 2,
+   "normal_alarm_share": 0.1099
+  }
+ ]
+}

@@ -1,0 +1,478 @@
+{
+ "runs": [
+  {
+   "plan_index": 0,
+   "split": "train",
+   "seed": 31007,
+   "time": "09:00",
+   "cameras": "train",
+   "folder": "20261101_212907",
+   "recorded_s": 2101,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 1,
+     "t0": 98.0,
+     "kind": "rear-end",
+     "lane": "37_5",
+     "distance_m": 22.9,
+     "from_sim_s": 98.0,
+     "to_sim_s": 281.5
+    }
+   ]
+  },
+  {
+   "plan_index": 1,
+   "split": "train",
+   "seed": 31019,
+   "time": "12:00",
+   "cameras": "train",
+   "folder": "20261101_220536",
+   "recorded_s": 2099,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 2,
+     "t0": 124.0,
+     "kind": "pile-up",
+     "lane": "37_3",
+     "distance_m": 32.5,
+     "from_sim_s": 124.5,
+     "to_sim_s": 391.5
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 4,
+     "t0": 438.0,
+     "kind": "pile-up",
+     "lane": "37_4",
+     "distance_m": 29.3,
+     "from_sim_s": 438.0,
+     "to_sim_s": 1298.5
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 5,
+     "t0": 595.0,
+     "kind": "pile-up",
+     "lane": "-38_5",
+     "distance_m": 33.0,
+     "from_sim_s": 595.0,
+     "to_sim_s": 2130.5
+    }
+   ]
+  },
+  {
+   "plan_index": 2,
+   "split": "test",
+   "seed": 31031,
+   "time": "15:00",
+   "cameras": "test",
+   "folder": "20261101_224226",
+   "recorded_s": 2098,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 3,
+     "t0": 296.0,
+     "kind": "pile-up",
+     "lane": "37_4",
+     "distance_m": 15.0,
+     "from_sim_s": 296.5,
+     "to_sim_s": 750.5
+    },
+    {
+     "camera": "2328-2 looking W",
+     "incident": 4,
+     "t0": 824.0,
+     "kind": "rear-end",
+     "lane": "-36_3",
+     "distance_m": 15.8,
+     "from_sim_s": 824.0,
+     "to_sim_s": 1066.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 6,
+     "t0": 1083.5,
+     "kind": "rear-end",
+     "lane": "-38_3",
+     "distance_m": 15.6,
+     "from_sim_s": 1084.0,
+     "to_sim_s": 1268.5
+    }
+   ]
+  },
+  {
+   "plan_index": 3,
+   "split": "train",
+   "seed": 31051,
+   "time": "17:30",
+   "cameras": "train",
+   "folder": "20261101_231846",
+   "recorded_s": 2101,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2328-2 looking W",
+     "incident": 2,
+     "t0": 101.0,
+     "kind": "pile-up",
+     "lane": "-36_3",
+     "distance_m": 33.6,
+     "from_sim_s": 101.5,
+     "to_sim_s": 530.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 3,
+     "t0": 181.0,
+     "kind": "pile-up",
+     "lane": "-38_4",
+     "distance_m": 23.1,
+     "from_sim_s": 181.0,
+     "to_sim_s": 473.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 9,
+     "t0": 1516.0,
+     "kind": "rear-end",
+     "lane": "-38_5",
+     "distance_m": 32.5,
+     "from_sim_s": 1516.5,
+     "to_sim_s": 1711.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 11,
+     "t0": 1734.5,
+     "kind": "rear-end",
+     "lane": "-38_4",
+     "distance_m": 19.7,
+     "from_sim_s": 1734.5,
+     "to_sim_s": 1904.0
+    }
+   ]
+  },
+  {
+   "plan_index": 4,
+   "split": "train",
+   "seed": 31063,
+   "time": "07:30",
+   "cameras": "train",
+   "folder": "20261101_235517",
+   "recorded_s": 2100,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2328-2 looking W",
+     "incident": 1,
+     "t0": 102.0,
+     "kind": "rear-end",
+     "lane": "-36_3",
+     "distance_m": 21.8,
+     "from_sim_s": 102.5,
+     "to_sim_s": 389.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 2,
+     "t0": 418.0,
+     "kind": "rear-end",
+     "lane": "-38_5",
+     "distance_m": 15.3,
+     "from_sim_s": 418.0,
+     "to_sim_s": 601.0
+    }
+   ]
+  },
+  {
+   "plan_index": 5,
+   "split": "test",
+   "seed": 31081,
+   "time": "10:30",
+   "cameras": "test",
+   "folder": "20261102_003143",
+   "recorded_s": 2099,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 1,
+     "t0": 118.0,
+     "kind": "rear-end",
+     "lane": "37_5",
+     "distance_m": 15.6,
+     "from_sim_s": 118.5,
+     "to_sim_s": 1922.0
+    }
+   ]
+  },
+  {
+   "plan_index": 6,
+   "split": "train",
+   "seed": 31091,
+   "time": "13:30",
+   "cameras": "train",
+   "folder": "20261102_010750",
+   "recorded_s": 2100,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 2,
+     "t0": 113.5,
+     "kind": "rear-end",
+     "lane": "37_3",
+     "distance_m": 32.5,
+     "from_sim_s": 113.5,
+     "to_sim_s": 294.0
+    },
+    {
+     "camera": "2328-2 looking W",
+     "incident": 6,
+     "t0": 1245.0,
+     "kind": "rear-end",
+     "lane": "-36_4",
+     "distance_m": 21.3,
+     "from_sim_s": 1245.0,
+     "to_sim_s": 1526.5
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 8,
+     "t0": 1596.5,
+     "kind": "rear-end",
+     "lane": "37_5",
+     "distance_m": 14.9,
+     "from_sim_s": 1596.5,
+     "to_sim_s": 1781.0
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 10,
+     "t0": 1819.5,
+     "kind": "rear-end",
+     "lane": "37_3",
+     "distance_m": 22.4,
+     "from_sim_s": 1820.0,
+     "to_sim_s": 2030.5
+    }
+   ]
+  },
+  {
+   "plan_index": 7,
+   "split": "train",
+   "seed": 31121,
+   "time": "09:00",
+   "cameras": "train",
+   "folder": "20261102_014406",
+   "recorded_s": 268,
+   "complete": false,
+   "near_crashes": [
+    {
+     "camera": "2328-1 looking E",
+     "incident": 2,
+     "t0": 280.0,
+     "kind": "rear-end",
+     "lane": "35_2",
+     "distance_m": 14.9,
+     "from_sim_s": 280.0,
+     "to_sim_s": 302.0
+    }
+   ]
+  },
+  {
+   "plan_index": 8,
+   "split": "test",
+   "seed": 31139,
+   "time": "12:00",
+   "cameras": "test",
+   "folder": "20261102_014958",
+   "recorded_s": 2100,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 1,
+     "t0": 112.0,
+     "kind": "rear-end",
+     "lane": "37_3",
+     "distance_m": 13.3,
+     "from_sim_s": 112.0,
+     "to_sim_s": 324.5
+    },
+    {
+     "camera": "2328-2 looking W",
+     "incident": 2,
+     "t0": 395.0,
+     "kind": "pile-up",
+     "lane": "-36_3",
+     "distance_m": 14.8,
+     "from_sim_s": 395.0,
+     "to_sim_s": 682.0
+    },
+    {
+     "camera": "2014-3 looking E",
+     "incident": 3,
+     "t0": 507.5,
+     "kind": "rear-end",
+     "lane": "-38_3",
+     "distance_m": 22.6,
+     "from_sim_s": 507.5,
+     "to_sim_s": 691.5
+    }
+   ]
+  },
+  {
+   "plan_index": 9,
+   "split": "train",
+   "seed": 31147,
+   "time": "15:00",
+   "cameras": "train",
+   "folder": "20261102_022614",
+   "recorded_s": 2098,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2328-2 looking W",
+     "incident": 2,
+     "t0": 98.5,
+     "kind": "rear-end",
+     "lane": "-36_4",
+     "distance_m": 26.2,
+     "from_sim_s": 98.5,
+     "to_sim_s": 373.0
+    },
+    {
+     "camera": "2328-1 looking E",
+     "incident": 3,
+     "t0": 348.0,
+     "kind": "rear-end",
+     "lane": "35_4",
+     "distance_m": 32.9,
+     "from_sim_s": 348.0,
+     "to_sim_s": 537.5
+    },
+    {
+     "camera": "2328-1 looking E",
+     "incident": 5,
+     "t0": 577.5,
+     "kind": "rear-end",
+     "lane": "35_2",
+     "distance_m": 25.0,
+     "from_sim_s": 577.5,
+     "to_sim_s": 758.0
+    },
+    {
+     "camera": "2328-2 looking W",
+     "incident": 7,
+     "t0": 1022.0,
+     "kind": "pile-up",
+     "lane": "-36_5",
+     "distance_m": 16.5,
+     "from_sim_s": 1022.0,
+     "to_sim_s": 2102.0
+    }
+   ]
+  },
+  {
+   "plan_index": 10,
+   "split": "train",
+   "seed": 31151,
+   "time": "17:30",
+   "cameras": "train",
+   "folder": "20261102_030232",
+   "recorded_s": 2099,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "2014-2 looking W",
+     "incident": 1,
+     "t0": 70.5,
+     "kind": "rear-end",
+     "lane": "37_3",
+     "distance_m": 14.2,
+     "from_sim_s": 70.5,
+     "to_sim_s": 250.0
+    },
+    {
+     "camera": "2328-1 looking E",
+     "incident": 2,
+     "t0": 134.5,
+     "kind": "rear-end",
+     "lane": "35_4",
+     "distance_m": 13.8,
+     "from_sim_s": 134.5,
+     "to_sim_s": 560.5
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 3,
+     "t0": 286.5,
+     "kind": "pile-up",
+     "lane": "37_3",
+     "distance_m": 12.8,
+     "from_sim_s": 286.5,
+     "to_sim_s": 578.0
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 4,
+     "t0": 637.0,
+     "kind": "rear-end",
+     "lane": "37_4",
+     "distance_m": 13.3,
+     "from_sim_s": 637.0,
+     "to_sim_s": 2075.5
+    }
+   ]
+  },
+  {
+   "plan_index": 11,
+   "split": "test",
+   "seed": 31153,
+   "time": "07:30",
+   "cameras": "test",
+   "folder": "20261102_033846",
+   "recorded_s": 2098,
+   "complete": true,
+   "near_crashes": [
+    {
+     "camera": "838-2 looking N",
+     "incident": 2,
+     "t0": 163.0,
+     "kind": "rear-end",
+     "lane": "44_4",
+     "distance_m": 28.3,
+     "from_sim_s": 163.0,
+     "to_sim_s": 847.5
+    },
+    {
+     "camera": "2014-2 looking W",
+     "incident": 3,
+     "t0": 286.0,
+     "kind": "rear-end",
+     "lane": "37_4",
+     "distance_m": 22.5,
+     "from_sim_s": 286.5,
+     "to_sim_s": 984.5
+    },
+    {
+     "camera": "2328-2 looking W",
+     "incident": 4,
+     "t0": 1068.0,
+     "kind": "rear-end",
+     "lane": "-36_3",
+     "distance_m": 22.0,
+     "from_sim_s": 1068.0,
+     "to_sim_s": 1303.0
+    }
+   ]
+  }
+ ]
+}

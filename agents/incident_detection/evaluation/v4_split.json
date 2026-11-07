@@ -1,0 +1,117 @@
+{
+ "purpose": "v4 data set (the simulator's stage-2 delivery plan, option A: --crash-focus 0.5), recorded on this PC after the 3-6 Nov simulator fixes (police after minutes, crash drawn at contact, every recorded camera posed each picture, frame times = SUMO moment shown). Runs, seeds and split fixed before recording, as in the simulator's tools/record_stage2.bat. Test runs are opened once. Crash rates from these runs mean nothing (crashes are made likelier in front of the cameras). Runs 7-12 added 7 Nov 01:30, before being recorded, because runs 1-6 gave only 8 training and 7 test crashes by the counting rule (decided from the simulator's crash log only, no agent output looked at).",
+ "careless_share": 0.1,
+ "crash_focus": 0.5,
+ "seconds": 3000,
+ "fps": 10,
+ "cameras": {
+  "ring": [
+   "2014-2 looking W",
+   "2014-3 looking E",
+   "2328-2 looking W",
+   "2328-1 looking E"
+  ],
+  "junctions": [
+   "1126-1 looking E",
+   "1427-3 looking S",
+   "838-2 looking N",
+   "979-4 looking W"
+  ],
+  "unseen_a": [
+   "2014-1 looking S",
+   "2328-3 looking N",
+   "1292-1 looking W",
+   "2086-1 looking N"
+  ],
+  "unseen_b": [
+   "2240-1 looking N",
+   "1882-1 looking E",
+   "1126-2 looking S",
+   "53-1 looking E"
+  ]
+ },
+ "unseen_test_cameras": [
+  "2014-1 looking S",
+  "2328-3 looking N",
+  "1292-1 looking W",
+  "2086-1 looking N",
+  "2240-1 looking N",
+  "1882-1 looking E",
+  "1126-2 looking S",
+  "53-1 looking E"
+ ],
+ "runs": [
+  {
+   "split": "train",
+   "seed": 4101,
+   "time": "09:00",
+   "cameras": "ring"
+  },
+  {
+   "split": "train",
+   "seed": 4102,
+   "time": "12:00",
+   "cameras": "junctions"
+  },
+  {
+   "split": "train",
+   "seed": 4103,
+   "time": "17:30",
+   "cameras": "ring"
+  },
+  {
+   "split": "test",
+   "seed": 4104,
+   "time": "15:00",
+   "cameras": "unseen_a"
+  },
+  {
+   "split": "test",
+   "seed": 4105,
+   "time": "16:30",
+   "cameras": "unseen_b"
+  },
+  {
+   "split": "test",
+   "seed": 4106,
+   "time": "10:30",
+   "cameras": "ring"
+  },
+  {
+   "split": "train",
+   "seed": 4107,
+   "time": "13:00",
+   "cameras": "ring"
+  },
+  {
+   "split": "train",
+   "seed": 4108,
+   "time": "08:00",
+   "cameras": "junctions"
+  },
+  {
+   "split": "train",
+   "seed": 4109,
+   "time": "19:00",
+   "cameras": "ring"
+  },
+  {
+   "split": "test",
+   "seed": 4110,
+   "time": "11:00",
+   "cameras": "unseen_b"
+  },
+  {
+   "split": "train",
+   "seed": 4111,
+   "time": "14:00",
+   "cameras": "ring"
+  },
+  {
+   "split": "test",
+   "seed": 4112,
+   "time": "09:30",
+   "cameras": "unseen_a"
+  }
+ ]
+}

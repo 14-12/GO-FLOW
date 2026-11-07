@@ -1,0 +1,530 @@
+{
+ "created": "2026-11-01T01:51:26",
+ "runs": [
+  "20261031_003054",
+  "20261031_010659",
+  "20261031_014304",
+  "20261031_021915"
+ ],
+ "features": {
+  "hard_stops": {
+   "normal_windows_per_hour": 3.95,
+   "accident_window_share": 0.013,
+   "rules": [
+    {
+     "threshold": 1,
+     "false_alarms_per_hour": 3.73,
+     "normal_alarm_share": 0.0055,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": true,
+       "time_to_detect_s": 145.0
+      }
+     ]
+    },
+    {
+     "threshold": 2,
+     "false_alarms_per_hour": 0.11,
+     "normal_alarm_share": 0.0002,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 3,
+     "false_alarms_per_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  },
+  "contact_hard_stops": {
+   "normal_windows_per_hour": 0.22,
+   "accident_window_share": 0.007,
+   "rules": [
+    {
+     "threshold": 1,
+     "false_alarms_per_hour": 0.22,
+     "normal_alarm_share": 0.0003,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": true,
+       "time_to_detect_s": 145.0
+      }
+     ]
+    },
+    {
+     "threshold": 2,
+     "false_alarms_per_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 3,
+     "false_alarms_per_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  },
+  "max_speed_drop": {
+   "normal_windows_per_hour": 607.56,
+   "accident_window_share": 1.0,
+   "rules": [
+    {
+     "threshold": 1,
+     "false_alarms_per_hour": 13.93,
+     "normal_alarm_share": 0.0254,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": true,
+       "time_to_detect_s": 230.0
+      }
+     ]
+    },
+    {
+     "threshold": 1.5,
+     "false_alarms_per_hour": 6.47,
+     "normal_alarm_share": 0.011,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 2,
+     "false_alarms_per_hour": 3.29,
+     "normal_alarm_share": 0.005,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 3,
+     "false_alarms_per_hour": 0.33,
+     "normal_alarm_share": 0.0005,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 4,
+     "false_alarms_per_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  },
+  "crash_born_spot_age_s": {
+   "normal_windows_per_hour": 3.95,
+   "accident_window_share": 0.027,
+   "rules": [
+    {
+     "threshold": 5,
+     "false_alarms_per_hour": 0.22,
+     "normal_alarm_share": 0.0052,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": true,
+       "time_to_detect_s": 150.0
+      }
+     ]
+    },
+    {
+     "threshold": 20,
+     "false_alarms_per_hour": 0.22,
+     "normal_alarm_share": 0.0043,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 60,
+     "false_alarms_per_hour": 0.22,
+     "normal_alarm_share": 0.0018,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 120,
+     "false_alarms_per_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  },
+  "passing_same_direction": {
+   "normal_windows_per_hour": 20.6,
+   "accident_window_share": 0.013,
+   "rules": [
+    {
+     "threshold": 1,
+     "false_alarms_per_hour": 13.05,
+     "normal_alarm_share": 0.0286,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": true,
+       "time_to_detect_s": 120.0
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 2,
+     "false_alarms_per_hour": 3.18,
+     "normal_alarm_share": 0.0055,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 3,
+     "false_alarms_per_hour": 1.1,
+     "normal_alarm_share": 0.0018,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 5,
+     "false_alarms_per_hour": 0.11,
+     "normal_alarm_share": 0.0002,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  },
+  "passing_any_direction": {
+   "normal_windows_per_hour": 41.97,
+   "accident_window_share": 0.053,
+   "rules": [
+    {
+     "threshold": 1,
+     "false_alarms_per_hour": 25.01,
+     "normal_alarm_share": 0.0583,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": true,
+       "time_to_detect_s": 25.0
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": true,
+       "time_to_detect_s": 365.0
+      }
+     ]
+    },
+    {
+     "threshold": 2,
+     "false_alarms_per_hour": 7.57,
+     "normal_alarm_share": 0.0142,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": true,
+       "time_to_detect_s": 25.0
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 3,
+     "false_alarms_per_hour": 2.74,
+     "normal_alarm_share": 0.0044,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    },
+    {
+     "threshold": 5,
+     "false_alarms_per_hour": 0.22,
+     "normal_alarm_share": 0.0003,
+     "events": [
+      {
+       "stream": "20261031_003054|2014-2 looking W",
+       "start_sec": 170.0,
+       "end_sec": 335.0,
+       "caught": false,
+       "time_to_detect_s": null
+      },
+      {
+       "stream": "20261031_021915|1292 overview from 2296",
+       "start_sec": 910.0,
+       "end_sec": 1495.0,
+       "caught": false,
+       "time_to_detect_s": null
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

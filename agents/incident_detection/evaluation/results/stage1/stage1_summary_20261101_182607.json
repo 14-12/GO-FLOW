@@ -1,0 +1,240 @@
+{
+ "created": "2026-11-01T18:26:07",
+ "model_version": "v1",
+ "model_sha256_12": "7ce31bb81739",
+ "render_lag_s": 2.2,
+ "per_clip": [
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "ring1_2014-2_W_crash_aftermath",
+   "group": "ring road",
+   "windows": 60,
+   "alarm_windows": 53,
+   "incident_windows": 37,
+   "normal_minutes": 1.92,
+   "false_alarm_episodes": 3,
+   "false_alarms_per_camera_hour": 93.91,
+   "false_alarm_windows": 16,
+   "normal_alarm_share": 0.696,
+   "score_mean_normal": 0.407,
+   "score_p90_normal": 0.5055,
+   "accidents": [
+    {
+     "incident": 1,
+     "kind": "rear-end",
+     "severity_label": "severe",
+     "crash_before_clip": true,
+     "view_clip_s": [
+      0.0,
+      187.2
+     ],
+     "incident_windows": 37,
+     "alarm_windows": 37,
+     "caught": true,
+     "first_alarm_clip_s": 5.0,
+     "time_to_detect_s": 5.0,
+     "max_score_in_view": 0.8126,
+     "alarm_windows_in_60s_before_view": null,
+     "windows_in_60s_before_view": 0
+    }
+   ]
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "ring2_2014-3_E_normal",
+   "group": "ring road",
+   "windows": 61,
+   "alarm_windows": 43,
+   "incident_windows": 0,
+   "normal_minutes": 5.0,
+   "false_alarm_episodes": 3,
+   "false_alarms_per_camera_hour": 35.99,
+   "false_alarm_windows": 43,
+   "normal_alarm_share": 0.705,
+   "score_mean_normal": 0.3728,
+   "score_p90_normal": 0.5058,
+   "accidents": []
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "ring3_2328-2_W_crash",
+   "group": "ring road",
+   "windows": 60,
+   "alarm_windows": 60,
+   "incident_windows": 56,
+   "normal_minutes": 0.33,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_camera_hour": 0.0,
+   "false_alarm_windows": 4,
+   "normal_alarm_share": 1.0,
+   "score_mean_normal": 0.5993,
+   "score_p90_normal": 0.7659,
+   "accidents": [
+    {
+     "incident": 1,
+     "kind": "rear-end",
+     "severity_label": "severe",
+     "crash_before_clip": true,
+     "view_clip_s": [
+      0.0,
+      98.7
+     ],
+     "incident_windows": 20,
+     "alarm_windows": 20,
+     "caught": true,
+     "first_alarm_clip_s": 5.0,
+     "time_to_detect_s": 5.0,
+     "max_score_in_view": 0.8776,
+     "alarm_windows_in_60s_before_view": null,
+     "windows_in_60s_before_view": 0
+    },
+    {
+     "incident": 3,
+     "kind": "rear-end",
+     "severity_label": "severe",
+     "crash_before_clip": false,
+     "view_clip_s": [
+      121.7,
+      300.0
+     ],
+     "incident_windows": 36,
+     "alarm_windows": 36,
+     "caught": true,
+     "first_alarm_clip_s": 125.0,
+     "time_to_detect_s": 3.299999999999997,
+     "max_score_in_view": 0.7123,
+     "alarm_windows_in_60s_before_view": 11,
+     "windows_in_60s_before_view": 11
+    }
+   ]
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "ring4_2328-1_E_normal",
+   "group": "ring road",
+   "windows": 60,
+   "alarm_windows": 14,
+   "incident_windows": 0,
+   "normal_minutes": 4.99,
+   "false_alarm_episodes": 1,
+   "false_alarms_per_camera_hour": 12.02,
+   "false_alarm_windows": 14,
+   "normal_alarm_share": 0.233,
+   "score_mean_normal": 0.162,
+   "score_p90_normal": 0.4509,
+   "accidents": []
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "junction1_1126-1_E_far_crash",
+   "group": "junction",
+   "windows": 60,
+   "alarm_windows": 60,
+   "incident_windows": 49,
+   "normal_minutes": 0.92,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_camera_hour": 0.0,
+   "false_alarm_windows": 11,
+   "normal_alarm_share": 1.0,
+   "score_mean_normal": 0.5131,
+   "score_p90_normal": 0.6091,
+   "accidents": [
+    {
+     "incident": 2,
+     "kind": "rear-end",
+     "severity_label": "severe",
+     "crash_before_clip": false,
+     "view_clip_s": [
+      55.2,
+      300.0
+     ],
+     "incident_windows": 49,
+     "alarm_windows": 49,
+     "caught": true,
+     "first_alarm_clip_s": 60.0,
+     "time_to_detect_s": 4.799999999999997,
+     "max_score_in_view": 0.832,
+     "alarm_windows_in_60s_before_view": 11,
+     "windows_in_60s_before_view": 11
+    }
+   ]
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "junction2_1427-3_S_far_crash",
+   "group": "junction",
+   "windows": 60,
+   "alarm_windows": 59,
+   "incident_windows": 48,
+   "normal_minutes": 1.0,
+   "false_alarm_episodes": 0,
+   "false_alarms_per_camera_hour": 0.0,
+   "false_alarm_windows": 11,
+   "normal_alarm_share": 0.917,
+   "score_mean_normal": 0.5765,
+   "score_p90_normal": 0.6721,
+   "accidents": [
+    {
+     "incident": 4,
+     "kind": "rear-end",
+     "severity_label": "moderate",
+     "crash_before_clip": false,
+     "view_clip_s": [
+      61.7,
+      300.0
+     ],
+     "incident_windows": 48,
+     "alarm_windows": 48,
+     "caught": true,
+     "first_alarm_clip_s": 65.0,
+     "time_to_detect_s": 3.299999999999997,
+     "max_score_in_view": 0.7227,
+     "alarm_windows_in_60s_before_view": 11,
+     "windows_in_60s_before_view": 11
+    }
+   ]
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "junction3_838-2_N_normal",
+   "group": "junction",
+   "windows": 60,
+   "alarm_windows": 35,
+   "incident_windows": 0,
+   "normal_minutes": 5.0,
+   "false_alarm_episodes": 5,
+   "false_alarms_per_camera_hour": 60.0,
+   "false_alarm_windows": 35,
+   "normal_alarm_share": 0.583,
+   "score_mean_normal": 0.3382,
+   "score_p90_normal": 0.6169,
+   "accidents": []
+  },
+  {
+   "detector": "carla-yolo26n-t05",
+   "clip_id": "junction4_979-4_W_normal",
+   "group": "junction",
+   "windows": 60,
+   "alarm_windows": 54,
+   "incident_windows": 0,
+   "normal_minutes": 5.0,
+   "false_alarm_episodes": 4,
+   "false_alarms_per_camera_hour": 48.0,
+   "false_alarm_windows": 54,
+   "normal_alarm_share": 0.9,
+   "score_mean_normal": 0.4861,
+   "score_p90_normal": 0.6966,
+   "accidents": []
+  }
+ ],
+ "per_detector": {
+  "carla-yolo26n-t05": {
+   "clips": 8,
+   "false_alarm_episodes": 16,
+   "normal_hours": 0.403,
+   "false_alarms_per_camera_hour": 39.74,
+   "normal_alarm_share": 0.646,
+   "accidents_caught": "5/5"
+  }
+ }
+}

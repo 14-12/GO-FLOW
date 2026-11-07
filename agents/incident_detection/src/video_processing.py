@@ -98,12 +98,13 @@ def build_detector(config, yolo_factory=None):
 
 
 def process_frames(frames, fps, frame_size, source_id=None, *, duration_sec=None, config=None,
-                   yolo_factory=None, device=None):
+                   yolo_factory=None, device=None, detections_out=None):
     """Window features from an iterable of BGR frames captured at `fps`.
 
     Keeps input frames stride-1, 2*stride-1, ... (0-based), the same frames Ultralytics
     selects with vid_stride, so an MP4 gives identical windows through either entry point.
     frame_size is (width, height). duration_sec defaults to frames received / fps.
+    Pass a list as detections_out to also receive every tracked detection row.
     """
     fps = float(fps)
     width, height = (float(x) for x in frame_size)
@@ -128,10 +129,12 @@ def process_frames(frames, fps, frame_size, source_id=None, *, duration_sec=None
         detection_rows.extend(detections)
     windows = aggregate_windows(frame_rows, detection_rows, duration_sec or received / fps)
     windows.attrs.update(source_id=source_id, detector=config.name)
+    if detections_out is not None:
+        detections_out.extend(detection_rows)
     return windows
 
 
-def process_video(video_path, *, yolo_factory=None, device=None, config=None, source_id=None):
+def process_video(video_path, *, yolo_factory=None, device=None, config=None, source_id=None, detections_out=None):
     """Process one MP4 with a fresh tracker; inject a factory for lightweight tests."""
     path = Path(video_path)
     if not path.is_file() or path.suffix.lower() != ".mp4":
@@ -163,4 +166,4 @@ def process_video(video_path, *, yolo_factory=None, device=None, config=None, so
 
     return process_frames(read_frames(), fps, (width, height), source_id or path.stem,
                           duration_sec=frame_count / fps, config=config,
-                          yolo_factory=yolo_factory, device=device)
+                          yolo_factory=yolo_factory, device=device, detections_out=detections_out)

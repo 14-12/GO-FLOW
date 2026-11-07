@@ -59,11 +59,17 @@ Detector weights, class map, confidence, image size and tracker come from
 `config/detector_v1.json` (the v1 settings: `yolo11n.pt`, COCO car, motorcycle,
 bus, truck, confidence 0.25). Another detector is used by pointing
 `GOFLOW_DETECTOR_CONFIG` at its file or passing `config=` directly; see
-`config/detector_carla_yolo26n.example.json`. Class names are resolved against
+`config/detector_carla_yolo26n_t05.json`. Class names are resolved against
 the model's own `names`, so a wrong map fails loudly. The window table carries
 `attrs["detector"]` with the config name. The saved Random Forest was trained on
 COCO YOLO11n features; other detectors change the feature distribution, so
 their windows must be evaluated before any result is trusted.
+
+`config/detector_carla_yolo26n_t05.json` is the Urban Traffic CARLA detector
+(9 classes, no motorcycle) with the class map agreed for stage 1: van, police
+and police_lights count as car; ambulance and ambulance_lights as truck;
+pedestrians are left out. Its weights are on the shared PC; elsewhere point
+`GOFLOW_YOLO_WEIGHTS` at a local copy.
 
 ## Evaluation by camera
 
@@ -73,6 +79,18 @@ with 5-fold cross-validation grouped by video and by camera
 false alarms per camera-hour and bootstrap 95 % intervals. It reads the feature
 CSVs from `data/` (not committed) and writes a new JSON under
 `evaluation/results/` on every run.
+
+## Town05 stage 1
+
+`evaluation/run_stage1.py <delivery folder> --detector <config> [--detector ...]`
+runs v1 unchanged on each clip of a Urban Traffic CARLA delivery (`labels.json`
+plus `clips/`) and writes one JSON per clip and detector, named
+`<clip>__<detector>__v1.json`, plus a `stage1_summary_*.json`. Each window keeps
+the v1 fields and gains `run`, `window_start_time_s` and `window_end_time_s`
+(SUMO seconds of the clip's own run). An accident counts as in view from its
+on-screen second (`crash_on_screen_clip_s`, clamped to 0) until its wrecks leave
+the picture plus the render lag; false alarms are runs of alarm windows with no
+in-view window, per hour of normal windows. The clips stay outside git.
 
 ## Handoff to Traffic Prediction
 

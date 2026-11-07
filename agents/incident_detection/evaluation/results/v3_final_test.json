@@ -1,0 +1,2283 @@
+{
+ "created": "20261102_155956",
+ "chosen": "v1_plus_evidence",
+ "threshold": 0.625,
+ "test_runs": [
+  "20261101_224226",
+  "20261102_003143",
+  "20261102_014958",
+  "20261102_033846"
+ ],
+ "normal_hours": 19.96,
+ "v2_all": {
+  "normal_hours": 19.93,
+  "false_alarms": 12,
+  "false_alarms_per_camera_hour": 0.6,
+  "normal_time_in_alarm": 0.0056,
+  "events": 10,
+  "caught": 10,
+  "caught_within_120s": 8,
+  "median_detect_s": 70.0,
+  "slowest_detect_s": 140.0,
+  "per_event": [
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 265.0,
+    "caught": true,
+    "time_to_detect_s": 50.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "incident": 6,
+    "start_sec": 1055.0,
+    "caught": true,
+    "time_to_detect_s": 35.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 795.0,
+    "caught": true,
+    "time_to_detect_s": 125.0
+   },
+   {
+    "stream": "20261102_003143|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 85.0,
+    "caught": true,
+    "time_to_detect_s": 70.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 80.0,
+    "caught": true,
+    "time_to_detect_s": 95.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "incident": 3,
+    "start_sec": 475.0,
+    "caught": true,
+    "time_to_detect_s": 65.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "incident": 2,
+    "start_sec": 365.0,
+    "caught": true,
+    "time_to_detect_s": 80.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 255.0,
+    "caught": true,
+    "time_to_detect_s": 60.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 1035.0,
+    "caught": true,
+    "time_to_detect_s": 70.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "incident": 2,
+    "start_sec": 130.0,
+    "caught": true,
+    "time_to_detect_s": 140.0
+   }
+  ],
+  "false_alarm_list": [
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1090.0,
+    "end_sec": 1115.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1120.0,
+    "end_sec": 1125.0
+   },
+   {
+    "stream": "20261102_014958|1882-3 looking S",
+    "start_sec": 1245.0,
+    "end_sec": 1250.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 715.0,
+    "end_sec": 725.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 810.0,
+    "end_sec": 855.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 470.0,
+    "end_sec": 505.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 565.0,
+    "end_sec": 590.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 630.0,
+    "end_sec": 635.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1600.0,
+    "end_sec": 1615.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1630.0,
+    "end_sec": 1660.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1355.0,
+    "end_sec": 1395.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1985.0,
+    "end_sec": 1990.0
+   }
+  ]
+ },
+ "v2_seen_cameras": {
+  "normal_hours": 13.33,
+  "false_alarms": 11,
+  "false_alarms_per_camera_hour": 0.82,
+  "normal_time_in_alarm": 0.0083,
+  "events": 10,
+  "caught": 10,
+  "caught_within_120s": 8,
+  "median_detect_s": 70.0,
+  "slowest_detect_s": 140.0,
+  "per_event": [
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 265.0,
+    "caught": true,
+    "time_to_detect_s": 50.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "incident": 6,
+    "start_sec": 1055.0,
+    "caught": true,
+    "time_to_detect_s": 35.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 795.0,
+    "caught": true,
+    "time_to_detect_s": 125.0
+   },
+   {
+    "stream": "20261102_003143|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 85.0,
+    "caught": true,
+    "time_to_detect_s": 70.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 80.0,
+    "caught": true,
+    "time_to_detect_s": 95.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "incident": 3,
+    "start_sec": 475.0,
+    "caught": true,
+    "time_to_detect_s": 65.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "incident": 2,
+    "start_sec": 365.0,
+    "caught": true,
+    "time_to_detect_s": 80.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 255.0,
+    "caught": true,
+    "time_to_detect_s": 60.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 1035.0,
+    "caught": true,
+    "time_to_detect_s": 70.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "incident": 2,
+    "start_sec": 130.0,
+    "caught": true,
+    "time_to_detect_s": 140.0
+   }
+  ],
+  "false_alarm_list": [
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1090.0,
+    "end_sec": 1115.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1120.0,
+    "end_sec": 1125.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 715.0,
+    "end_sec": 725.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 810.0,
+    "end_sec": 855.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 470.0,
+    "end_sec": 505.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 565.0,
+    "end_sec": 590.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 630.0,
+    "end_sec": 635.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1600.0,
+    "end_sec": 1615.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1630.0,
+    "end_sec": 1660.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1355.0,
+    "end_sec": 1395.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1985.0,
+    "end_sec": 1990.0
+   }
+  ]
+ },
+ "v2_unseen_cameras": {
+  "normal_hours": 6.6,
+  "false_alarms": 1,
+  "false_alarms_per_camera_hour": 0.15,
+  "normal_time_in_alarm": 0.0002,
+  "events": 0,
+  "caught": 0,
+  "caught_within_120s": 0,
+  "median_detect_s": null,
+  "slowest_detect_s": null,
+  "per_event": [],
+  "false_alarm_list": [
+   {
+    "stream": "20261102_014958|1882-3 looking S",
+    "start_sec": 1245.0,
+    "end_sec": 1250.0
+   }
+  ]
+ },
+ "v1_all": {
+  "normal_hours": 19.93,
+  "false_alarms": 375,
+  "false_alarms_per_camera_hour": 18.81,
+  "normal_time_in_alarm": 0.5941,
+  "events": 10,
+  "caught": 10,
+  "caught_within_120s": 10,
+  "median_detect_s": 5.0,
+  "slowest_detect_s": 15.0,
+  "per_event": [
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 265.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "incident": 6,
+    "start_sec": 1055.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 795.0,
+    "caught": true,
+    "time_to_detect_s": 10.0
+   },
+   {
+    "stream": "20261102_003143|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 85.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "incident": 1,
+    "start_sec": 80.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "incident": 3,
+    "start_sec": 475.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "incident": 2,
+    "start_sec": 365.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "incident": 3,
+    "start_sec": 255.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "incident": 4,
+    "start_sec": 1035.0,
+    "caught": true,
+    "time_to_detect_s": 5.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "incident": 2,
+    "start_sec": 130.0,
+    "caught": true,
+    "time_to_detect_s": 15.0
+   }
+  ],
+  "false_alarm_list": [
+   {
+    "stream": "20261101_224226|1126-1 looking E",
+    "start_sec": 0.0,
+    "end_sec": 185.0
+   },
+   {
+    "stream": "20261101_224226|1126-1 looking E",
+    "start_sec": 190.0,
+    "end_sec": 870.0
+   },
+   {
+    "stream": "20261101_224226|1126-1 looking E",
+    "start_sec": 875.0,
+    "end_sec": 1050.0
+   },
+   {
+    "stream": "20261101_224226|1126-1 looking E",
+    "start_sec": 1060.0,
+    "end_sec": 1605.0
+   },
+   {
+    "stream": "20261101_224226|1427-2 looking E",
+    "start_sec": 0.0,
+    "end_sec": 255.0
+   },
+   {
+    "stream": "20261101_224226|1427-2 looking E",
+    "start_sec": 260.0,
+    "end_sec": 940.0
+   },
+   {
+    "stream": "20261101_224226|1427-2 looking E",
+    "start_sec": 990.0,
+    "end_sec": 1670.0
+   },
+   {
+    "stream": "20261101_224226|1427-2 looking E",
+    "start_sec": 1740.0,
+    "end_sec": 1810.0
+   },
+   {
+    "stream": "20261101_224226|1427-2 looking E",
+    "start_sec": 1835.0,
+    "end_sec": 1838.2
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 0.0,
+    "end_sec": 185.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 215.0,
+    "end_sec": 235.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 260.0,
+    "end_sec": 265.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 485.0,
+    "end_sec": 490.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 530.0,
+    "end_sec": 535.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 675.0,
+    "end_sec": 730.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 950.0,
+    "end_sec": 955.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1090.0,
+    "end_sec": 1230.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1290.0,
+    "end_sec": 1300.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1305.0,
+    "end_sec": 1315.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1350.0,
+    "end_sec": 1390.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1445.0,
+    "end_sec": 1460.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1555.0,
+    "end_sec": 1565.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1600.0,
+    "end_sec": 1720.0
+   },
+   {
+    "stream": "20261101_224226|1722-2 looking S",
+    "start_sec": 1745.0,
+    "end_sec": 1755.0
+   },
+   {
+    "stream": "20261101_224226|1882-3 looking S",
+    "start_sec": 0.0,
+    "end_sec": 1839.2
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 765.0,
+    "end_sec": 780.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 785.0,
+    "end_sec": 790.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 830.0,
+    "end_sec": 850.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 880.0,
+    "end_sec": 885.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 900.0,
+    "end_sec": 930.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 970.0,
+    "end_sec": 980.0
+   },
+   {
+    "stream": "20261101_224226|2014-2 looking W",
+    "start_sec": 1105.0,
+    "end_sec": 1345.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 0.0,
+    "end_sec": 40.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 60.0,
+    "end_sec": 75.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 125.0,
+    "end_sec": 275.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 295.0,
+    "end_sec": 325.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 380.0,
+    "end_sec": 760.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 765.0,
+    "end_sec": 770.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 775.0,
+    "end_sec": 805.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 810.0,
+    "end_sec": 830.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 840.0,
+    "end_sec": 865.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 945.0,
+    "end_sec": 960.0
+   },
+   {
+    "stream": "20261101_224226|2014-3 looking E",
+    "start_sec": 1370.0,
+    "end_sec": 1390.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 95.0,
+    "end_sec": 110.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 265.0,
+    "end_sec": 305.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 335.0,
+    "end_sec": 375.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 430.0,
+    "end_sec": 455.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 510.0,
+    "end_sec": 545.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 680.0,
+    "end_sec": 735.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 755.0,
+    "end_sec": 785.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 800.0,
+    "end_sec": 895.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1065.0,
+    "end_sec": 1135.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1140.0,
+    "end_sec": 1190.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1210.0,
+    "end_sec": 1230.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1330.0,
+    "end_sec": 1360.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1400.0,
+    "end_sec": 1500.0
+   },
+   {
+    "stream": "20261101_224226|2328-1 looking E",
+    "start_sec": 1650.0,
+    "end_sec": 1700.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 95.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 130.0,
+    "end_sec": 170.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 180.0,
+    "end_sec": 185.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 315.0,
+    "end_sec": 355.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 600.0,
+    "end_sec": 610.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1135.0,
+    "end_sec": 1235.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1245.0,
+    "end_sec": 1305.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1405.0,
+    "end_sec": 1420.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1450.0,
+    "end_sec": 1465.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1495.0,
+    "end_sec": 1500.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1505.0,
+    "end_sec": 1535.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1565.0,
+    "end_sec": 1580.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1615.0,
+    "end_sec": 1630.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1655.0,
+    "end_sec": 1710.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1730.0,
+    "end_sec": 1760.0
+   },
+   {
+    "stream": "20261101_224226|2328-2 looking W",
+    "start_sec": 1795.0,
+    "end_sec": 1839.8
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 0.0,
+    "end_sec": 20.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 30.0,
+    "end_sec": 70.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 225.0,
+    "end_sec": 275.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 310.0,
+    "end_sec": 325.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 360.0,
+    "end_sec": 395.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 630.0,
+    "end_sec": 660.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 770.0,
+    "end_sec": 810.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 820.0,
+    "end_sec": 840.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 940.0,
+    "end_sec": 975.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 990.0,
+    "end_sec": 1030.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1060.0,
+    "end_sec": 1105.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1175.0,
+    "end_sec": 1200.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1290.0,
+    "end_sec": 1320.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1340.0,
+    "end_sec": 1355.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1395.0,
+    "end_sec": 1415.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1420.0,
+    "end_sec": 1435.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1460.0,
+    "end_sec": 1470.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1515.0,
+    "end_sec": 1520.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1540.0,
+    "end_sec": 1555.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1595.0,
+    "end_sec": 1605.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1650.0,
+    "end_sec": 1705.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1720.0,
+    "end_sec": 1730.0
+   },
+   {
+    "stream": "20261101_224226|53-2 looking N",
+    "start_sec": 1775.0,
+    "end_sec": 1815.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 65.0,
+    "end_sec": 100.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 675.0,
+    "end_sec": 740.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 800.0,
+    "end_sec": 850.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1020.0,
+    "end_sec": 1080.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1110.0,
+    "end_sec": 1130.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1165.0,
+    "end_sec": 1170.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1220.0,
+    "end_sec": 1255.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1310.0,
+    "end_sec": 1325.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1350.0,
+    "end_sec": 1430.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1455.0,
+    "end_sec": 1490.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1530.0,
+    "end_sec": 1535.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1610.0,
+    "end_sec": 1615.0
+   },
+   {
+    "stream": "20261101_224226|838-2 looking N",
+    "start_sec": 1825.0,
+    "end_sec": 1830.0
+   },
+   {
+    "stream": "20261102_003143|1126-1 looking E",
+    "start_sec": 0.0,
+    "end_sec": 365.0
+   },
+   {
+    "stream": "20261102_003143|1126-1 looking E",
+    "start_sec": 370.0,
+    "end_sec": 525.0
+   },
+   {
+    "stream": "20261102_003143|1427-2 looking E",
+    "start_sec": 0.0,
+    "end_sec": 1883.6
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 25.0,
+    "end_sec": 350.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 385.0,
+    "end_sec": 395.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 445.0,
+    "end_sec": 480.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 525.0,
+    "end_sec": 610.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 700.0,
+    "end_sec": 705.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 910.0,
+    "end_sec": 925.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 965.0,
+    "end_sec": 985.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1025.0,
+    "end_sec": 1035.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1045.0,
+    "end_sec": 1055.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1090.0,
+    "end_sec": 1120.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1205.0,
+    "end_sec": 1220.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1290.0,
+    "end_sec": 1340.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1540.0,
+    "end_sec": 1570.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1785.0,
+    "end_sec": 1805.0
+   },
+   {
+    "stream": "20261102_003143|1722-2 looking S",
+    "start_sec": 1850.0,
+    "end_sec": 1885.0
+   },
+   {
+    "stream": "20261102_003143|1882-3 looking S",
+    "start_sec": 0.0,
+    "end_sec": 1884.6
+   },
+   {
+    "stream": "20261102_003143|2014-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 15.0
+   },
+   {
+    "stream": "20261102_003143|2014-3 looking E",
+    "start_sec": 0.0,
+    "end_sec": 35.0
+   },
+   {
+    "stream": "20261102_003143|2014-3 looking E",
+    "start_sec": 110.0,
+    "end_sec": 175.0
+   },
+   {
+    "stream": "20261102_003143|2014-3 looking E",
+    "start_sec": 200.0,
+    "end_sec": 220.0
+   },
+   {
+    "stream": "20261102_003143|2014-3 looking E",
+    "start_sec": 275.0,
+    "end_sec": 1830.0
+   },
+   {
+    "stream": "20261102_003143|2014-3 looking E",
+    "start_sec": 1845.0,
+    "end_sec": 1886.2
+   },
+   {
+    "stream": "20261102_003143|2328-1 looking E",
+    "start_sec": 185.0,
+    "end_sec": 195.0
+   },
+   {
+    "stream": "20261102_003143|2328-2 looking W",
+    "start_sec": 5.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_003143|2328-2 looking W",
+    "start_sec": 45.0,
+    "end_sec": 100.0
+   },
+   {
+    "stream": "20261102_003143|2328-2 looking W",
+    "start_sec": 210.0,
+    "end_sec": 1885.2
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 20.0,
+    "end_sec": 35.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 145.0,
+    "end_sec": 170.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 200.0,
+    "end_sec": 280.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 295.0,
+    "end_sec": 335.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 370.0,
+    "end_sec": 430.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 525.0,
+    "end_sec": 545.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 605.0,
+    "end_sec": 620.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 705.0,
+    "end_sec": 750.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 765.0,
+    "end_sec": 780.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 795.0,
+    "end_sec": 810.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 875.0,
+    "end_sec": 945.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1120.0,
+    "end_sec": 1130.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1230.0,
+    "end_sec": 1295.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1690.0,
+    "end_sec": 1700.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1770.0,
+    "end_sec": 1785.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1800.0,
+    "end_sec": 1805.0
+   },
+   {
+    "stream": "20261102_003143|53-2 looking N",
+    "start_sec": 1875.0,
+    "end_sec": 1885.4
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 0.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 80.0,
+    "end_sec": 110.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 120.0,
+    "end_sec": 125.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 250.0,
+    "end_sec": 260.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 310.0,
+    "end_sec": 345.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 755.0,
+    "end_sec": 790.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 875.0,
+    "end_sec": 995.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1040.0,
+    "end_sec": 1075.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1265.0,
+    "end_sec": 1300.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1345.0,
+    "end_sec": 1365.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1390.0,
+    "end_sec": 1420.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1460.0,
+    "end_sec": 1535.0
+   },
+   {
+    "stream": "20261102_003143|838-2 looking N",
+    "start_sec": 1710.0,
+    "end_sec": 1775.0
+   },
+   {
+    "stream": "20261102_014958|1126-1 looking E",
+    "start_sec": 0.0,
+    "end_sec": 910.0
+   },
+   {
+    "stream": "20261102_014958|1126-1 looking E",
+    "start_sec": 915.0,
+    "end_sec": 1280.0
+   },
+   {
+    "stream": "20261102_014958|1126-1 looking E",
+    "start_sec": 1435.0,
+    "end_sec": 1465.0
+   },
+   {
+    "stream": "20261102_014958|1126-1 looking E",
+    "start_sec": 1545.0,
+    "end_sec": 1580.0
+   },
+   {
+    "stream": "20261102_014958|1126-1 looking E",
+    "start_sec": 1660.0,
+    "end_sec": 1735.0
+   },
+   {
+    "stream": "20261102_014958|1427-2 looking E",
+    "start_sec": 0.0,
+    "end_sec": 525.0
+   },
+   {
+    "stream": "20261102_014958|1427-2 looking E",
+    "start_sec": 550.0,
+    "end_sec": 665.0
+   },
+   {
+    "stream": "20261102_014958|1427-2 looking E",
+    "start_sec": 675.0,
+    "end_sec": 1090.0
+   },
+   {
+    "stream": "20261102_014958|1427-2 looking E",
+    "start_sec": 1130.0,
+    "end_sec": 2096.8
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 10.0,
+    "end_sec": 330.0
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 440.0,
+    "end_sec": 770.0
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 795.0,
+    "end_sec": 815.0
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 850.0,
+    "end_sec": 880.0
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 910.0,
+    "end_sec": 965.0
+   },
+   {
+    "stream": "20261102_014958|1722-2 looking S",
+    "start_sec": 1080.0,
+    "end_sec": 2096.6
+   },
+   {
+    "stream": "20261102_014958|1882-3 looking S",
+    "start_sec": 0.0,
+    "end_sec": 2096.6
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 60.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 375.0,
+    "end_sec": 385.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 405.0,
+    "end_sec": 435.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 465.0,
+    "end_sec": 480.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 500.0,
+    "end_sec": 520.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 615.0,
+    "end_sec": 645.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 720.0,
+    "end_sec": 755.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 775.0,
+    "end_sec": 785.0
+   },
+   {
+    "stream": "20261102_014958|2014-2 looking W",
+    "start_sec": 845.0,
+    "end_sec": 940.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 0.0,
+    "end_sec": 35.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 115.0,
+    "end_sec": 160.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 175.0,
+    "end_sec": 195.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 290.0,
+    "end_sec": 300.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 905.0,
+    "end_sec": 955.0
+   },
+   {
+    "stream": "20261102_014958|2014-3 looking E",
+    "start_sec": 990.0,
+    "end_sec": 1035.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 150.0,
+    "end_sec": 195.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 240.0,
+    "end_sec": 290.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 330.0,
+    "end_sec": 375.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 410.0,
+    "end_sec": 690.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 725.0,
+    "end_sec": 855.0
+   },
+   {
+    "stream": "20261102_014958|2328-1 looking E",
+    "start_sec": 955.0,
+    "end_sec": 2096.4
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 45.0,
+    "end_sec": 100.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 220.0,
+    "end_sec": 230.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 735.0,
+    "end_sec": 755.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 790.0,
+    "end_sec": 850.0
+   },
+   {
+    "stream": "20261102_014958|2328-2 looking W",
+    "start_sec": 885.0,
+    "end_sec": 1095.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 0.0,
+    "end_sec": 55.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 100.0,
+    "end_sec": 105.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 125.0,
+    "end_sec": 130.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 150.0,
+    "end_sec": 165.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 225.0,
+    "end_sec": 265.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 310.0,
+    "end_sec": 405.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 415.0,
+    "end_sec": 470.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 490.0,
+    "end_sec": 515.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 550.0,
+    "end_sec": 565.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 570.0,
+    "end_sec": 575.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 600.0,
+    "end_sec": 655.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 680.0,
+    "end_sec": 695.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 705.0,
+    "end_sec": 785.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 820.0,
+    "end_sec": 890.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 925.0,
+    "end_sec": 950.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 965.0,
+    "end_sec": 1025.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1040.0,
+    "end_sec": 1065.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1075.0,
+    "end_sec": 1135.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1165.0,
+    "end_sec": 1170.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1180.0,
+    "end_sec": 1205.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1260.0,
+    "end_sec": 1290.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1310.0,
+    "end_sec": 1315.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1460.0,
+    "end_sec": 1530.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1740.0,
+    "end_sec": 1770.0
+   },
+   {
+    "stream": "20261102_014958|53-2 looking N",
+    "start_sec": 1910.0,
+    "end_sec": 1990.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 0.0,
+    "end_sec": 5.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 10.0,
+    "end_sec": 45.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 190.0,
+    "end_sec": 235.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 330.0,
+    "end_sec": 370.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 405.0,
+    "end_sec": 515.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 765.0,
+    "end_sec": 855.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 880.0,
+    "end_sec": 920.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 1010.0,
+    "end_sec": 1085.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 1100.0,
+    "end_sec": 1125.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 1150.0,
+    "end_sec": 1200.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 1245.0,
+    "end_sec": 1270.0
+   },
+   {
+    "stream": "20261102_014958|838-2 looking N",
+    "start_sec": 1285.0,
+    "end_sec": 1310.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 0.0,
+    "end_sec": 1130.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 1135.0,
+    "end_sec": 1295.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 1325.0,
+    "end_sec": 1465.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 1480.0,
+    "end_sec": 1670.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 1685.0,
+    "end_sec": 1900.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 1905.0,
+    "end_sec": 2055.0
+   },
+   {
+    "stream": "20261102_033846|1126-1 looking E",
+    "start_sec": 2060.0,
+    "end_sec": 2098.2
+   },
+   {
+    "stream": "20261102_033846|1427-2 looking E",
+    "start_sec": 0.0,
+    "end_sec": 1240.0
+   },
+   {
+    "stream": "20261102_033846|1427-2 looking E",
+    "start_sec": 1250.0,
+    "end_sec": 1465.0
+   },
+   {
+    "stream": "20261102_033846|1427-2 looking E",
+    "start_sec": 1475.0,
+    "end_sec": 2098.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 0.0,
+    "end_sec": 65.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 145.0,
+    "end_sec": 150.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 215.0,
+    "end_sec": 250.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 260.0,
+    "end_sec": 265.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 285.0,
+    "end_sec": 305.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 355.0,
+    "end_sec": 385.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 420.0,
+    "end_sec": 435.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 455.0,
+    "end_sec": 460.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 490.0,
+    "end_sec": 530.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 595.0,
+    "end_sec": 615.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 635.0,
+    "end_sec": 645.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 675.0,
+    "end_sec": 740.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 815.0,
+    "end_sec": 830.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 845.0,
+    "end_sec": 850.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 890.0,
+    "end_sec": 975.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1020.0,
+    "end_sec": 1050.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1120.0,
+    "end_sec": 1345.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1360.0,
+    "end_sec": 1410.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1420.0,
+    "end_sec": 1425.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1445.0,
+    "end_sec": 1460.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1510.0,
+    "end_sec": 1515.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1560.0,
+    "end_sec": 1575.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1645.0,
+    "end_sec": 1665.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1670.0,
+    "end_sec": 1720.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1725.0,
+    "end_sec": 1800.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1840.0,
+    "end_sec": 1895.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1945.0,
+    "end_sec": 1970.0
+   },
+   {
+    "stream": "20261102_033846|1722-2 looking S",
+    "start_sec": 1980.0,
+    "end_sec": 2000.0
+   },
+   {
+    "stream": "20261102_033846|1882-3 looking S",
+    "start_sec": 0.0,
+    "end_sec": 2098.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 15.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 70.0,
+    "end_sec": 105.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 185.0,
+    "end_sec": 190.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 995.0,
+    "end_sec": 1020.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1050.0,
+    "end_sec": 1070.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1075.0,
+    "end_sec": 1115.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1695.0,
+    "end_sec": 1700.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1730.0,
+    "end_sec": 1765.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1880.0,
+    "end_sec": 1945.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 1960.0,
+    "end_sec": 1990.0
+   },
+   {
+    "stream": "20261102_033846|2014-2 looking W",
+    "start_sec": 2025.0,
+    "end_sec": 2098.4
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 0.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 145.0,
+    "end_sec": 220.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 290.0,
+    "end_sec": 705.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 725.0,
+    "end_sec": 780.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 785.0,
+    "end_sec": 930.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 955.0,
+    "end_sec": 1060.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1065.0,
+    "end_sec": 1085.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1150.0,
+    "end_sec": 1175.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1245.0,
+    "end_sec": 1270.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1280.0,
+    "end_sec": 1315.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1395.0,
+    "end_sec": 1410.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1585.0,
+    "end_sec": 1635.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1645.0,
+    "end_sec": 1700.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1775.0,
+    "end_sec": 1785.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1855.0,
+    "end_sec": 1885.0
+   },
+   {
+    "stream": "20261102_033846|2014-3 looking E",
+    "start_sec": 1945.0,
+    "end_sec": 1965.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 100.0,
+    "end_sec": 105.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 120.0,
+    "end_sec": 195.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 270.0,
+    "end_sec": 290.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 440.0,
+    "end_sec": 460.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 515.0,
+    "end_sec": 550.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 625.0,
+    "end_sec": 630.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1110.0,
+    "end_sec": 1115.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1140.0,
+    "end_sec": 1325.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1400.0,
+    "end_sec": 1405.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1410.0,
+    "end_sec": 1415.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1555.0,
+    "end_sec": 1580.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1635.0,
+    "end_sec": 1665.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1700.0,
+    "end_sec": 1705.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1795.0,
+    "end_sec": 1870.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1895.0,
+    "end_sec": 1905.0
+   },
+   {
+    "stream": "20261102_033846|2328-1 looking E",
+    "start_sec": 1980.0,
+    "end_sec": 2020.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 0.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 60.0,
+    "end_sec": 65.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 75.0,
+    "end_sec": 80.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 100.0,
+    "end_sec": 110.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 255.0,
+    "end_sec": 275.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 560.0,
+    "end_sec": 600.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1425.0,
+    "end_sec": 1450.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1465.0,
+    "end_sec": 1470.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1645.0,
+    "end_sec": 1665.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1680.0,
+    "end_sec": 1700.0
+   },
+   {
+    "stream": "20261102_033846|2328-2 looking W",
+    "start_sec": 1895.0,
+    "end_sec": 1995.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 70.0,
+    "end_sec": 75.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 90.0,
+    "end_sec": 165.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 180.0,
+    "end_sec": 185.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 200.0,
+    "end_sec": 260.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 360.0,
+    "end_sec": 400.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 415.0,
+    "end_sec": 445.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 460.0,
+    "end_sec": 490.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 855.0,
+    "end_sec": 890.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 895.0,
+    "end_sec": 955.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1005.0,
+    "end_sec": 1015.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1140.0,
+    "end_sec": 1205.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1225.0,
+    "end_sec": 1230.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1285.0,
+    "end_sec": 1290.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1335.0,
+    "end_sec": 1375.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1465.0,
+    "end_sec": 1550.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1635.0,
+    "end_sec": 1640.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1645.0,
+    "end_sec": 1660.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1685.0,
+    "end_sec": 1695.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1730.0,
+    "end_sec": 1780.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1815.0,
+    "end_sec": 1850.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1860.0,
+    "end_sec": 1890.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 1915.0,
+    "end_sec": 2005.0
+   },
+   {
+    "stream": "20261102_033846|53-2 looking N",
+    "start_sec": 2025.0,
+    "end_sec": 2090.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 0.0,
+    "end_sec": 25.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 30.0,
+    "end_sec": 45.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 860.0,
+    "end_sec": 1075.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1110.0,
+    "end_sec": 1125.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1385.0,
+    "end_sec": 1390.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1395.0,
+    "end_sec": 1420.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1575.0,
+    "end_sec": 1655.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1685.0,
+    "end_sec": 1765.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1790.0,
+    "end_sec": 1840.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1910.0,
+    "end_sec": 1935.0
+   },
+   {
+    "stream": "20261102_033846|838-2 looking N",
+    "start_sec": 1955.0,
+    "end_sec": 1975.0
+   }
+  ]
+ },
+ "criteria_met": {
+  "false_alarms": true,
+  "recall": true,
+  "median_detect": false,
+  "slowest_detect": false
+ },
+ "passed": false
+}

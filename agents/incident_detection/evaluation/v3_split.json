@@ -1,0 +1,167 @@
+{
+ "purpose": "v3 data set, recorded on this PC. Split by run, fixed before recording. Test runs are opened once.",
+ "careless_share": 0.1,
+ "seconds": 2100,
+ "fps": 5,
+ "target_train": 20,
+ "target_test": 10,
+ "cameras": {
+  "train": [
+   "2328-2 looking W",
+   "2014-2 looking W",
+   "2328-1 looking E",
+   "2014-3 looking E",
+   "1722-2 looking S",
+   "1126-1 looking E",
+   "838-2 looking N",
+   "979-4 looking W",
+   "1427-3 looking S",
+   "1574-1 looking N"
+  ],
+  "test": [
+   "2328-2 looking W",
+   "2014-2 looking W",
+   "2328-1 looking E",
+   "2014-3 looking E",
+   "1722-2 looking S",
+   "1126-1 looking E",
+   "838-2 looking N",
+   "53-2 looking N",
+   "1882-3 looking S",
+   "1427-2 looking E"
+  ]
+ },
+ "unseen_test_cameras": [
+  "53-2 looking N",
+  "1882-3 looking S",
+  "1427-2 looking E"
+ ],
+ "runs": [
+  {
+   "seed": 31007,
+   "split": "train",
+   "cameras": "train",
+   "time": "09:00"
+  },
+  {
+   "seed": 31019,
+   "split": "train",
+   "cameras": "train",
+   "time": "12:00"
+  },
+  {
+   "seed": 31031,
+   "split": "test",
+   "cameras": "test",
+   "time": "15:00"
+  },
+  {
+   "seed": 31051,
+   "split": "train",
+   "cameras": "train",
+   "time": "17:30"
+  },
+  {
+   "seed": 31063,
+   "split": "train",
+   "cameras": "train",
+   "time": "07:30"
+  },
+  {
+   "seed": 31081,
+   "split": "test",
+   "cameras": "test",
+   "time": "10:30"
+  },
+  {
+   "seed": 31091,
+   "split": "train",
+   "cameras": "train",
+   "time": "13:30"
+  },
+  {
+   "seed": 31121,
+   "split": "train",
+   "cameras": "train",
+   "time": "09:00"
+  },
+  {
+   "seed": 31139,
+   "split": "test",
+   "cameras": "test",
+   "time": "12:00"
+  },
+  {
+   "seed": 31147,
+   "split": "train",
+   "cameras": "train",
+   "time": "15:00"
+  },
+  {
+   "seed": 31151,
+   "split": "train",
+   "cameras": "train",
+   "time": "17:30"
+  },
+  {
+   "seed": 31153,
+   "split": "test",
+   "cameras": "test",
+   "time": "07:30"
+  },
+  {
+   "seed": 31159,
+   "split": "train",
+   "cameras": "train",
+   "time": "10:30"
+  },
+  {
+   "seed": 31177,
+   "split": "train",
+   "cameras": "train",
+   "time": "13:30"
+  },
+  {
+   "seed": 31181,
+   "split": "test",
+   "cameras": "test",
+   "time": "09:00"
+  },
+  {
+   "seed": 31183,
+   "split": "train",
+   "cameras": "train",
+   "time": "12:00"
+  },
+  {
+   "seed": 31189,
+   "split": "train",
+   "cameras": "train",
+   "time": "15:00"
+  },
+  {
+   "seed": 31193,
+   "split": "test",
+   "cameras": "test",
+   "time": "17:30"
+  },
+  {
+   "seed": 31219,
+   "split": "train",
+   "cameras": "train",
+   "time": "07:30"
+  },
+  {
+   "seed": 31223,
+   "split": "train",
+   "cameras": "train",
+   "time": "10:30"
+  },
+  {
+   "seed": 31237,
+   "split": "test",
+   "cameras": "test",
+   "time": "13:30"
+  }
+ ]
+}

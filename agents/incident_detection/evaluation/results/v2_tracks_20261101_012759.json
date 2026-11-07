@@ -1,0 +1,2611 @@
+{
+ "created": "20261101_012759",
+ "split": "evaluation/v2_split.json",
+ "max_fa": 1.0,
+ "selection": "most training accidents caught at OOF FA <= max_fa, chosen before test",
+ "chosen": "B_rf_v1_plus_tracks",
+ "oof": {
+  "A_rule_spot_age": {
+   "threshold": 600.0,
+   "oof": {
+    "false_alarms_per_camera_hour": 1.1,
+    "normal_alarm_share": 0.2575,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_f2": 0.0,
+    "average_precision": 0.0195,
+    "normal_hours": 9.12
+   },
+   "curve": [
+    {
+     "threshold": 30.0,
+     "false_alarms_per_camera_hour": 11.74,
+     "normal_alarm_share": 0.7192,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 20.0,
+     "window_f2": 0.1201,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 35.0,
+     "false_alarms_per_camera_hour": 11.85,
+     "normal_alarm_share": 0.6968,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 22.5,
+     "window_f2": 0.1188,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 40.0,
+     "false_alarms_per_camera_hour": 11.74,
+     "normal_alarm_share": 0.6731,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 25.0,
+     "window_f2": 0.1148,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 45.0,
+     "false_alarms_per_camera_hour": 11.85,
+     "normal_alarm_share": 0.6501,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 40.0,
+     "window_f2": 0.1134,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 50.0,
+     "false_alarms_per_camera_hour": 11.08,
+     "normal_alarm_share": 0.6306,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 45.0,
+     "window_f2": 0.1113,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 55.0,
+     "false_alarms_per_camera_hour": 10.53,
+     "normal_alarm_share": 0.6116,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 50.0,
+     "window_f2": 0.1101,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 60.0,
+     "false_alarms_per_camera_hour": 10.31,
+     "normal_alarm_share": 0.5927,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 55.0,
+     "window_f2": 0.1088,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 65.0,
+     "false_alarms_per_camera_hour": 9.21,
+     "normal_alarm_share": 0.5732,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 60.0,
+     "window_f2": 0.1087,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 70.0,
+     "false_alarms_per_camera_hour": 8.77,
+     "normal_alarm_share": 0.5577,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 65.0,
+     "window_f2": 0.1078,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 75.0,
+     "false_alarms_per_camera_hour": 8.55,
+     "normal_alarm_share": 0.5417,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 70.0,
+     "window_f2": 0.1071,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 80.0,
+     "false_alarms_per_camera_hour": 6.58,
+     "normal_alarm_share": 0.5269,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 75.0,
+     "window_f2": 0.106,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 85.0,
+     "false_alarms_per_camera_hour": 4.94,
+     "normal_alarm_share": 0.5154,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 167.5,
+     "window_f2": 0.1044,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 90.0,
+     "false_alarms_per_camera_hour": 3.84,
+     "normal_alarm_share": 0.5079,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 172.5,
+     "window_f2": 0.1032,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 95.0,
+     "false_alarms_per_camera_hour": 3.07,
+     "normal_alarm_share": 0.5017,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 177.5,
+     "window_f2": 0.1018,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 100.0,
+     "false_alarms_per_camera_hour": 2.41,
+     "normal_alarm_share": 0.4968,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 182.5,
+     "window_f2": 0.1002,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 105.0,
+     "false_alarms_per_camera_hour": 2.19,
+     "normal_alarm_share": 0.4933,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 187.5,
+     "window_f2": 0.0983,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 110.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4901,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 192.5,
+     "window_f2": 0.0963,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 115.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4868,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 197.5,
+     "window_f2": 0.0943,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 120.0,
+     "false_alarms_per_camera_hour": 2.08,
+     "normal_alarm_share": 0.484,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 202.5,
+     "window_f2": 0.0909,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 125.0,
+     "false_alarms_per_camera_hour": 2.08,
+     "normal_alarm_share": 0.4811,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 207.5,
+     "window_f2": 0.0888,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 130.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4782,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 212.5,
+     "window_f2": 0.0854,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 135.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4753,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 217.5,
+     "window_f2": 0.0832,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 140.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4726,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 222.5,
+     "window_f2": 0.0797,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 145.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4699,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 305.0,
+     "window_f2": 0.0761,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 150.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4673,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 310.0,
+     "window_f2": 0.0751,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 155.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4645,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 315.0,
+     "window_f2": 0.0742,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 160.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4616,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 320.0,
+     "window_f2": 0.0732,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 165.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4589,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 325.0,
+     "window_f2": 0.0722,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 170.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4563,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 330.0,
+     "window_f2": 0.0712,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 175.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4536,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 335.0,
+     "window_f2": 0.0702,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 180.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.451,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 340.0,
+     "window_f2": 0.0692,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 185.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4482,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 345.0,
+     "window_f2": 0.0682,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 190.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4455,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 350.0,
+     "window_f2": 0.0671,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 195.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4428,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 355.0,
+     "window_f2": 0.0661,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 200.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4399,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 360.0,
+     "window_f2": 0.065,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 205.0,
+     "false_alarms_per_camera_hour": 2.08,
+     "normal_alarm_share": 0.4368,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 365.0,
+     "window_f2": 0.064,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 210.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4338,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 370.0,
+     "window_f2": 0.063,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 215.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4309,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 375.0,
+     "window_f2": 0.0619,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 220.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4282,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 380.0,
+     "window_f2": 0.0608,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 225.0,
+     "false_alarms_per_camera_hour": 1.97,
+     "normal_alarm_share": 0.4254,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 385.0,
+     "window_f2": 0.0597,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 230.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4227,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 390.0,
+     "window_f2": 0.0585,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 235.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4201,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 395.0,
+     "window_f2": 0.0574,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 240.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4174,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 400.0,
+     "window_f2": 0.0562,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 245.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4148,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 405.0,
+     "window_f2": 0.055,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 250.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4122,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 410.0,
+     "window_f2": 0.0538,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 255.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4096,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 415.0,
+     "window_f2": 0.0526,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 260.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.407,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 420.0,
+     "window_f2": 0.0514,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 265.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.4044,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 425.0,
+     "window_f2": 0.0502,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 270.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.4018,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 430.0,
+     "window_f2": 0.0489,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 275.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3992,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 435.0,
+     "window_f2": 0.0476,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 280.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3968,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 440.0,
+     "window_f2": 0.0463,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 285.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3944,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 445.0,
+     "window_f2": 0.045,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 290.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3918,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 450.0,
+     "window_f2": 0.0437,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 295.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3893,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 455.0,
+     "window_f2": 0.0424,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 300.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3869,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 460.0,
+     "window_f2": 0.041,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 305.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3843,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 465.0,
+     "window_f2": 0.0397,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 310.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3822,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 470.0,
+     "window_f2": 0.0383,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 315.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3801,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 475.0,
+     "window_f2": 0.0369,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 320.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3779,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 480.0,
+     "window_f2": 0.0354,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 325.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3758,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 485.0,
+     "window_f2": 0.034,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 330.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3735,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 490.0,
+     "window_f2": 0.0325,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 335.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3714,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 495.0,
+     "window_f2": 0.0311,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 340.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3693,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 500.0,
+     "window_f2": 0.0296,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 345.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3671,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 505.0,
+     "window_f2": 0.0281,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 350.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.365,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 510.0,
+     "window_f2": 0.0265,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 355.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3629,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 515.0,
+     "window_f2": 0.025,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 360.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3606,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 520.0,
+     "window_f2": 0.0235,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 365.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3584,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 525.0,
+     "window_f2": 0.0219,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 370.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3563,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 530.0,
+     "window_f2": 0.0203,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 375.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3542,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 535.0,
+     "window_f2": 0.0187,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 380.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.3519,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 540.0,
+     "window_f2": 0.0171,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 385.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3496,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 545.0,
+     "window_f2": 0.0155,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 390.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3472,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 550.0,
+     "window_f2": 0.0138,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 395.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3449,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 555.0,
+     "window_f2": 0.0122,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 400.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3426,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 560.0,
+     "window_f2": 0.0105,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 405.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3403,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 565.0,
+     "window_f2": 0.0088,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 410.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3381,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 570.0,
+     "window_f2": 0.0071,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 415.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3358,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 575.0,
+     "window_f2": 0.0053,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 420.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3333,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 580.0,
+     "window_f2": 0.0036,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 425.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3309,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 585.0,
+     "window_f2": 0.0018,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 430.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.3285,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 435.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.3259,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 440.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.3233,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 445.0,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.3207,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 450.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3181,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 455.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3157,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 460.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3132,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 465.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3108,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 470.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3084,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 475.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3059,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 480.0,
+     "false_alarms_per_camera_hour": 1.75,
+     "normal_alarm_share": 0.3033,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 485.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.3009,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 490.0,
+     "false_alarms_per_camera_hour": 1.65,
+     "normal_alarm_share": 0.2986,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 495.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.2963,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 500.0,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.2942,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 505.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.2921,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 510.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.2901,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 515.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.2881,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 520.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.2861,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 525.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.284,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 530.0,
+     "false_alarms_per_camera_hour": 1.43,
+     "normal_alarm_share": 0.282,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 535.0,
+     "false_alarms_per_camera_hour": 1.32,
+     "normal_alarm_share": 0.2801,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 540.0,
+     "false_alarms_per_camera_hour": 1.32,
+     "normal_alarm_share": 0.2781,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 545.0,
+     "false_alarms_per_camera_hour": 1.32,
+     "normal_alarm_share": 0.2763,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 550.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2743,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 555.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2726,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 560.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2709,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 565.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2693,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 570.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2676,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 575.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2659,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 580.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2642,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 585.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2626,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 590.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2609,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 595.0,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.2592,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 600.0,
+     "false_alarms_per_camera_hour": 1.1,
+     "normal_alarm_share": 0.2575,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0195,
+     "normal_hours": 9.12
+    }
+   ]
+  },
+  "B_rf_v1_plus_tracks": {
+   "threshold": 0.4,
+   "oof": {
+    "false_alarms_per_camera_hour": 0.88,
+    "normal_alarm_share": 0.0052,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_f2": 0.0,
+    "average_precision": 0.0171,
+    "normal_hours": 9.12
+   },
+   "curve": [
+    {
+     "threshold": 0.05,
+     "false_alarms_per_camera_hour": 16.56,
+     "normal_alarm_share": 0.2478,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 202.5,
+     "window_f2": 0.009,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.075,
+     "false_alarms_per_camera_hour": 13.49,
+     "normal_alarm_share": 0.1904,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 202.5,
+     "window_f2": 0.0081,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.1,
+     "false_alarms_per_camera_hour": 10.42,
+     "normal_alarm_share": 0.1496,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.125,
+     "false_alarms_per_camera_hour": 7.35,
+     "normal_alarm_share": 0.1279,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.15,
+     "false_alarms_per_camera_hour": 6.25,
+     "normal_alarm_share": 0.1122,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.175,
+     "false_alarms_per_camera_hour": 5.15,
+     "normal_alarm_share": 0.0991,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.2,
+     "false_alarms_per_camera_hour": 4.83,
+     "normal_alarm_share": 0.0906,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.225,
+     "false_alarms_per_camera_hour": 6.25,
+     "normal_alarm_share": 0.0595,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.25,
+     "false_alarms_per_camera_hour": 3.95,
+     "normal_alarm_share": 0.0365,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.275,
+     "false_alarms_per_camera_hour": 3.62,
+     "normal_alarm_share": 0.0272,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.3,
+     "false_alarms_per_camera_hour": 2.3,
+     "normal_alarm_share": 0.0158,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.325,
+     "false_alarms_per_camera_hour": 1.32,
+     "normal_alarm_share": 0.0105,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.35,
+     "false_alarms_per_camera_hour": 1.32,
+     "normal_alarm_share": 0.0088,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.375,
+     "false_alarms_per_camera_hour": 1.21,
+     "normal_alarm_share": 0.0072,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.4,
+     "false_alarms_per_camera_hour": 0.88,
+     "normal_alarm_share": 0.0052,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.425,
+     "false_alarms_per_camera_hour": 0.55,
+     "normal_alarm_share": 0.0033,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.45,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0023,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.475,
+     "false_alarms_per_camera_hour": 0.33,
+     "normal_alarm_share": 0.0015,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.5,
+     "false_alarms_per_camera_hour": 0.33,
+     "normal_alarm_share": 0.0011,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.525,
+     "false_alarms_per_camera_hour": 0.11,
+     "normal_alarm_share": 0.0005,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.55,
+     "false_alarms_per_camera_hour": 0.11,
+     "normal_alarm_share": 0.0003,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.575,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.6,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.625,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.65,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.675,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.7,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.725,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.75,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.775,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.8,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.825,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.85,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.875,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.9,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.925,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.95,
+     "false_alarms_per_camera_hour": 0.0,
+     "normal_alarm_share": 0.0,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0171,
+     "normal_hours": 9.12
+    }
+   ]
+  },
+  "C_rf_tracks_only": {
+   "threshold": 0.625,
+   "oof": {
+    "false_alarms_per_camera_hour": 0.99,
+    "normal_alarm_share": 0.0085,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_f2": 0.0,
+    "average_precision": 0.0181,
+    "normal_hours": 9.12
+   },
+   "curve": [
+    {
+     "threshold": 0.05,
+     "false_alarms_per_camera_hour": 20.62,
+     "normal_alarm_share": 0.319,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 75.0,
+     "window_f2": 0.0532,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.075,
+     "false_alarms_per_camera_hour": 17.11,
+     "normal_alarm_share": 0.272,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 90.0,
+     "window_f2": 0.0415,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.1,
+     "false_alarms_per_camera_hour": 15.25,
+     "normal_alarm_share": 0.2466,
+     "events": 2,
+     "events_caught": 2,
+     "time_to_detect_median_s": 190.0,
+     "window_f2": 0.0135,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.125,
+     "false_alarms_per_camera_hour": 15.03,
+     "normal_alarm_share": 0.2236,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 155.0,
+     "window_f2": 0.0072,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.15,
+     "false_alarms_per_camera_hour": 14.26,
+     "normal_alarm_share": 0.195,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 155.0,
+     "window_f2": 0.008,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.175,
+     "false_alarms_per_camera_hour": 14.37,
+     "normal_alarm_share": 0.1744,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 160.0,
+     "window_f2": 0.0029,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.2,
+     "false_alarms_per_camera_hour": 13.6,
+     "normal_alarm_share": 0.1568,
+     "events": 2,
+     "events_caught": 1,
+     "time_to_detect_median_s": 160.0,
+     "window_f2": 0.0031,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.225,
+     "false_alarms_per_camera_hour": 12.94,
+     "normal_alarm_share": 0.1409,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.25,
+     "false_alarms_per_camera_hour": 11.63,
+     "normal_alarm_share": 0.1291,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.275,
+     "false_alarms_per_camera_hour": 10.53,
+     "normal_alarm_share": 0.1174,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.3,
+     "false_alarms_per_camera_hour": 9.54,
+     "normal_alarm_share": 0.1067,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.325,
+     "false_alarms_per_camera_hour": 7.79,
+     "normal_alarm_share": 0.0976,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.35,
+     "false_alarms_per_camera_hour": 7.02,
+     "normal_alarm_share": 0.091,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.375,
+     "false_alarms_per_camera_hour": 6.03,
+     "normal_alarm_share": 0.0836,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.4,
+     "false_alarms_per_camera_hour": 5.81,
+     "normal_alarm_share": 0.0787,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.425,
+     "false_alarms_per_camera_hour": 5.05,
+     "normal_alarm_share": 0.0735,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.45,
+     "false_alarms_per_camera_hour": 4.28,
+     "normal_alarm_share": 0.035,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.475,
+     "false_alarms_per_camera_hour": 3.73,
+     "normal_alarm_share": 0.0236,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.5,
+     "false_alarms_per_camera_hour": 3.29,
+     "normal_alarm_share": 0.0202,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.525,
+     "false_alarms_per_camera_hour": 2.85,
+     "normal_alarm_share": 0.0174,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.55,
+     "false_alarms_per_camera_hour": 2.63,
+     "normal_alarm_share": 0.0143,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.575,
+     "false_alarms_per_camera_hour": 1.86,
+     "normal_alarm_share": 0.0114,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.6,
+     "false_alarms_per_camera_hour": 1.54,
+     "normal_alarm_share": 0.0102,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.625,
+     "false_alarms_per_camera_hour": 0.99,
+     "normal_alarm_share": 0.0085,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.65,
+     "false_alarms_per_camera_hour": 0.66,
+     "normal_alarm_share": 0.0078,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.675,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0067,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.7,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0065,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.725,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0062,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.75,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0061,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.775,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0058,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.8,
+     "false_alarms_per_camera_hour": 0.44,
+     "normal_alarm_share": 0.0052,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.825,
+     "false_alarms_per_camera_hour": 0.55,
+     "normal_alarm_share": 0.0038,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.85,
+     "false_alarms_per_camera_hour": 0.33,
+     "normal_alarm_share": 0.0033,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.875,
+     "false_alarms_per_camera_hour": 0.22,
+     "normal_alarm_share": 0.003,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.9,
+     "false_alarms_per_camera_hour": 0.22,
+     "normal_alarm_share": 0.0029,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.925,
+     "false_alarms_per_camera_hour": 0.33,
+     "normal_alarm_share": 0.0026,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    },
+    {
+     "threshold": 0.95,
+     "false_alarms_per_camera_hour": 0.11,
+     "normal_alarm_share": 0.0018,
+     "events": 2,
+     "events_caught": 0,
+     "time_to_detect_median_s": null,
+     "window_f2": 0.0,
+     "average_precision": 0.0181,
+     "normal_hours": 9.12
+    }
+   ]
+  }
+ },
+ "test": {
+  "v1": {
+   "threshold": 0.35000000000000003,
+   "all": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 232,
+    "false_alarms_per_camera_hour": 30.83,
+    "normal_alarm_share": 0.3895,
+    "events": 10,
+    "events_caught": 10,
+    "time_to_detect_median_s": 5.0,
+    "window_precision": 0.2319,
+    "window_recall": 0.7752,
+    "window_f2": 0.5279,
+    "average_precision": 0.2119,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     }
+    ]
+   },
+   "unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 2,
+    "time_to_detect_median_s": 5.0,
+    "window_precision": 1.0,
+    "window_recall": 0.6803,
+    "window_f2": 0.7268,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     }
+    ]
+   }
+  },
+  "A_rule_spot_age": {
+   "threshold": 600.0,
+   "all": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 4,
+    "false_alarms_per_camera_hour": 0.53,
+    "normal_alarm_share": 0.136,
+    "events": 10,
+    "events_caught": 2,
+    "time_to_detect_median_s": 887.5,
+    "window_precision": 0.1098,
+    "window_recall": 0.1106,
+    "window_f2": 0.1104,
+    "average_precision": 0.1929,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": true,
+      "time_to_detect_s": 705.0
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 1070.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   },
+   "unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_precision": 0.0,
+    "window_recall": 0.0,
+    "window_f2": 0.0,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   }
+  },
+  "B_rf_v1_plus_tracks": {
+   "threshold": 0.4,
+   "all": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 5,
+    "false_alarms_per_camera_hour": 0.66,
+    "normal_alarm_share": 0.0018,
+    "events": 10,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_precision": 0.0,
+    "window_recall": 0.0,
+    "window_f2": 0.0,
+    "average_precision": 0.1723,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   },
+   "unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_precision": 0.0,
+    "window_recall": 0.0,
+    "window_f2": 0.0,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   }
+  },
+  "C_rf_tracks_only": {
+   "threshold": 0.625,
+   "all": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 1,
+    "false_alarms_per_camera_hour": 0.13,
+    "normal_alarm_share": 0.0004,
+    "events": 10,
+    "events_caught": 2,
+    "time_to_detect_median_s": 152.5,
+    "window_precision": 0.7143,
+    "window_recall": 0.0061,
+    "window_f2": 0.0076,
+    "average_precision": 0.1409,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 190.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": true,
+      "time_to_detect_s": 115.0
+     }
+    ]
+   },
+   "unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_precision": 0.0,
+    "window_recall": 0.0,
+    "window_f2": 0.0,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   }
+  }
+ }
+}

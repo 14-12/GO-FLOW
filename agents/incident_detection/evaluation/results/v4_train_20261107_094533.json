@@ -1,0 +1,1215 @@
+{
+ "created": "2026-11-07T09:44:58",
+ "max_fa": 1.0,
+ "candidates": {
+  "evidence_only": {
+   "threshold": 0.875,
+   "train_oof": {
+    "normal_hours": 13.44,
+    "false_alarms": 12,
+    "false_alarms_per_camera_hour": 0.89,
+    "normal_time_in_alarm": 0.0078,
+    "events": 19,
+    "caught": 15,
+    "caught_within_120s": 1,
+    "median_detect_s": 350.0,
+    "slowest_detect_s": 2415.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 200.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": true,
+      "time_to_detect_s": 395.0
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": true,
+      "time_to_detect_s": 325.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": true,
+      "time_to_detect_s": 715.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": true,
+      "time_to_detect_s": 360.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 145.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 460.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": true,
+      "time_to_detect_s": 345.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": true,
+      "time_to_detect_s": 465.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 270.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": true,
+      "time_to_detect_s": 2415.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": true,
+      "time_to_detect_s": 80.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": true,
+      "time_to_detect_s": 600.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": true,
+      "time_to_detect_s": 130.0
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 980.0,
+      "end_sec": 1050.0
+     },
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 1055.0,
+      "end_sec": 1100.0
+     },
+     {
+      "stream": "20261106_201847|2328-2 looking W",
+      "start_sec": 1085.0,
+      "end_sec": 1125.0
+     },
+     {
+      "stream": "20261106_201847|2328-2 looking W",
+      "start_sec": 1945.0,
+      "end_sec": 1990.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "start_sec": 2360.0,
+      "end_sec": 2375.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2620.0,
+      "end_sec": 2645.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2650.0,
+      "end_sec": 2685.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2700.0,
+      "end_sec": 2730.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 810.0,
+      "end_sec": 815.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 885.0,
+      "end_sec": 895.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 960.0,
+      "end_sec": 965.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "start_sec": 745.0,
+      "end_sec": 780.0
+     }
+    ]
+   },
+   "train_oof_other_cameras": {
+    "normal_hours": 13.44,
+    "false_alarms": 13,
+    "false_alarms_per_camera_hour": 0.97,
+    "normal_time_in_alarm": 0.0074,
+    "events": 19,
+    "caught": 12,
+    "caught_within_120s": 0,
+    "median_detect_s": 337.5,
+    "slowest_detect_s": 1735.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 215.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": true,
+      "time_to_detect_s": 390.0
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": true,
+      "time_to_detect_s": 325.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 145.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 460.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": true,
+      "time_to_detect_s": 355.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": true,
+      "time_to_detect_s": 210.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 255.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": true,
+      "time_to_detect_s": 1735.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": true,
+      "time_to_detect_s": 750.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": true,
+      "time_to_detect_s": 165.0
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 985.0,
+      "end_sec": 995.0
+     },
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 1005.0,
+      "end_sec": 1030.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2400.0,
+      "end_sec": 2410.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2430.0,
+      "end_sec": 2440.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2610.0,
+      "end_sec": 2625.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2855.0,
+      "end_sec": 2880.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2900.0,
+      "end_sec": 2920.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2955.0,
+      "end_sec": 2970.0
+     },
+     {
+      "stream": "20261107_012711|2328-1 looking E",
+      "start_sec": 1480.0,
+      "end_sec": 1520.0
+     },
+     {
+      "stream": "20261107_030912|2328-1 looking E",
+      "start_sec": 1255.0,
+      "end_sec": 1260.0
+     },
+     {
+      "stream": "20261107_030912|2328-1 looking E",
+      "start_sec": 1270.0,
+      "end_sec": 1300.0
+     },
+     {
+      "stream": "20261107_030912|2328-1 looking E",
+      "start_sec": 1335.0,
+      "end_sec": 1465.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 2855.0,
+      "end_sec": 2870.0
+     }
+    ]
+   }
+  },
+  "v1_plus_evidence": {
+   "threshold": 0.85,
+   "train_oof": {
+    "normal_hours": 13.44,
+    "false_alarms": 11,
+    "false_alarms_per_camera_hour": 0.82,
+    "normal_time_in_alarm": 0.0051,
+    "events": 19,
+    "caught": 18,
+    "caught_within_120s": 2,
+    "median_detect_s": 290.0,
+    "slowest_detect_s": 1730.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": true,
+      "time_to_detect_s": 105.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 195.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": true,
+      "time_to_detect_s": 345.0
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": true,
+      "time_to_detect_s": 375.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": true,
+      "time_to_detect_s": 610.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": true,
+      "time_to_detect_s": 360.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": true,
+      "time_to_detect_s": 235.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": true,
+      "time_to_detect_s": 135.0
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 135.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 460.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": true,
+      "time_to_detect_s": 345.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": true,
+      "time_to_detect_s": 565.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 110.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": true,
+      "time_to_detect_s": 1730.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": true,
+      "time_to_detect_s": 135.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": true,
+      "time_to_detect_s": 200.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": true,
+      "time_to_detect_s": 130.0
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 975.0,
+      "end_sec": 980.0
+     },
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 1050.0,
+      "end_sec": 1070.0
+     },
+     {
+      "stream": "20261106_201847|2328-2 looking W",
+      "start_sec": 1090.0,
+      "end_sec": 1100.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "start_sec": 2360.0,
+      "end_sec": 2375.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "start_sec": 2870.0,
+      "end_sec": 2875.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 250.0,
+      "end_sec": 265.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 590.0,
+      "end_sec": 645.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 685.0,
+      "end_sec": 700.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 705.0,
+      "end_sec": 725.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 865.0,
+      "end_sec": 900.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 955.0,
+      "end_sec": 985.0
+     }
+    ]
+   },
+   "train_oof_other_cameras": {
+    "normal_hours": 13.44,
+    "false_alarms": 9,
+    "false_alarms_per_camera_hour": 0.67,
+    "normal_time_in_alarm": 0.0031,
+    "events": 19,
+    "caught": 16,
+    "caught_within_120s": 1,
+    "median_detect_s": 352.5,
+    "slowest_detect_s": 895.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 200.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": true,
+      "time_to_detect_s": 390.0
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": true,
+      "time_to_detect_s": 420.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": true,
+      "time_to_detect_s": 640.0
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": true,
+      "time_to_detect_s": 385.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": true,
+      "time_to_detect_s": 130.0
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": true,
+      "time_to_detect_s": 120.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 455.0
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": true,
+      "time_to_detect_s": 355.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": true,
+      "time_to_detect_s": 260.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": true,
+      "time_to_detect_s": 250.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": true,
+      "time_to_detect_s": 895.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": true,
+      "time_to_detect_s": 135.0
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": true,
+      "time_to_detect_s": 715.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": true,
+      "time_to_detect_s": 150.0
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 975.0,
+      "end_sec": 990.0
+     },
+     {
+      "stream": "20261106_201847|2014-3 looking E",
+      "start_sec": 1015.0,
+      "end_sec": 1040.0
+     },
+     {
+      "stream": "20261106_201847|2328-2 looking W",
+      "start_sec": 1935.0,
+      "end_sec": 1950.0
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "start_sec": 2360.0,
+      "end_sec": 2375.0
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "start_sec": 480.0,
+      "end_sec": 490.0
+     },
+     {
+      "stream": "20261107_012711|2328-1 looking E",
+      "start_sec": 1410.0,
+      "end_sec": 1420.0
+     },
+     {
+      "stream": "20261107_012711|2328-1 looking E",
+      "start_sec": 1485.0,
+      "end_sec": 1520.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 255.0,
+      "end_sec": 260.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 2860.0,
+      "end_sec": 2870.0
+     }
+    ]
+   }
+  },
+  "v1_features_only": {
+   "threshold": 0.9,
+   "train_oof": {
+    "normal_hours": 13.44,
+    "false_alarms": 6,
+    "false_alarms_per_camera_hour": 0.45,
+    "normal_time_in_alarm": 0.0017,
+    "events": 19,
+    "caught": 3,
+    "caught_within_120s": 0,
+    "median_detect_s": 235.0,
+    "slowest_detect_s": 565.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": true,
+      "time_to_detect_s": 135.0
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": true,
+      "time_to_detect_s": 565.0
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": true,
+      "time_to_detect_s": 235.0
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 565.0,
+      "end_sec": 575.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 1120.0,
+      "end_sec": 1125.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 600.0,
+      "end_sec": 610.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 690.0,
+      "end_sec": 710.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 755.0,
+      "end_sec": 785.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 960.0,
+      "end_sec": 965.0
+     }
+    ]
+   },
+   "train_oof_other_cameras": {
+    "normal_hours": 13.44,
+    "false_alarms": 11,
+    "false_alarms_per_camera_hour": 0.82,
+    "normal_time_in_alarm": 0.0057,
+    "events": 19,
+    "caught": 3,
+    "caught_within_120s": 0,
+    "median_detect_s": 665.0,
+    "slowest_detect_s": 810.0,
+    "per_event": [
+     {
+      "stream": "20261106_201847|2014-2 looking W",
+      "incident": 4,
+      "start_sec": 470.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 2,
+      "start_sec": 125.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_201847|2328-1 looking E",
+      "incident": 5,
+      "start_sec": 685.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_211039|1126-1 looking E",
+      "incident": 2,
+      "start_sec": 100.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 4,
+      "start_sec": 730.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2014-3 looking E",
+      "incident": 9,
+      "start_sec": 1955.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "incident": 7,
+      "start_sec": 1320.0,
+      "caught": true,
+      "time_to_detect_s": 665.0
+     },
+     {
+      "stream": "20261106_220200|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 805.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2014-2 looking W",
+      "incident": 6,
+      "start_sec": 880.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 125.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_012711|2328-2 looking W",
+      "incident": 5,
+      "start_sec": 715.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "incident": 6,
+      "start_sec": 1195.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2014-3 looking E",
+      "incident": 3,
+      "start_sec": 130.0,
+      "caught": true,
+      "time_to_detect_s": 575.0
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 2,
+      "start_sec": 65.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_030912|2328-2 looking W",
+      "incident": 4,
+      "start_sec": 505.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 2,
+      "start_sec": 75.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261107_045104|2014-2 looking W",
+      "incident": 5,
+      "start_sec": 465.0,
+      "caught": true,
+      "time_to_detect_s": 810.0
+     },
+     {
+      "stream": "20261107_045104|2328-2 looking W",
+      "incident": 8,
+      "start_sec": 1915.0,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ],
+    "false_alarm_list": [
+     {
+      "stream": "20261106_220200|2328-1 looking E",
+      "start_sec": 660.0,
+      "end_sec": 745.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 560.0,
+      "end_sec": 575.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 655.0,
+      "end_sec": 670.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 720.0,
+      "end_sec": 755.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 770.0,
+      "end_sec": 780.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 830.0,
+      "end_sec": 850.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 855.0,
+      "end_sec": 870.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 930.0,
+      "end_sec": 960.0
+     },
+     {
+      "stream": "20261107_021817|1126-1 looking E",
+      "start_sec": 1015.0,
+      "end_sec": 1025.0
+     },
+     {
+      "stream": "20261107_045104|2014-3 looking E",
+      "start_sec": 1530.0,
+      "end_sec": 1535.0
+     },
+     {
+      "stream": "20261107_045104|2328-1 looking E",
+      "start_sec": 2190.0,
+      "end_sec": 2210.0
+     }
+    ]
+   }
+  }
+ },
+ "chosen": "v1_plus_evidence",
+ "threshold": 0.85
+}

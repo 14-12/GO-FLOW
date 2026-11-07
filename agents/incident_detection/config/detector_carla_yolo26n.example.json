@@ -1,9 +1,0 @@
-{
-  "name": "carla-yolo26n",
-  "notes": "Example only. Copy to detector_carla_yolo26n.json, set weights to the CARLA model's path and make the class_map keys match print(YOLO(weights).names) exactly. Pedestrians are left out on purpose: v1 features count vehicles only. Mapping van/police/ambulance onto the four v1 categories is an assumption to agree on.",
-  "weights": "D:/Projects/Urban Traffic CARLA/models/carla-yolo26n.pt",
-  "class_map": {"car": "car", "van": "car", "police": "car", "bus": "bus", "truck": "truck", "ambulance": "truck"},
-  "confidence": 0.25,
-  "imgsz": 960,
-  "tracker": "bytetrack.yaml"
-}

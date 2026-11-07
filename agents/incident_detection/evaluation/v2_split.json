@@ -1,0 +1,20 @@
+{
+  "made": "2026-10-31",
+  "purpose": "Train/test split for incident model v2. Nothing in 'test' is used to train, tune a threshold or choose features.",
+  "town05": {
+    "train_runs": ["20261031_003054", "20261031_010659", "20261031_014304", "20261031_021915"],
+    "test_runs": ["20261030_164733", "20261030_165720", "20261030_171050", "20261030_175520"],
+    "why": "Training runs set by Urban Traffic CARLA (normal town, 10 % careless drivers, 4 times of day, 2 crashes in a picture). The 50 % careless runs hold most crashes in a picture and every stage-1 clip, so they test v2 on the same videos v1 was scored on.",
+    "labels": "1 while an accident is in the camera's picture (incidents.json 'visible', shown 2.2 s late); everything else 0, including the queue after the wrecks are cleared.",
+    "test_cameras_not_in_training": ["1574-3 looking S", "1722-2 looking S"],
+    "note": "The other test cameras also appear in training runs (other seed, other time of day). Fixed cameras are the real use case; results on the two unseen cameras are reported apart."
+  },
+  "ai_city": {
+    "test_videos": [1, 2, 5, 14, 30, 34, 36, 42, 62, 67, 74, 77, 82, 85, 92],
+    "excluded_videos": [7, 12, 17, 23, 25, 35, 38, 40, 43, 50, 52, 54, 57, 60, 69, 79, 84, 96],
+    "train_videos": "every other labelled video (67 videos, 14 anomaly intervals)",
+    "why": "The original v1 test split is kept as the real-video test (3 anomaly intervals). Train/val videos that share a camera with a test video (evaluation/camera_groups.json) are left out of training, so the real-video test has no camera leakage.",
+    "note": "3 test anomalies is a very small sample; also report camera-grouped cross-validation on the training videos."
+  },
+  "tuning": "Thresholds and model choices use out-of-fold scores on training data only, grouped by Town05 run and by AI City camera."
+}

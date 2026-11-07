@@ -1,0 +1,18 @@
+{
+  "name": "carla-yolo26n-t05",
+  "notes": "Urban Traffic CARLA detector (YOLO26n fine-tuned on Town05, 9 classes, no motorcycle). Class map agreed in the stage-1 delivery of 2026-10-30. Weights live on the shared PC; elsewhere set GOFLOW_YOLO_WEIGHTS to a local copy.",
+  "weights": "D:/Projects/Urban Traffic CARLA/models/carla-yolo26n-t05.pt",
+  "class_map": {
+    "car": "car",
+    "van": "car",
+    "police": "car",
+    "police_lights": "car",
+    "bus": "bus",
+    "truck": "truck",
+    "ambulance": "truck",
+    "ambulance_lights": "truck"
+  },
+  "confidence": 0.25,
+  "imgsz": 960,
+  "tracker": "bytetrack.yaml"
+}

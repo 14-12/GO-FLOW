@@ -1,0 +1,996 @@
+{
+ "created": "20261031_221824",
+ "split": "evaluation/v2_split.json",
+ "features": 27,
+ "rule": "mean3",
+ "threshold_rule": "lowest threshold with Town05 OOF false alarms <= 1.0 per camera-hour",
+ "threshold": 0.85,
+ "seed": 0,
+ "oof_curve": [
+  {
+   "threshold": 0.2,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 9.72,
+    "normal_alarm_share": 0.1003,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.6367
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 19.85,
+    "normal_alarm_share": 0.2202,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0675
+   }
+  },
+  {
+   "threshold": 0.225,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 8.72,
+    "normal_alarm_share": 0.089,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.6247
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 19.74,
+    "normal_alarm_share": 0.2044,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.071
+   }
+  },
+  {
+   "threshold": 0.25,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 7.72,
+    "normal_alarm_share": 0.0823,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.6131
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 18.54,
+    "normal_alarm_share": 0.1877,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0673
+   }
+  },
+  {
+   "threshold": 0.275,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 7.29,
+    "normal_alarm_share": 0.0763,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.6022
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 17.66,
+    "normal_alarm_share": 0.1741,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0707
+   }
+  },
+  {
+   "threshold": 0.3,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 6.29,
+    "normal_alarm_share": 0.071,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.5843
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 16.56,
+    "normal_alarm_share": 0.1591,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0719
+   }
+  },
+  {
+   "threshold": 0.325,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 5.5,
+    "normal_alarm_share": 0.0665,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.5687
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 14.81,
+    "normal_alarm_share": 0.1473,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0661
+   }
+  },
+  {
+   "threshold": 0.35,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 5.08,
+    "normal_alarm_share": 0.0633,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.5482
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 13.82,
+    "normal_alarm_share": 0.1376,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0591
+   }
+  },
+  {
+   "threshold": 0.375,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 4.79,
+    "normal_alarm_share": 0.06,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.5285
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 12.94,
+    "normal_alarm_share": 0.1286,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0615
+   }
+  },
+  {
+   "threshold": 0.4,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 4.58,
+    "normal_alarm_share": 0.0575,
+    "events": 14,
+    "events_caught": 13,
+    "window_f2": 0.5144
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 11.74,
+    "normal_alarm_share": 0.1196,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0571
+   }
+  },
+  {
+   "threshold": 0.425,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 4.07,
+    "normal_alarm_share": 0.054,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.4975
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 13.93,
+    "normal_alarm_share": 0.0963,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0601
+   }
+  },
+  {
+   "threshold": 0.45,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.86,
+    "normal_alarm_share": 0.0519,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.4822
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 12.06,
+    "normal_alarm_share": 0.0539,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0774
+   }
+  },
+  {
+   "threshold": 0.475,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.79,
+    "normal_alarm_share": 0.0496,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.4685
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 10.42,
+    "normal_alarm_share": 0.0431,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.078
+   }
+  },
+  {
+   "threshold": 0.5,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.93,
+    "normal_alarm_share": 0.0471,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.4548
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 8.45,
+    "normal_alarm_share": 0.0355,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0826
+   }
+  },
+  {
+   "threshold": 0.525,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.65,
+    "normal_alarm_share": 0.045,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.4298
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 7.35,
+    "normal_alarm_share": 0.0306,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0799
+   }
+  },
+  {
+   "threshold": 0.55,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.72,
+    "normal_alarm_share": 0.0426,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.3929
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 6.58,
+    "normal_alarm_share": 0.0265,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0638
+   }
+  },
+  {
+   "threshold": 0.575,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.43,
+    "normal_alarm_share": 0.0395,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.362
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 6.03,
+    "normal_alarm_share": 0.0237,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0588
+   }
+  },
+  {
+   "threshold": 0.6,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.22,
+    "normal_alarm_share": 0.0369,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.3338
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 5.15,
+    "normal_alarm_share": 0.0196,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0408
+   }
+  },
+  {
+   "threshold": 0.625,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 3.07,
+    "normal_alarm_share": 0.0354,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.3028
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 4.94,
+    "normal_alarm_share": 0.0175,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0347
+   }
+  },
+  {
+   "threshold": 0.65,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.79,
+    "normal_alarm_share": 0.0332,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.2765
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 4.39,
+    "normal_alarm_share": 0.0142,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0216
+   }
+  },
+  {
+   "threshold": 0.675,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.65,
+    "normal_alarm_share": 0.0305,
+    "events": 14,
+    "events_caught": 12,
+    "window_f2": 0.2385
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 3.84,
+    "normal_alarm_share": 0.0111,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0222
+   }
+  },
+  {
+   "threshold": 0.7,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.72,
+    "normal_alarm_share": 0.0284,
+    "events": 14,
+    "events_caught": 11,
+    "window_f2": 0.1994
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 3.07,
+    "normal_alarm_share": 0.0087,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.0227
+   }
+  },
+  {
+   "threshold": 0.725,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.57,
+    "normal_alarm_share": 0.0263,
+    "events": 14,
+    "events_caught": 11,
+    "window_f2": 0.1666
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 2.63,
+    "normal_alarm_share": 0.0073,
+    "events": 2,
+    "events_caught": 1,
+    "window_f2": 0.023
+   }
+  },
+  {
+   "threshold": 0.75,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.43,
+    "normal_alarm_share": 0.0236,
+    "events": 14,
+    "events_caught": 9,
+    "window_f2": 0.1274
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 2.3,
+    "normal_alarm_share": 0.0059,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.775,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 2.36,
+    "normal_alarm_share": 0.021,
+    "events": 14,
+    "events_caught": 8,
+    "window_f2": 0.0987
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 2.08,
+    "normal_alarm_share": 0.0044,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.8,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 1.93,
+    "normal_alarm_share": 0.0182,
+    "events": 14,
+    "events_caught": 6,
+    "window_f2": 0.0812
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 1.65,
+    "normal_alarm_share": 0.0032,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.825,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 1.43,
+    "normal_alarm_share": 0.016,
+    "events": 14,
+    "events_caught": 5,
+    "window_f2": 0.0662
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 1.1,
+    "normal_alarm_share": 0.0018,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.85,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 1.0,
+    "normal_alarm_share": 0.0136,
+    "events": 14,
+    "events_caught": 3,
+    "window_f2": 0.0525
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 0.55,
+    "normal_alarm_share": 0.0011,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.875,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 1.0,
+    "normal_alarm_share": 0.0115,
+    "events": 14,
+    "events_caught": 3,
+    "window_f2": 0.0406
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 0.44,
+    "normal_alarm_share": 0.0006,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.9,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 0.93,
+    "normal_alarm_share": 0.0103,
+    "events": 14,
+    "events_caught": 3,
+    "window_f2": 0.0343
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 0.33,
+    "normal_alarm_share": 0.0005,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.925,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 0.86,
+    "normal_alarm_share": 0.0081,
+    "events": 14,
+    "events_caught": 2,
+    "window_f2": 0.0252
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 0.11,
+    "normal_alarm_share": 0.0002,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  },
+  {
+   "threshold": 0.95,
+   "ai_city": {
+    "false_alarms_per_camera_hour": 0.86,
+    "normal_alarm_share": 0.0064,
+    "events": 14,
+    "events_caught": 1,
+    "window_f2": 0.0188
+   },
+   "town05": {
+    "false_alarms_per_camera_hour": 0.11,
+    "normal_alarm_share": 0.0002,
+    "events": 2,
+    "events_caught": 0,
+    "window_f2": 0.0
+   }
+  }
+ ],
+ "test": {
+  "v1": {
+   "ai_city": {
+    "windows": 2680,
+    "normal_hours": 3.43,
+    "false_alarm_episodes": 44,
+    "false_alarms_per_camera_hour": 12.84,
+    "normal_alarm_share": 0.1411,
+    "events": 3,
+    "events_caught": 2,
+    "time_to_detect_median_s": 7.5,
+    "window_precision": 0.243,
+    "window_recall": 0.5411,
+    "window_f2": 0.4344,
+    "average_precision": 0.2288,
+    "per_event": [
+     {
+      "stream": "aic_2",
+      "start_sec": 585.0,
+      "end_sec": 894.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "aic_14",
+      "start_sec": 475.0,
+      "end_sec": 600.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "aic_74",
+      "start_sec": 295.0,
+      "end_sec": 894.0,
+      "caught": true,
+      "time_to_detect_s": 10.0
+     }
+    ]
+   },
+   "town05": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 232,
+    "false_alarms_per_camera_hour": 30.83,
+    "normal_alarm_share": 0.3897,
+    "events": 10,
+    "events_caught": 10,
+    "time_to_detect_median_s": 5.0,
+    "window_precision": 0.2318,
+    "window_recall": 0.7752,
+    "window_f2": 0.5278,
+    "average_precision": 0.2119,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     }
+    ]
+   },
+   "town05_seen_cameras": {
+    "windows": 6126,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 232,
+    "false_alarms_per_camera_hour": 30.83,
+    "normal_alarm_share": 0.3897,
+    "events": 8,
+    "events_caught": 8,
+    "time_to_detect_median_s": 5.0,
+    "window_precision": 0.2079,
+    "window_recall": 0.7917,
+    "window_f2": 0.507,
+    "average_precision": 0.1964,
+    "per_event": [
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     }
+    ]
+   },
+   "town05_unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 2,
+    "time_to_detect_median_s": 5.0,
+    "window_precision": 1.0,
+    "window_recall": 0.6803,
+    "window_f2": 0.7268,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     }
+    ]
+   },
+   "threshold": 0.35000000000000003
+  },
+  "v2": {
+   "ai_city": {
+    "windows": 2680,
+    "normal_hours": 3.43,
+    "false_alarm_episodes": 40,
+    "false_alarms_per_camera_hour": 11.67,
+    "normal_alarm_share": 0.0869,
+    "events": 3,
+    "events_caught": 2,
+    "time_to_detect_median_s": 277.5,
+    "window_precision": 0.0812,
+    "window_recall": 0.0918,
+    "window_f2": 0.0895,
+    "average_precision": 0.1365,
+    "per_event": [
+     {
+      "stream": "aic_2",
+      "start_sec": 585.0,
+      "end_sec": 894.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "aic_14",
+      "start_sec": 475.0,
+      "end_sec": 600.0,
+      "caught": true,
+      "time_to_detect_s": 5.0
+     },
+     {
+      "stream": "aic_74",
+      "start_sec": 295.0,
+      "end_sec": 894.0,
+      "caught": true,
+      "time_to_detect_s": 550.0
+     }
+    ]
+   },
+   "town05": {
+    "windows": 6248,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 4,
+    "false_alarms_per_camera_hour": 0.53,
+    "normal_alarm_share": 0.0029,
+    "events": 10,
+    "events_caught": 1,
+    "time_to_detect_median_s": 350.0,
+    "window_precision": 0.1579,
+    "window_recall": 0.0036,
+    "window_f2": 0.0045,
+    "average_precision": 0.1235,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   },
+   "town05_seen_cameras": {
+    "windows": 6126,
+    "normal_hours": 7.53,
+    "false_alarm_episodes": 4,
+    "false_alarms_per_camera_hour": 0.53,
+    "normal_alarm_share": 0.0029,
+    "events": 8,
+    "events_caught": 1,
+    "time_to_detect_median_s": 350.0,
+    "window_precision": 0.1579,
+    "window_recall": 0.0043,
+    "window_f2": 0.0053,
+    "average_precision": 0.1106,
+    "per_event": [
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_164733|2328-2 looking W",
+      "start_sec": 245.0,
+      "end_sec": 424.1,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1126-1 looking E",
+      "start_sec": 310.0,
+      "end_sec": 488.9,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|2328-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 220.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1126-1 looking E",
+      "start_sec": 75.0,
+      "end_sec": 835.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|1427-3 looking S",
+      "start_sec": 550.0,
+      "end_sec": 2007.0,
+      "caught": true,
+      "time_to_detect_s": 350.0
+     },
+     {
+      "stream": "20261030_171050|2014-2 looking W",
+      "start_sec": 0.0,
+      "end_sec": 190.0,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_171050|2014-3 looking E",
+      "start_sec": 0.0,
+      "end_sec": 295.0,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   },
+   "town05_unseen_cameras": {
+    "windows": 122,
+    "normal_hours": 0.0,
+    "false_alarm_episodes": 0,
+    "false_alarms_per_camera_hour": null,
+    "normal_alarm_share": 0.0,
+    "events": 2,
+    "events_caught": 0,
+    "time_to_detect_median_s": null,
+    "window_precision": 0.0,
+    "window_recall": 0.0,
+    "window_f2": 0.0,
+    "average_precision": 1.0,
+    "per_event": [
+     {
+      "stream": "20261030_164733|1574-3 looking S",
+      "start_sec": 0.0,
+      "end_sec": 357.2,
+      "caught": false,
+      "time_to_detect_s": null
+     },
+     {
+      "stream": "20261030_165720|1722-2 looking S",
+      "start_sec": 0.0,
+      "end_sec": 249.7,
+      "caught": false,
+      "time_to_detect_s": null
+     }
+    ]
+   },
+   "threshold": 0.85
+  }
+ }
+}
