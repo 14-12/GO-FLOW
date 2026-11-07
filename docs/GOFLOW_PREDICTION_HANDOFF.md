@@ -1,5 +1,7 @@
 # Handoff: DSO4 forecaster + GO-FLOW traffic agent in Town05
 
+**Everything to do for the integration, step by step: [`GOFLOW_INTEGRATION_GUIDE.md`](GOFLOW_INTEGRATION_GUIDE.md).** This page is the short summary.
+
 * **Branch:** `integration/goflow-prediction-town05`, from `main` at a301ff6.
 * **From:** Rayan Zikoukout (DSO 4), with GO-FLOW's traffic prediction agent, for the integration in CARLA.
 * **Status:**
