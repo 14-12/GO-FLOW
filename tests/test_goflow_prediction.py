@@ -205,7 +205,14 @@ def test_clean_checkout_uses_shipped_model_bundle(monkeypatch, tmp_path):
     dso4, goflow = gp.default_models(with_goflow=True)
     assert dso4 == [str(dst / "dso4"), str(dst / "dso4_goflow")]
     assert goflow == str(dst / "goflow_xgb")
-    assert (dst / "graph" / "nodes.json").is_file()
+    nodes = dst / "graph" / "nodes.json"
+    assert nodes.is_file()
+    fp = gp.GoflowPrediction(FakeConn(), model_dirs=[str(dst / "dso4")], goflow_model=str(dst / "goflow_xgb"),
+                             nodes_file=nodes, python_dso4=tmp_path / "none.exe", python_goflow=tmp_path / "none.exe",
+                             out_dir=tmp_path / "live", log_dir=tmp_path)
+    assert fp.nodes and all("lanes" in n for n in fp.nodes)
+    assert fp.nodes[0]["node"] == "1427-1"
+    fp.close()
 
 
 def test_pills_have_their_own_option():
