@@ -1582,3 +1582,90 @@ from `frames.csv` (`crash_at_clip_s`, `contact_at_clip_s`, the cut windows) foll
 (v1, v2) carry the early labels: their crash happens about 2 s after the labelled second.**
 
 Tests: `tests/test_clip_recorder.py` (2 more).
+
+## The GO-FLOW forecasters: merged, checked in CARLA, retrained, made visible (7 Nov)
+
+Rayan's branch `integration/goflow-prediction-town05` (DSO4's queue forecaster and GO-FLOW's traffic-state agent, each
+in its own process) was merged off by default. In CARLA on the project PC: 247 tests passed; both agents start from
+the shipped models; a killed DSO4 came back in 7 s with no gap in its forecasts; F7 and Esc behave; the frame rate in
+the 70 s demo was 26.9 / 27.0 fps on, 31.7 / 28.0 off.
+
+**Windows line endings.** Git for Windows checked the LightGBM model files out with CRLF line endings, and LightGBM
+cannot read those ("Model format error, expect a tree here"): DSO4 crashed at every start, then switched itself off.
+`.gitattributes` now keeps `models/goflow/**` byte for byte.
+
+**Traffic volume.** `--demand-scale X` multiplies the day's vehicle curve (as the dataset tool's `--scale`). SUMO alone,
+crashes on, 4 seeds x 30 min per level, queue build-ups (an approach going from under DSO4's `low` to over its `full`):
+
+| Traffic | Build-ups per hour | Gridlock |
+| --- | --- | --- |
+| x1 | about 1 | no |
+| x1.5 | 4.5 | no |
+| x2 | 3.5 | no |
+| x3 | 10.5 | no |
+| x4 | 11 | no |
+
+**Retrained (v3).** `D3_x1_acc`, `D3_x2_acc`, `D3_x3_acc`: crashes on (43, 85 and 124 incidents in 40 runs), seeds
+101-130 train, 11-20 dev, 21-30 not opened; merged with `goflow_prediction.data merge`. Queue fill error at +120 s on
+the dev seeds (MAE):
+
+| Traffic | v3 | shipped v2 (x1, no crashes) | Last value |
+| --- | --- | --- | --- |
+| x1 | 0.0211 | 0.0210 | 0.0275 |
+| x2 | 0.0331 | 0.0392 | 0.0493 |
+| x3 | 0.0432 | 0.0587 | 0.0670 |
+
+GO-FLOW's occupancy at +120 s: 0.0240 against 0.0334 for the last value. v3 replaces v2 in `models/goflow/` (v2 is in
+git history, fd5e798). The bundle is 37 MB (v2: 11 MB): more varied traffic, larger trees.
+
+**The alerts do not work yet, at any traffic.** DSO4 alerts when an approach still under its `low` (Q90 of the train
+fill) is forecast at its `full` (Q99) or more. On the dev seeds no build-up was caught in advance by v2 or v3. Lowering
+the trigger (forecast at 0.5 to 0.9 of `full`) only adds false alerts: at x3, catching 3 of 6 build-ups costs about
+230 alerts an hour, 90 % false. The build-ups happen within one 30 s step and the inputs do not announce them. That is
+the agent's design (its alert rule, or what it is asked to predict), for DSO4's author.
+
+**On screen.** `cosim/goflow_prediction_hud.py`:
+* a panel bottom right whenever the forecasters run (before: one small line): their state, the time left to the first
+  forecast while they warm up, the three approaches most likely to fill up in 2 minutes (queue now and then, share of
+  full, GO-FLOW's state), the last alert;
+* with `--goflow-hud`, chips on the roads near you for approaches GO-FLOW calls congested or severe, or DSO4 forecasts
+  at least half full;
+* F10 flies to the last alert's approach, else the one most at risk.
+
+In CARLA at x2 (7 Nov, 18:30): the panel, the chips and F10 work; 22.7 fps with 270 vehicles. DSO4 raised one alert,
+and it was right: 1722-1 at 20 % of its queue space, forecast at 50 % within 60 s, at 49 % (over its `full`, 47 %) 30 s
+later; that is the queue filling again at the next red, not a queue spreading back. First seen: seven chips round one
+junction, several for 1-3 queued cars, one cut by the screen's edge, so now at most 4 (the most at risk), a queue of 3
+vehicles or more, inside the picture; and "329 % of full" in the panel, now "full".
+
+At x2 in SUMO, GO-FLOW's states over 12 minutes: 350 free, 336 moderate, 28 congested, 1 severe (approach-steps); the
+approach most at risk was forecast at 0.68 of full. Also fixed: after F6 / F7 the status said "DSO4 ok" while the
+agents warmed up again; a hand-written GO-FLOW model card hid the clock speed of the export metadata.
+
+Tests: `tests/test_goflow_prediction.py` (5 more).
+
+### Long queues instead of spill-back alerts (7 Nov, evening)
+
+The first alert rule caught no build-up (above). Its event was a jump within one 30 s step, which is mostly a queue
+filling again at the next red. `agents/goflow_prediction/goflow_prediction/congestion.py` now defines a long queue on
+the fill averaged over 4 steps (about one signal cycle): it starts when that mean reaches the approach's level (Q95 of
+the mean on the train seeds, at least 3 vehicles) after a whole cycle under it, from under 0.6 x the level. A LightGBM
+classifier (DSO4's features plus the approach against its level) gives the chance of a start within 3 minutes, and
+DSO4 alerts at 0.7 ("LONG QUEUE LIKELY WITHIN 3 MIN"); every forecast carries each approach's chance, which the panel
+and the chips now rank by. Dev seeds 11-20, 5 h per level:
+
+| Traffic | Long queues | Caught before they start | Alerts right | Median warning |
+| --- | --- | --- | --- | --- |
+| x1 | 6 | 3 | 3 of 5 | 30 s |
+| x2 | 40 | 27 | 27 of 50 | 60 s |
+| x3 | 136 | 101 | 116 of 227 | 60 s |
+
+A simpler trigger (the cycle mean over 0.8 x the level and rising) catches about as many at x2-x3 but with 3 to 10
+times the false alerts and half the warning (x2: 219 false against 23; x3: 328 against 115). The live code path (agent.replay) gives the same alerts as the training
+script's scoring (x2: 50 alerts, 27 right, 27 of 40 caught). The test seeds 21-30 stay closed.
+
+**Frame rate.** The panel's text was rendered again for every picture (1.4 ms at 1920 x 1080); it is now rendered when
+what it says changes, and chips and pills are reused by their text (0.04 ms per picture). Also: a child's restart
+messages no longer nest ("exited with code ...: exited with code ...").
+
+Tests: `agents/goflow_prediction/tests` (2 more), `tests/test_goflow_prediction.py` (3 more).

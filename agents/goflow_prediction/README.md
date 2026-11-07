@@ -3,8 +3,9 @@
 Rayan Zikoukout's DSO 4, prepared for Urban Traffic CARLA (Town05) following the integration plan
 (`docs/INTEGRATION_PLAN_TOWN05.md` in the DSO4 repository, and the shared doc of the same name).
 
-**Status: code and tests only.** No Town05 data has been simulated yet, so there is **no Town05 result**. The tests
-run on a toy corridor (`tests/conftest.py`), which is a test fixture and not Town05.
+**Status (7 Nov):** trained on Town05 (crashes on, traffic x1 / x2 / x3; the shipped models are in `models/goflow/`)
+and checked in CARLA; results in `docs/WORKLOG.md`. The tests run on a toy corridor (`tests/conftest.py`), a test
+fixture, not Town05.
 
 ## What it does
 
@@ -15,8 +16,27 @@ Every 30 SUMO seconds the town sends one observation per approach (the 55 approa
    the best candidate is used for each horizon;
 3. **decides:** forecasts each approach's queue at +60, +120 and +300 s. The queue is `fill` = halting vehicles /
    storage (lane length / 7.5 m), the junction agents' own `_fill`;
-4. **acts:** for an approach under 0.6 now and forecast at 0.85 or more, it raises a `propagation` alert when a
-   downstream approach is already full, or a `spillback_soon` alert otherwise. The cooldown is 120 s per approach.
+4. **acts:** with the long-queue classifier next to its model (`congestion.json`, `congestion_model.txt`; since
+   7 Nov), a `long_queue_soon` alert when an approach is likely (0.7) to start a queue that stays over its level
+   within 3 minutes, and each forecast carries every approach's chance (`p_long`). Without it, the first rule: for an
+   approach under its `low` now and forecast at its `full` or more, a `propagation` alert when a downstream approach
+   is already full, or a `spillback_soon` alert otherwise. The cooldown is 120 s per approach.
+
+### Long queues (7 Nov)
+
+The first rule fired on queues refilling at the next red and caught no build-up on the dev seeds, at any traffic.
+A queue sampled every 30 s swings with the signal (cycle 115 s), so `congestion.py` looks at the fill averaged over
+4 steps (about one cycle): an approach's *level* is the Q95 of that mean on the train seeds (at least 3 vehicles); a
+long queue *starts* when the mean reaches the level after a whole cycle under it, from under 0.6 x the level. A
+LightGBM classifier (the forecast's features plus the approach against its level) gives the chance of a start within
+6 steps (3 minutes); trained with `python -m goflow_prediction.congestion --dataset ... --model DIR --train-seeds ...
+--dev-seeds ...`. Dev seeds 11-20 (5 h per traffic level), alert at 0.7:
+
+| Traffic | Long queues | Caught before they start | Alerts right | Median warning |
+| --- | --- | --- | --- | --- |
+| x1 | 6 | 3 | 3 of 5 | 30 s |
+| x2 | 40 | 27 | 27 of 50 | 60 s |
+| x3 | 136 | 101 | 116 of 227 | 60 s |
 
 The candidates are LightGBM (and LightGBM + GO-FLOW when her real forecast is in the message), last value, and the
 value one signal cycle (115 s) ago.

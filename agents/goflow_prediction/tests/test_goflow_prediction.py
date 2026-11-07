@@ -223,3 +223,50 @@ def test_merge_keeps_runs_apart_and_parts_selectable(tmp_path):
     assert sorted(set(one.seed)) == [12, 102] and np.allclose(one.x["halt"], b.x["halt"])
     with pytest.raises(FileExistsError):
         merge([tmp_path / "a.npz"], tmp_path / "m.npz")
+
+
+def test_long_queue_start_needs_a_cycle_under_then_over():
+    """congestion.starts: over its level after a whole cycle under it, from under 0.6 x the level 4 steps before."""
+    from goflow_prediction import congestion as cg
+
+    fill = np.array([[0.1]] * 10 + [[0.9]] * 6 + [[0.1]] * 6 + [[0.55]] * 6)   # one approach, one run
+    run = np.zeros(len(fill), int)
+    c = cg.cycle_means(fill, run)
+    assert np.isnan(c[2, 0]) and c[3, 0] == pytest.approx(0.1)
+    s = cg.starts(c, run, np.array([0.5]))
+    # c(11) = (0.1 + 0.1 + 0.9 + 0.9) / 4 = 0.5 reaches the level; the slow rise to 0.55 at the end is a start too
+    # (under the level for a cycle, at 0.1 four steps before); the first step of each jump is not (c still under)
+    assert list(np.flatnonzero(s[:, 0])) == [11, 25]
+    assert not cg.starts(c, run, np.array([0.6]))[25, 0]    # 0.55 never reaches 0.6
+
+
+def test_long_queue_classifier_makes_the_alerts(toy, trained, tmp_path):
+    """7 Nov: with congestion.json next to the model, the alerts come from the classifier ("long_queue_soon", with its
+    probability) and every forecast carries each approach's chance of a long queue; on the toy jams (one starts at
+    f-1 and spills upstream every 2 steps) it catches most of them on the dev seeds."""
+    import shutil
+
+    from goflow_prediction import congestion as cg
+    from goflow_prediction.agent import ForecastAgent, ModelBundle, replay
+    from goflow_prediction.data import load_dataset
+
+    model = tmp_path / "with_congestion"
+    shutil.copytree(trained, model)
+    card = cg.train(str(toy / "toy.npz"), str(model), list(range(101, 107)), [11, 12])
+    assert set(card["level"]) == set(NODES) and card["k_steps"] == cg.K and card["train_positives"] > 0
+    with pytest.raises(ValueError):
+        cg.train(str(toy / "toy.npz"), str(model), [101, 11], [11])
+    agent = ForecastAgent([ModelBundle(model)])
+    assert agent.congestion is not None
+    ds = load_dataset(toy / "toy.npz")
+    alerts, fc = replay(agent, ds, [11, 12])
+    assert alerts and {a["kind"] for a in alerts} == {"long_queue_soon"}
+    a = alerts[0]
+    assert a["horizon_s"] == cg.K * 30 and a["p"] >= cg.THRESHOLD and "longer green" in a["action"]
+    f = next(iter(fc.values()))
+    assert f["long_queue_s"] == cg.K * 30 and all(0.0 <= v["p_long"] <= 1.0 for v in f["nodes"].values())
+    dev = card["dev_scores_by_part"]["0"]["by_threshold"]
+    at = next(e for e in dev if e["threshold"] == cg.THRESHOLD)
+    assert at["starts"] > 0 and at["recall"] >= 0.5
+    # the plain model folder (no congestion.json): the first rule, as before
+    assert ForecastAgent([ModelBundle(trained)]).congestion is None

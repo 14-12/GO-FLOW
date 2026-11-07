@@ -220,3 +220,214 @@ def test_pills_have_their_own_option():
 
     assert parse_args(["--goflow-prediction"]).goflow_hud is False
     assert parse_args(["--goflow-prediction", "--goflow-hud"]).goflow_hud is True
+
+
+def _offline(tmp_path, demand_scale=1.0):
+    nodes = tmp_path / "nodes.json"
+    nodes.write_text(json.dumps(NODES), encoding="utf-8")
+    (tmp_path / "thresholds.json").write_text(json.dumps({"full": {"1-1": 0.5, "2-1": 0.8}}), encoding="utf-8")
+    conn = FakeConn()
+    fp = gp.GoflowPrediction(conn, model_dirs=[str(tmp_path)], goflow_model=str(tmp_path), nodes_file=nodes,
+                             python_dso4=tmp_path / "none.exe", python_goflow=tmp_path / "none.exe",
+                             out_dir=tmp_path / "live", log_dir=tmp_path, dt_s=1.0, demand_scale=demand_scale)
+    return fp, conn
+
+
+def test_at_risk_ranks_by_forecast_against_full_with_goflow_state(tmp_path):
+    """7 Nov, the overlay's panel: the approaches closest to full in 2 minutes, queue now and then, GO-FLOW's state."""
+    fp, conn = _offline(tmp_path)
+    assert fp.full == {"1-1": 0.5, "2-1": 0.8}
+    assert fp.at_risk() == [] and fp.warm_up_left_s() == fp.n_in * 1.0
+    conn.set("e1_0", 3, 2, 1.0, 0.3)
+    for k in range(4):
+        fp.on_step(StepResult(time=k * 0.5, vehicles={}, arrived=[], tls={"1": "Grr", "2": "r"}), conn, 17 * 3600.0)
+    assert fp.steps == 1 and fp.obs_latest["nodes"]["1-1"]["halt"] == 2.0
+    fp.latest = {"nodes": {"1-1": {"fill": [0.2, 0.3, 0.4], "halt": [2.0, 3.0, 4.0]},
+                           "2-1": {"fill": [0.6, 0.6, 0.6], "halt": [3.0, 3.0, 3.0]}}}
+    fp.goflow_latest = {"nodes": {"2-1": {"traffic_state": "congested", "risk_level": "high"}}}
+    rows = fp.at_risk()
+    assert [r["node"] for r in rows] == ["2-1", "1-1"]          # 0.6 / 0.8 = 0.75 before 0.3 / 0.5 = 0.6
+    assert rows[0]["risk"] == pytest.approx(0.75) and rows[0]["state"] == "congested"
+    assert rows[1]["queue_now"] == 2.0 and rows[1]["queue_then"] == 3.0 and rows[1]["horizon_s"] == 120
+    assert fp.states() == {"2-1": "congested"} and fp.warm_up_left_s() is None
+    fp.close()
+
+
+def test_a_clock_jump_says_warming_up_again(tmp_path):
+    """Rayan's F6 / F7 reset left the overlay on "DSO4 ok" while the agents warmed up again (seen in CARLA, 7 Nov)."""
+    fp, _ = _offline(tmp_path)
+    fp.latest, fp.goflow_latest, fp.steps = {"nodes": {}}, {"nodes": {}}, 20
+    fp.dso4.state = fp.goflow.state = "ready"
+    assert fp.status() == "DSO4 ok  ·  GO-FLOW ok"
+    fp.reset(100.0)
+    assert fp.status() == "DSO4 warming up  ·  GO-FLOW warming up"
+    assert fp.warm_up_left_s() == fp.n_in * 1.0 and fp.at_risk() == []
+    fp.dso4.state = fp.goflow.state = "off"
+    fp.close()
+
+
+def test_demand_scale_reaches_the_agents(tmp_path):
+    """--demand-scale: the agents are told the demand they were trained with (tools/goflow_prediction_dataset --scale)."""
+    from cosim.freefly import parse_args
+
+    assert parse_args([]).demand_scale == 1.0 and parse_args(["--demand-scale", "3"]).demand_scale == 3.0
+    fp, conn = _offline(tmp_path, demand_scale=3.0)
+    for k in range(4):
+        fp.on_step(StepResult(time=k * 0.5, vehicles={}, arrived=[], tls={"1": "Grr", "2": "r"}), conn, 17 * 3600.0)
+    one = gp.obs_message({"t": 1.0, **{c: [0.0, 0.0] for c in ("halt", "veh", "speed", "occ", "green")}}, NODES, 0,
+                         17 * 3600.0, 60.0)
+    assert fp.obs_latest["demand"] == pytest.approx(3.0 * one["demand"])
+    fp.close()
+
+
+def test_panel_and_chips_draw(tmp_path, monkeypatch):
+    """The panel (always) and the chips (--goflow-hud) render, headless."""
+    import os
+
+    monkeypatch.setitem(os.environ, "SDL_VIDEODRIVER", "dummy")
+    import pygame
+
+    pygame.init()
+    from cosim.goflow_prediction_hud import ForecastHud
+
+    fp, _ = _offline(tmp_path)
+    fp.latest = {"nodes": {"1-1": {"fill": [0.2, 0.4, 0.4], "halt": [2.0, 4.0, 4.0]}}}
+    fp.goflow_latest = {"nodes": {"1-1": {"traffic_state": "severe", "risk_level": "high"}}}
+    fp.alerts.append({"type": "alert", "kind": "spillback_soon", "node": "1-1", "tls": "1", "t": 90.0,
+                      "horizon_s": 120, "fill_now": 0.2, "pred_fill": 0.6})
+
+    class V:
+        def __init__(self, x, y, z):
+            self.x, self.y, self.z = x, y, z
+
+    class TF:                                   # looking along +x from 30 m back, level
+        location = V(-30.0, 0.0, 5.0)
+
+        def get_forward_vector(self):
+            return V(1.0, 0.0, 0.0)
+
+        def get_right_vector(self):
+            return V(0.0, 1.0, 0.0)
+
+        def get_up_vector(self):
+            return V(0.0, 0.0, 1.0)
+
+    screen = pygame.Surface((1280, 720))
+    hud = ForecastHud()
+    rects = hud.draw(screen, (1280, 720), TF(), {"1": (0.0, 0.0, 0.0)}, {"1-1": (0.0, 0.0, 0.0)}, fp, 100.0, True)
+    assert len(rects) == 3                      # a chip, the alert's pill, the panel
+    panel = rects[-1]
+    assert panel.right == 1280 - 16 and panel.bottom == 720 - 16 and panel.width >= 330
+    assert len(hud.draw(screen, (1280, 720), TF(), {"1": (0.0, 0.0, 0.0)}, {"1-1": (0.0, 0.0, 0.0)}, fp, 100.0,
+                        False)) == 1           # without --goflow-hud: the panel only
+    fp.close()
+    pygame.quit()
+
+
+def test_chips_are_few_and_on_screen(monkeypatch):
+    """CARLA, 7 Nov: seven chips round one junction, several for queues of 1-3 cars, one cut by the screen's edge.
+    Now the 4 most at risk, a queue of 3 vehicles or more (or severe), inside the picture."""
+    import os
+
+    monkeypatch.setitem(os.environ, "SDL_VIDEODRIVER", "dummy")
+    import pygame
+
+    pygame.init()
+    from cosim.goflow_prediction_hud import MAX_CHIPS, ForecastHud, _full
+
+    class V:
+        def __init__(self, x, y, z):
+            self.x, self.y, self.z = x, y, z
+
+    class TF:
+        location = V(-30.0, 0.0, 5.0)
+
+        def get_forward_vector(self):
+            return V(1.0, 0.0, 0.0)
+
+        def get_right_vector(self):
+            return V(0.0, 1.0, 0.0)
+
+        def get_up_vector(self):
+            return V(0.0, 0.0, 1.0)
+
+    rows = [{"node": f"n{i}", "risk": 0.9 - i * 0.05, "queue_now": 6.0, "queue_then": 7.0, "horizon_s": 120,
+             "state": "congested"} for i in range(7)]
+    rows.append({"node": "small", "risk": 0.95, "queue_now": 1.0, "queue_then": 2.0, "horizon_s": 120, "state": "congested"})
+    anchors = {r["node"]: (0.0, -24.0 + i * 1.0, 0.0) for i, r in enumerate(rows)}   # n0 near the left edge
+    screen = pygame.Surface((1280, 720))
+    rects = ForecastHud().draw_chips(screen, (1280, 720), TF(), anchors, rows)
+    assert len(rects) == MAX_CHIPS == 4
+    assert all(r.left >= 8 and r.right <= 1280 - 8 for r in rects)
+    assert _full(1.4) == "full" and _full(0.68) == "68 % full"
+    pygame.quit()
+
+
+def test_long_queue_chance_ranks_the_roads_and_titles_the_alert(tmp_path, monkeypatch):
+    """7 Nov: with DSO4's long-queue classifier, the panel ranks by its chance; the alert says it plainly."""
+    import os
+
+    monkeypatch.setitem(os.environ, "SDL_VIDEODRIVER", "dummy")
+    import pygame
+
+    pygame.init()
+    from cosim.goflow_prediction_hud import ForecastHud
+
+    fp, _ = _offline(tmp_path)
+    fp.latest = {"long_queue_s": 180,
+                 "nodes": {"1-1": {"fill": [0.2, 0.45, 0.4], "halt": [2.0, 4.0, 4.0], "p_long": 0.2},
+                           "2-1": {"fill": [0.1, 0.1, 0.1], "halt": [1.0, 1.0, 1.0], "p_long": 0.8}}}
+    rows = fp.at_risk()
+    assert [r["node"] for r in rows] == ["2-1", "1-1"]       # by chance, though 1-1 is nearer full
+    assert rows[0]["p_long"] == 0.8 and rows[0]["long_s"] == 180
+    a = {"kind": "long_queue_soon", "horizon_s": 180, "node": "2-1", "p": 0.81, "queue_now": 4.0, "t": 90.0,
+         "goflow_state": "congested"}
+    hud = ForecastHud()
+    assert hud.title(a) == "LONG QUEUE LIKELY WITHIN 3 MIN"
+    assert "81 % chance" in hud.subtitle(a, 100.0) and "congested" in hud.subtitle(a, 100.0)
+    p1 = hud.panel("DSO4 ok", None, rows, a, 100.0, 1)
+    assert p1.get_width() >= 330
+    fp.close()
+    pygame.quit()
+
+
+def test_the_panel_is_rendered_once_while_it_says_the_same(tmp_path, monkeypatch):
+    import os
+
+    monkeypatch.setitem(os.environ, "SDL_VIDEODRIVER", "dummy")
+    import pygame
+
+    pygame.init()
+    from cosim.goflow_prediction_hud import ForecastHud
+
+    fp, _ = _offline(tmp_path)
+    fp.latest = {"nodes": {"1-1": {"fill": [0.2, 0.4, 0.4], "halt": [2.0, 4.0, 4.0]}}}
+    hud = ForecastHud()
+    made = []
+    real = hud.panel
+    monkeypatch.setattr(hud, "panel", lambda *a: made.append(1) or real(*a))
+
+    class TF:
+        location = type("L", (), {"x": 0.0, "y": 0.0, "z": 0.0})()
+
+    screen = pygame.Surface((1280, 720))
+    for _ in range(5):
+        hud.draw(screen, (1280, 720), TF(), {}, {}, fp, 100.0, False)
+    assert len(made) == 1
+    fp.latest = {"nodes": {"1-1": {"fill": [0.2, 0.6, 0.4], "halt": [2.0, 6.0, 4.0]}}}
+    hud.draw(screen, (1280, 720), TF(), {}, {}, fp, 100.0, False)
+    assert len(made) == 2
+    fp.close()
+    pygame.quit()
+
+
+def test_restart_errors_do_not_nest(tmp_path, monkeypatch):
+    """CARLA, 7 Nov: "exited with code 3221226505: exited with code 3221226505: ..." after each restart."""
+    monkeypatch.setattr(gp, "RESTART_S", (0.1, 0.1, 0.1))
+    ch = child(tmp_path, FAKE_CRASH, [])
+    for _ in range(40):
+        ch.tick()
+        if ch.state == "off":
+            break
+        time.sleep(0.25)
+    assert ch.error.count("exited with code") == 1

@@ -59,9 +59,21 @@ def trained_clock_speed(model_dir) -> float | None:
         if p.is_file():
             meta = json.loads(p.read_text(encoding="utf-8")).get(key) or {}
             cs = meta.get("clock_speed")
-            return float(cs) if cs is not None else None
+            if cs is not None:             # a card without it: look at the next file (7 Nov: GO-FLOW's hand-written
+                return float(cs)           # model_card.json hid the export metadata's clock speed)
     return None
 GOFLOW_WAIT_S = 1.0
+N_IN = 12                    # DSO4's steps of history before its first forecast (its models' n_in)
+
+
+def full_thresholds(model_dir, names: list[str]) -> dict[str, float]:
+    """The fill at which DSO4 calls each approach full (its model's thresholds.json), for the overlay's ranking;
+    0.85 for an approach (or a model) without one."""
+    p = Path(model_dir) / "thresholds.json" if model_dir else None
+    if p is None or not p.is_file():
+        return {n: 0.85 for n in names}
+    full = json.loads(p.read_text(encoding="utf-8")).get("full") or {}
+    return {n: float(full.get(n, 0.85)) for n in names}
 ALERT_SHOW_S = 60.0          # an alert stays on the overlay this long (simulated seconds)
 
 
@@ -161,6 +173,7 @@ class Child:
         self.failures = 0
         self.restart_at = 0.0
         self.error = ""
+        self.child_error = ""            # the child's own last "error" message while starting
         self.lock = threading.Lock()
         self._start()
 
@@ -183,6 +196,7 @@ class Child:
             self._failed(f"cannot start: {e}")
             return
         self.state = "starting"
+        self.child_error = ""
         threading.Thread(target=self._read, args=(self.proc,), daemon=True, name=f"{self.name}-out").start()
 
     def _read(self, proc) -> None:
@@ -195,11 +209,12 @@ class Child:
             if msg.get("type") == "ready":
                 self.state = "ready"
             elif msg.get("type") == "error" and self.state == "starting":
-                self.error = msg.get("msg", "")
+                self.child_error = msg.get("msg", "")
             self.on_message(self, msg)
         code = proc.wait()
         if proc is self.proc and self.state != "off":
-            self._failed(f"exited with code {code}" + (f": {self.error}" if self.error else ""))
+            # the child's own last error, not ours: the message no longer nests ("exited with code ...: exited ...")
+            self._failed(f"exited with code {code}" + (f": {self.child_error}" if self.child_error else ""))
 
     def _failed(self, why: str) -> None:
         self.failures += 1
@@ -250,7 +265,7 @@ class GoflowPrediction:
     def __init__(self, conn, *, model_dirs: list[str], goflow_model: str | None = None,
                  nodes_file: Path | None = None, python_dso4: Path | None = None, python_goflow: Path | None = None,
                  clock_speed: float = 60.0, dt_s: float = 30.0, out_dir: Path | None = None,
-                 log_dir: Path | None = None, dso4_args: list[str] | None = None):
+                 log_dir: Path | None = None, dso4_args: list[str] | None = None, demand_scale: float = 1.0):
         """dso4_args: the DSO4 child's command after its Python (tests run a fake agent through it).
         Refuses (ValueError) a clock speed the models were not trained at: their demand features and their horizons
         in town hours assume it."""
@@ -266,11 +281,18 @@ class GoflowPrediction:
         self.tls = {n["node"]: n["tls"] for n in self.nodes}
         self.agg = Aggregator(conn, self.nodes, dt_s)
         self.clock_speed = clock_speed
+        self.demand_scale = demand_scale   # --demand-scale: the demand the agents are told (as in the training data)
         self.seq = 0
         self.q: queue.Queue = queue.Queue(maxsize=4)
         self.dropped = 0
         self.latest: dict | None = None
         self.alerts: deque = deque(maxlen=200)
+        # for the overlay (7 Nov): the queue now, each approach's storage and the fill DSO4 calls full
+        self.obs_latest: dict | None = None
+        self.steps = 0                     # observations since the start or the last reset (the warm-up)
+        self.n_in = N_IN
+        self.storage = {n["node"]: float(n.get("storage") or 0.0) for n in self.nodes}
+        self.full = full_thresholds(model_dirs[0] if model_dirs else None, self.names)
         self.goflow_latest: dict | None = None
         self.lock = threading.Lock()
         self._io_lock = threading.Lock()
@@ -312,8 +334,10 @@ class GoflowPrediction:
         row = self.agg.sample(conn, cur.time, cur.tls)
         if row is None:
             return
-        msg = obs_message(row, self.nodes, self.seq, sod, self.clock_speed)
+        msg = obs_message(row, self.nodes, self.seq, sod, self.clock_speed, self.demand_scale)
         self.seq += 1
+        self.obs_latest = msg
+        self.steps += 1
         try:
             self.q.put_nowait(msg)
         except queue.Full:
@@ -332,6 +356,10 @@ class GoflowPrediction:
         self.agg.reset()
         for h in self._hist.values():
             h.clear()
+        self.steps = 0
+        with self.lock:                    # the overlay says "warming up" again, as the agents are
+            self.latest = None
+            self.goflow_latest = None
         try:
             self.q.put_nowait({"type": "reset", "v": 1, "t": t, "reason": reason})
         except queue.Full:
@@ -402,7 +430,8 @@ class GoflowPrediction:
             with self._gf_event:
                 self._gf_wait[msg.get("seq")] = msg
                 self._gf_event.notify_all()
-            self.goflow_latest = msg
+            with self.lock:
+                self.goflow_latest = msg
         elif msg.get("type") == "error":
             ch.err.write(f"[error] {msg.get('msg')}\n")
             ch.err.flush()
@@ -438,13 +467,53 @@ class GoflowPrediction:
             if ch is None:
                 continue
             if ch.state == "ready":
-                warm = label == "DSO4" and self.latest is None
+                warm = (self.latest if label == "DSO4" else self.goflow_latest) is None
                 parts.append(f"{label} warming up" if warm else f"{label} ok")
             elif ch.state == "off":
                 parts.append(f"{label} OFFLINE")
             else:
                 parts.append(f"{label} {ch.state}")
         return "  ·  ".join(parts)
+
+    def warm_up_left_s(self) -> float | None:
+        """Simulated seconds until DSO4's first forecast (it needs n_in steps of history), None once it forecasts."""
+        if self.latest is not None:
+            return None
+        return max(0, self.n_in - self.steps) * self.agg.dt_s
+
+    def at_risk(self, n: int = 3, horizon_i: int = 1) -> list[dict]:
+        """The approaches most at risk first: by DSO4's chance of a long queue (`p_long`, when its model has the
+        long-queue classifier, agents/goflow_prediction/goflow_prediction/congestion.py), else by its forecast fill at
+        HORIZONS_S[horizon_i] (default +120 s) as a share of the fill it calls full. Each: node, tls, queue now and
+        forecast (vehicles), that share, the chance and its horizon, GO-FLOW's traffic state when she answers."""
+        with self.lock:
+            fc, gf = self.latest, self.goflow_latest
+        if fc is None:
+            return []
+        now_nodes = (self.obs_latest or {}).get("nodes", {})
+        gfn = (gf or {}).get("nodes") or {}
+        rows = []
+        for node, v in (fc.get("nodes") or {}).items():
+            fill, halt = v.get("fill") or [], v.get("halt") or []
+            if len(fill) <= horizon_i or fill[horizon_i] is None:
+                continue
+            full = self.full.get(node) or 0.85
+            g = gfn.get(node) or {}
+            rows.append({"node": node, "tls": self.tls.get(node), "risk": fill[horizon_i] / full,
+                         "p_long": v.get("p_long"), "long_s": fc.get("long_queue_s"),
+                         "queue_now": (now_nodes.get(node) or {}).get("halt"),
+                         "queue_then": halt[horizon_i] if len(halt) > horizon_i else None,
+                         "horizon_s": HORIZONS_S[horizon_i], "state": g.get("traffic_state"),
+                         "risk_level": g.get("risk_level")})
+        rows.sort(key=lambda r: (-(r["p_long"] or 0.0), -r["risk"]) if fc.get("long_queue_s") else -r["risk"])
+        return rows[:n]
+
+    def states(self) -> dict[str, str]:
+        """GO-FLOW's traffic state of each approach ("free", "moderate", "congested", "severe"), her latest answer."""
+        with self.lock:
+            gf = self.goflow_latest
+        return {k: v.get("traffic_state") for k, v in ((gf or {}).get("nodes") or {}).items()
+                if v and v.get("traffic_state")}
 
     def recent_alerts(self, now: float, window_s: float = ALERT_SHOW_S) -> list[dict]:
         with self.lock:

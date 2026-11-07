@@ -144,6 +144,10 @@ def parse_args(argv=None):
                     help="cars driving round each loop of the ring road at the evening peak (cosim/highway.py, "
                          "default PEAK_PER_LOOP; 0: none, the town's trips only)")
     ap.add_argument("--highway-kmh", type=float, default=80.0, help="the ring road's limit (the town's: 50)")
+    ap.add_argument("--demand-scale", type=float, default=1.0,
+                    help="multiplies the day's vehicle curve (7 Nov): 1 = the town as it is (about 170 vehicles at the "
+                         "evening peak); more makes queues fill at the junctions, which the GO-FLOW forecasters alert "
+                         "on. Same meaning as tools/goflow_prediction_dataset.py --scale")
     ap.add_argument("--mean-trip-s", type=float, default=140.0,
                     help="mean trip of the town (Town05, actuated, SUMO alone: 138 s) for the vehicle curve")
     ap.add_argument("--emergency-every", type=float, default=45.0,
@@ -1032,7 +1036,8 @@ class FreeFly:
                                                  vmodels.LANE_CHANGE_ATTRS)
         pool_file = ROOT / "out" / "freefly" / f"{a.scenario}.pool.rou.xml"
         route_ids = daily.write_pool_routes(pool, pool_file)
-        curve = daily.population_curve(None, pool, mean_trip_min=a.mean_trip_s / 60.0)
+        curve = [v * a.demand_scale
+                 for v in daily.population_curve(None, pool, mean_trip_min=a.mean_trip_s / 60.0)]
         # Lane changes: SUMO's sublane model (--lateral-resolution 0.8), every car sideways at most 0.3 x its forward
         # speed and never while standing (vmodels.LANE_CHANGE_ATTRS). The continuous lane change used before
         # (--lanechange.duration 2) slid cars standing at a stop line 3.5 m sideways, and the bodies stood diagonally
@@ -2170,11 +2175,70 @@ class FreeFly:
             models = a.goflow_prediction_model or models
             gf = (a.goflow_traffic_model or gf) if a.goflow_traffic else None
             self.forecast = GoflowPrediction(self.sumo.conn, model_dirs=models, goflow_model=gf,
+                                             demand_scale=a.demand_scale,
                                              clock_speed=self.clock.speed)
             log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
+            self.forecast_anchors, self.forecast_dirs = self._approach_anchors(self.forecast.nodes)
         except Exception:  # noqa: BLE001 - the town goes on without it
             self.forecast = None
             log.error("goflow forecast not started:\n%s", traceback.format_exc())
+
+    def _approach_anchors(self, nodes: list[dict], back_m: float = 15.0):
+        """For the forecast overlay (7 Nov): each approach's point on its lanes `back_m` before the stop line (CARLA x,
+        y, ground z), and the unit direction of travel there (CARLA x, y). From SUMO's lane shapes, in the load
+        thread."""
+        from cosim.run import ground_z
+
+        conn, frame = self.sumo.conn, self.scen.frame
+        anchors, dirs = {}, {}
+        for n in nodes:
+            pts, ds = [], []
+            for ln in n["lanes"]:
+                try:
+                    shape = conn.lane.getShape(ln)
+                except Exception:  # noqa: BLE001 - a lane SUMO does not know: that approach gets no chip
+                    continue
+                if len(shape) < 2:
+                    continue
+                # walk back from the stop line along the shape
+                left, i = back_m, len(shape) - 1
+                x, y = shape[-1]
+                while i > 0 and left > 0:
+                    px, py = shape[i - 1]
+                    seg = math.hypot(x - px, y - py)
+                    if seg >= left:
+                        x, y = x + (px - x) * left / seg, y + (py - y) * left / seg
+                        left = 0
+                    else:
+                        left -= seg
+                        x, y, i = px, py, i - 1
+                pts.append(frame.to_carla_xy(x, y))
+                (ax, ay), (bx, by) = frame.to_carla_xy(*shape[-2]), frame.to_carla_xy(*shape[-1])
+                d = math.hypot(bx - ax, by - ay) or 1.0
+                ds.append(((bx - ax) / d, (by - ay) / d))
+            if not pts:
+                continue
+            cx, cy = sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+            anchors[n["node"]] = (cx, cy, ground_z(self.cmap, cx, cy))
+            dx, dy = sum(d[0] for d in ds), sum(d[1] for d in ds)
+            nd = math.hypot(dx, dy) or 1.0
+            dirs[n["node"]] = (dx / nd, dy / nd)
+        return anchors, dirs
+
+    def fly_to_approach(self, node: str) -> bool:
+        """F10: the view 45 m behind an approach's anchor and 28 m up, looking down the road to its junction."""
+        import carla
+
+        a, d = getattr(self, "forecast_anchors", {}).get(node), getattr(self, "forecast_dirs", {}).get(node)
+        if a is None or d is None:
+            return False
+        x, y, z = a
+        px, py, pz = x - d[0] * 45.0, y - d[1] * 45.0, z + 28.0
+        tx, ty = x + d[0] * 10.0, y + d[1] * 10.0
+        yaw = math.degrees(math.atan2(ty - py, tx - px))
+        pitch = math.degrees(math.atan2(z - pz, math.hypot(tx - px, ty - py)))
+        self.spectator.set_transform(carla.Transform(carla.Location(px, py, pz), carla.Rotation(pitch, yaw, 0.0)))
+        return True
 
     def close(self) -> None:
         if getattr(self, "forecast", None) is not None:
@@ -3590,7 +3654,7 @@ def main(argv=None) -> int:
         return surf
 
     keys_pill = pill("F5 pause    F6 / F7  -1 h / +1 h    F8 next junction    F9 hide clock    H inspect a camera    "
-                     "Esc quit")
+                     + ("F10 forecast    " if args.goflow_prediction else "") + "Esc quit")
     lat, lon = INGOLSTADT
     ticker = pygame.time.Clock()
     ui = {"show": True, "follow_t": 0.0, "front": False}  # front: hide when CARLA is not in front (once loaded)
@@ -3642,10 +3706,9 @@ def main(argv=None) -> int:
             rects = agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
             if ms:
                 rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
-            if fc is not None:  # pills only with --goflow-hud; the status line always
-                rects += forecast_hud.draw_alerts(scr, tuple(size), tf, centres,
-                                                  fc.recent_alerts(now) if args.goflow_hud else [], fc.status(), now,
-                                                  alerts_last_minute=len(fc.recent_alerts(now)))
+            if fc is not None:  # chips and pills only with --goflow-hud; the panel always
+                rects += forecast_hud.draw(scr, tuple(size), tf, centres, getattr(ff, "forecast_anchors", {}), fc,
+                                           now, args.goflow_hud)
             return rects
 
         return paint
@@ -3898,6 +3961,15 @@ def main(argv=None) -> int:
                     note, note_until = f"junction {tid}", time.time() + 3
                 elif k == "F9":
                     ui["show"] = not ui["show"]
+                elif k == "F10" and getattr(ff, "forecast", None) is not None:
+                    # the approach of the last alert (if under 2 minutes old), else the one most at risk
+                    al = ff.forecast.recent_alerts(ff.sim_now, window_s=120.0)
+                    top = ff.forecast.at_risk(1)
+                    node = al[-1]["node"] if al else (top[0]["node"] if top else None)
+                    if node is not None and ff.fly_to_approach(node):
+                        note, note_until = f"forecast: approach {node}", time.time() + 3
+                    else:
+                        note, note_until = "forecast: nothing to show yet", time.time() + 3
                 elif k == "H" and cams is not None:
                     if cams.active is not None:
                         cams.close()

@@ -212,7 +212,9 @@ town05_freefly.bat
 | `--enforce-record SECONDS` | 0 | With `--enforce`: record both cameras for that long, then quit |
 | `--seed` | 42 | SUMO's random seed |
 | `--windowed` | | Keep CARLA in a window (set by `CARLA_RES`) |
-| `--goflow-prediction` / `--goflow-traffic` | off | The GO-FLOW team's forecasters in their own processes (`agents/`, their own venvs: `tools\setup_goflow_prediction.bat`, `setup_goflow_traffic.bat`): DSO4's spill-back alerts over the junctions, with GO-FLOW's occupancy forecast as its input (`cosim/goflow_prediction.py`). The town never waits for them |
+| `--goflow-prediction` / `--goflow-traffic` | off | The GO-FLOW team's forecasters in their own processes (`agents/`, their own venvs: `tools\setup_goflow_prediction.bat`, `setup_goflow_traffic.bat`): DSO4's queue forecasts and its "long queue likely within 3 min" alerts (a classifier, `agents/goflow_prediction/goflow_prediction/congestion.py`), with GO-FLOW's occupancy forecast and traffic state as its input (`cosim/goflow_prediction.py`). The town never waits for them |
+| `--goflow-hud` | off | With `--goflow-prediction`: on the roads near you, a chip over each approach GO-FLOW calls congested or severe, or DSO4 forecasts at least half full; DSO4's alert pills over the junctions. The forecast panel (bottom right: the three roads most likely to get a long queue within 3 minutes, the last alert) shows whenever the forecasters run; F10 flies to the road most at risk (`cosim/goflow_prediction_hud.py`) |
+| `--demand-scale X` | 1 | Multiplies the day's vehicle curve: 2 or 3 make queues fill at the junctions (no gridlock in SUMO at 3, crashes on). The forecasters are told the same scale, as in their training data |
 
 ### Signal sets
 

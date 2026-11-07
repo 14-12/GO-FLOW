@@ -1,33 +1,108 @@
 {
-  "bundle": "goflow",
-  "trained_with_crashes": false,
-  "accidents": false,
-  "careless_share": null,
-  "models": [
-    {
-      "name": "dso4",
-      "path": "models/goflow/dso4",
-      "task": "queue-fill forecast",
-      "horizons_s": [60, 120, 300],
-      "source": "exact"
-    },
-    {
-      "name": "dso4_goflow",
-      "path": "models/goflow/dso4_goflow",
-      "task": "queue-fill forecast with GO-FLOW confirmation",
-      "horizons_s": [60, 120, 300],
-      "source": "exact"
-    },
-    {
-      "name": "goflow_xgb",
-      "path": "models/goflow/goflow_xgb",
-      "task": "GO-FLOW occupancy forecast at +120 s",
-      "horizon_s": 120,
-      "source": "exact"
-    }
-  ],
-  "notes": [
-    "The shipped model bundle is the repo-tracked copy used for the integrated CARLA viewer.",
-    "This bundle is the nominal D2 no-crash model set. The crash/jam alert evaluation is a separate dataset and should not be treated as the default shipped bundle."
-  ]
+ "bundle": "goflow",
+ "retrained": "7 Nov 2026 (v3): crashes on, traffic x1 / x2 / x3",
+ "trained_with_crashes": true,
+ "accidents": true,
+ "careless_share": null,
+ "demand_scales": [
+  1.0,
+  2.0,
+  3.0
+ ],
+ "datasets": [
+  "D3_x1_acc",
+  "D3_x2_acc",
+  "D3_x3_acc"
+ ],
+ "train_seeds": "101-130",
+ "dev_seeds": "11-20",
+ "test_seeds": "21-30, not opened",
+ "models": [
+  {
+   "name": "dso4",
+   "version": "lgbm_mix_v3",
+   "path": "models/goflow/dso4",
+   "task": "queue-fill forecast",
+   "horizons_s": [
+    60,
+    120,
+    300
+   ],
+   "source": "exact"
+  },
+  {
+   "name": "dso4_goflow",
+   "version": "lgbm_gf_mix_v3",
+   "path": "models/goflow/dso4_goflow",
+   "task": "queue-fill forecast with GO-FLOW confirmation",
+   "horizons_s": [
+    60,
+    120,
+    300
+   ],
+   "source": "exact"
+  },
+  {
+   "name": "goflow_xgb",
+   "version": "xgb_mix_v3",
+   "path": "models/goflow/goflow_xgb",
+   "task": "GO-FLOW occupancy forecast at +120 s",
+   "horizon_s": 120,
+   "source": "exact"
+  }
+ ],
+ "dev_results_queue_fill_mae_120s": {
+  "x1": {
+   "dso4_v3": 0.0211,
+   "last_value": 0.0275,
+   "shipped_v2": 0.021
+  },
+  "x2": {
+   "dso4_v3": 0.0331,
+   "last_value": 0.0493,
+   "shipped_v2": 0.0392
+  },
+  "x3": {
+   "dso4_v3": 0.0432,
+   "last_value": 0.067,
+   "shipped_v2": 0.0587
+  }
+ },
+ "alerts": "DSO4's alerts come from its long-queue classifier (models/goflow/dso4/congestion_model.txt, agents/goflow_prediction/goflow_prediction/congestion.py): the chance that an approach starts a queue that stays over its level (Q95 of its fill averaged over a signal cycle, train seeds) within 3 minutes; alert at 0.7. The first rule (forecast at `full` from under `low`) caught no build-up on the dev seeds.",
+ "notes": [
+  "The previous bundle (v2, D2 no-crash, traffic x1 only) is in git history (commit fd5e798).",
+  "Dataset paths inside the cards are those of the machine that trained them."
+ ],
+ "long_queue_dev_scores": {
+  "x1": {
+   "threshold": 0.7,
+   "alerts": 5,
+   "right": 3,
+   "starts": 6,
+   "caught": 3,
+   "precision": 0.6,
+   "recall": 0.5,
+   "median_lead_s": 30.0
+  },
+  "x2": {
+   "threshold": 0.7,
+   "alerts": 50,
+   "right": 27,
+   "starts": 40,
+   "caught": 27,
+   "precision": 0.54,
+   "recall": 0.675,
+   "median_lead_s": 60.0
+  },
+  "x3": {
+   "threshold": 0.7,
+   "alerts": 227,
+   "right": 116,
+   "starts": 136,
+   "caught": 101,
+   "precision": 0.511,
+   "recall": 0.743,
+   "median_lead_s": 60.0
+  }
+ }
 }

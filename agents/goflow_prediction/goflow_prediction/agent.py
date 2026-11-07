@@ -54,6 +54,13 @@ class ModelBundle:
             self.thresholds = (np.array([t["full"][n] for n in self.nodes]),
                                np.array([t["low"][n] for n in self.nodes]))
         self.name = "lgbm_gf" if self.use_goflow else "lgbm"
+        self.congestion = None             # congestion.py: the long-queue classifier, when trained next to it
+        if os.path.isfile(os.path.join(folder, "congestion.json")):
+            from .congestion import Congestion
+
+            self.congestion = Congestion(folder)
+            if self.congestion.nodes != self.nodes:
+                raise ValueError(f"{folder}: congestion.json and the model have different nodes")
 
 
 class ForecastAgent:
@@ -78,6 +85,8 @@ class ForecastAgent:
             self.full = np.full(self.N, self.rules.full)
             self.low = np.full(self.N, self.rules.low)
         self.keep = max(self.tb.n_in, self.tb.cycle_steps + 1)
+        # the long-queue classifier (congestion.py), from the first model that has one: it makes the alerts
+        self.congestion = next((m.congestion for m in models if m.congestion is not None), None)
         self.reset()
 
     # ------------------------------------------------------------------ state
@@ -194,6 +203,29 @@ class ForecastAgent:
         return out
 
     # ------------------------------------------------------------------ 4. act
+    def act_congestion(self, t: float, p: np.ndarray, c_now: np.ndarray) -> list[dict]:
+        """Alerts from the long-queue classifier (congestion.py): probability >= its threshold, not already over its
+        level, the cooldown per approach. GO-FLOW's state, when she answers, is reported, not required."""
+        cg, alerts = self.congestion, []
+        states = self.buf[-1]["goflow_state"]
+        now = self.buf[-1]["fill"]
+        horizon = int(cg.k * self.tb.dt_s)
+        for j in np.flatnonzero(p >= cg.threshold):
+            if t - self.last_alert[j] < self.rules.cooldown_s:
+                continue
+            node = self.nodes[j]
+            a = {"type": "alert", "v": 1, "t": t, "kind": "long_queue_soon", "node": node, "tls": node.split("-")[0],
+                 "horizon_s": horizon, "p": round(float(p[j]), 3), "fill_now": _r(now[j]), "cycle_fill": _r(c_now[j]),
+                 "level": round(float(cg.level[j]), 4), "queue_now": _r(now[j] * self.storage[j]),
+                 "source": None, "model": "congestion",
+                 "action": f"A long queue is likely on {node} within {horizon // 60} min "
+                           f"({p[j] * 100:.0f} %): give it a longer green before it backs up"}
+            if states is not None:
+                a["goflow_state"] = states[j]
+            alerts.append(a)
+            self.last_alert[j] = t
+        return alerts
+
     def act(self, t: float, pred: dict[str, np.ndarray], chosen: dict[str, str]) -> list[dict]:
         r = self.rules
         now = self.buf[-1]["fill"]
@@ -239,13 +271,22 @@ class ForecastAgent:
         self.pending = deque(sorted(self.pending, key=lambda x: x[0]))
         pred = {h: allp[h].get(chosen[h], allp[h]["last_value"]) for h in self.tb.steps}
         t = float(obs["t"])
-        alerts = self.act(t, pred, chosen)
+        p_long = None
+        if self.congestion is not None:
+            p_long, c_now = self.congestion.predict(self.window(), self.storage, self.A_up, self.A_down)
+            alerts = self.act_congestion(t, p_long, c_now)
+        else:
+            alerts = self.act(t, pred, chosen)
         hs = list(self.tb.steps)
         msg = {"type": "forecast", "v": 1, "seq": obs.get("seq"), "t": t,
                "model": "+".join(b.version for b in self.bundles.values()), "chosen": chosen,
                "nodes": {n: {"fill": [_r(pred[h][j]) for h in hs],
                              "halt": [_r(pred[h][j] * self.storage[j]) for h in hs]}
                          for j, n in enumerate(self.nodes)}}
+        if p_long is not None:                 # the chance of a long queue within the classifier's horizon
+            msg["long_queue_s"] = int(self.congestion.k * self.tb.dt_s)
+            for j, n in enumerate(self.nodes):
+                msg["nodes"][n]["p_long"] = _r(p_long[j])
         return {"problems": problems, "forecast": msg, "alerts": alerts, "warming_up": False}
 
 

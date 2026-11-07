@@ -11,7 +11,7 @@ the top-left corner, the "H inspect" prompt and the camera inspector (cosim/insp
 
 Its keys are read while the CARLA window has the focus (GetAsyncKeyState), so you keep flying in
 CARLA: F5 pause, F6 / F7 one hour back / forward, F8 next junction, F9 hide or show the clock,
-H inspect the traffic camera you are near, Esc quit. Function keys and H, because CARLA's
+F10 the forecast's road most at risk (--goflow-prediction), H inspect the traffic camera you are near, Esc quit. Function keys and H, because CARLA's
 spectator uses the other letters, the arrows, Space and C.
 """
 
@@ -23,7 +23,7 @@ from ctypes import wintypes
 
 KEY_COLOUR = (1, 0, 1)  # drawn nowhere in the clock: these pixels are see-through
 
-VK = {"F5": 0x74, "F6": 0x75, "F7": 0x76, "F8": 0x77, "F9": 0x78, "ESC": 0x1B, "H": 0x48}
+VK = {"F5": 0x74, "F6": 0x75, "F7": 0x76, "F8": 0x77, "F9": 0x78, "F10": 0x79, "ESC": 0x1B, "H": 0x48}
 
 _GWL_EXSTYLE = -20
 _WS_EX = 0x00080000 | 0x00000020 | 0x00000080 | 0x08000000 | 0x00000008  # LAYERED TRANSPARENT TOOLWINDOW NOACTIVATE TOPMOST
