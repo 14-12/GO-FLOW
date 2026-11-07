@@ -1,6 +1,7 @@
 """cosim/goflow_prediction.py (the DSO4 / GO-FLOW connector), with no SUMO, no CARLA and none of the agents' packages:
 a fake TraCI connection, and fake agent processes written here."""
 import json
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -191,6 +192,20 @@ def test_refuses_a_clock_speed_the_models_were_not_trained_at(tmp_path):
     with pytest.raises(ValueError, match="--clock-speed 60"):
         gp.GoflowPrediction(FakeConn(), model_dirs=[str(m)], nodes_file=nodes, clock_speed=1.0,
                             out_dir=tmp_path / "live", log_dir=tmp_path)
+
+
+def test_clean_checkout_uses_shipped_model_bundle(monkeypatch, tmp_path):
+    shipped = ROOT / "models" / "goflow"
+    dst = tmp_path / "models" / "goflow"
+    shutil.copytree(shipped, dst)
+    assert not (tmp_path / "out").exists()
+    monkeypatch.setattr(gp, "ROOT", tmp_path)
+    monkeypatch.setattr(gp, "SHIPPED", dst)
+    monkeypatch.setattr(gp, "DEFAULT_GRAPH", dst / "graph")
+    dso4, goflow = gp.default_models(with_goflow=True)
+    assert dso4 == [str(dst / "dso4"), str(dst / "dso4_goflow")]
+    assert goflow == str(dst / "goflow_xgb")
+    assert (dst / "graph" / "nodes.json").is_file()
 
 
 def test_pills_have_their_own_option():

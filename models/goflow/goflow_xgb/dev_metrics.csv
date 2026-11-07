@@ -1,0 +1,3 @@
+model,split,horizon_s,MAE,n
+xgboost,dev,120,0.015111721183961594,24200
+last_value,dev,120,0.020107258655954738,24200

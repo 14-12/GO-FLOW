@@ -394,17 +394,17 @@ The repo currently contains the committed nominal-traffic evaluation and the cra
 
 | Dataset / run set | Scale | Accidents | Careless share | Seeds | Model | Alerts | Precision | Onsets caught | Median lead time |
 | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: |
-| `D2_x1_coord_v1` (current committed dev eval) | 1.0x | off | n/a | 11-20 | DSO4 alone | 0 | 0.0 | 0/0 | n/a |
-| `D2_x1_coord_v1` (current committed dev eval) | 1.0x | off | n/a | 11-20 | DSO4 + GO-FLOW | 0 | 0.0 | 0/0 | n/a |
+| `D2_x1_coord_v1` (committed dev eval, actual run artifact) | 1.0x | off | n/a | 11-20 | DSO4 alone | 1 | 0.0 | 0/5 | n/a |
+| `D2_x1_coord_v1` (committed dev eval, actual run artifact) | 1.0x | off | n/a | 11-20 | DSO4 + GO-FLOW | 0 | n/a | 0/5 | n/a |
 | `D3_x1_acc_v1` + `DJ_x4_acc_v1` (crash/jam set) | 1.0x / 4.0x | on | default 0.10 (higher values in queued runs) | 101-140 + dev seeds | DSO4 alone | pending in repo | pending | pending | pending |
 | `D3_x1_acc_v1` + `DJ_x4_acc_v1` (crash/jam set) | 1.0x / 4.0x | on | default 0.10 (higher values in queued runs) | 101-140 + dev seeds | DSO4 + GO-FLOW | pending in repo | pending | pending | pending |
 
-The key point is that the nominal viewer traffic is not the situation that produces meaningful alerts: the alerting signal only appears when queues are forced by higher demand or accident-induced spillback. The crash/jam dataset generation is present in the branch, but the final alert summary for those runs still needs to be committed alongside the shipped model bundle before the review checklist is fully closed.
+The key point is that the nominal viewer traffic is not the situation that produces meaningful alerts: the alerting signal only appears when queues are forced by higher demand or accident-induced spillback. The actual committed no-crash dev artifact on this branch is 1 alert and 5 onsets for DSO4 alone; the stale 0/0 row was not the true run output. The crash/jam dataset generation is present in the branch, but the final alert summary for those runs still needs to be committed alongside the shipped model bundle before the review checklist is fully closed.
 
 **Known limits:**
 1. **Not seen in CARLA yet** (section 6).
 2. **The alerts are not validated on the crash/jam runs yet.** The normal traffic case produces almost no queue-fill events, which is why the useful alerting signal only appears under higher-demand or accident-heavy conditions.
-   * In the current committed dev eval, `D2_x1_coord_v1`, the alert count is 0 for both DSO4 alone and DSO4 + GO-FLOW.
+   * In the actual committed dev eval on this branch, `D2_x1_coord_v1` produced 1 alert and 5 onsets for DSO4 alone, while DSO4 + GO-FLOW produced 0 alerts and 0 caught onsets on the same dataset.
    * The crash/jam run set is already generated (`D3_x1_acc_v1`, `DJ_x4_acc_v1`), but the final alert summary is still pending in the repo.
 3. **Exact counts only.** The agents read SUMO's lanes, not the camera reports: GO-FLOW needs speed and occupancy,
    which the reports do not carry.

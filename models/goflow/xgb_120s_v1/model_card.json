@@ -3,11 +3,11 @@
   "task": "GO-FLOW occupancy forecast",
   "horizon_s": 120,
   "dt_s": 30.0,
-  "trained_with_crashes": true,
-  "accidents": true,
-  "careless_share": 0.10,
+  "trained_with_crashes": false,
+  "accidents": false,
+  "careless_share": null,
   "source": "exact",
   "notes": [
-    "This GO-FLOW model was trained with crashes enabled to match the viewer's default incident setting and target the queue behind a crash."
+    "This GO-FLOW model was trained on the no-crash D2 dataset used by the shipped bundle."
   ]
 }
