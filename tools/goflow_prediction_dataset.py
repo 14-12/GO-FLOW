@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import re
 import shutil
 import subprocess
@@ -49,9 +48,9 @@ def seeds_arg(s: str) -> list[int]:
     return out
 
 
-def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> dict:
-    import traci.constants as tc
-
+def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, probe=None) -> dict:
+    """probe(cur, conn, seconds_of_day): called after every step (tools/goflow_prediction_live_check.py
+    plugs the live connector in through it, on exactly this traffic)."""
     from cosim import daily, vmodels
     from cosim import scenario as scenario_mod
     from cosim.blueprints import Candidate
@@ -91,9 +90,9 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
     sinks = sorted({r.split()[-1] for routes in pool.routes.values() for r in routes})
     kw = {}
     if not a["accidents"]:
-        kw = dict(share=0.0, breakdown_mean_s=0.0, speeder_share=0.0, pileups=False, lookalikes=False)
+        kw = {"share": 0.0, "breakdown_mean_s": 0.0, "speeder_share": 0.0, "pileups": False, "lookalikes": False}
     elif a["careless_share"] is not None:
-        kw = dict(share=a["careless_share"])
+        kw = {"share": a["careless_share"]}
     im = IncidentManager(c, scen.net_file, typer, seed=seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
     bus = ring = None
@@ -118,20 +117,13 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
         ring.protected = im.protected
         ring.setup()
 
-    # what is measured: lane subscriptions (sent back with each step, no extra round trips)
-    lane_vars = [tc.LAST_STEP_VEHICLE_NUMBER, tc.LAST_STEP_VEHICLE_HALTING_NUMBER, tc.LAST_STEP_MEAN_SPEED,
-                 tc.LAST_STEP_OCCUPANCY]
-    for n in nodes:
-        for ln in n["lanes"]:
-            c.lane.subscribe(ln, lane_vars)
-    links = {}  # node index -> (tls, [link indices of its lanes])
-    for j, n in enumerate(nodes):
-        cl = c.trafficlight.getControlledLinks(n["tls"])
-        idx = [i for i, group in enumerate(cl) if any(lk[0] in n["lanes"] for lk in group)]
-        links[j] = (n["tls"], idx)
+    # what is measured: the live connector's own Aggregator (cosim/goflow_prediction.py), so the agents are
+    # trained on exactly what the town will send them
+    from cosim.goflow_prediction import Aggregator
+
+    agg = Aggregator(c, nodes, a["dt"])
 
     N = len(nodes)
-    dt = a["dt"]
     sod0 = a["start_hour"] * 3600.0
     t_start = sumo.time
 
@@ -141,11 +133,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
     pop.add(int(pop.target(sod_at(t_start))), anywhere=True)
     end = t_start + 60.0 * (a["minutes"] + a["warmup"])
     keep_from = t_start + 60.0 * a["warmup"]
-    acc = np.zeros((5, N))
-    nsamp = 0
     rows = {k: [] for k in ("t", "tod", "dem", "dem_at", "halt", "veh", "speed", "occ", "green")}
     k = 0
-    win_end = keep_from + dt
     cur = None
     while sumo.time < end:
         cur = sumo.step()
@@ -159,42 +148,28 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
             for vid in [v for v in cur.vehicles if v.startswith("pt_")]:
                 try:
                     route, idx = c.vehicle.getRoute(vid), c.vehicle.getRouteIndex(vid)
-                except Exception:  # noqa: BLE001
+                except Exception:  # noqa: BLE001, S112 - a bus that just left
                     continue
                 if idx >= len(route) - 3:
                     bus.next_lap(vid, idx, route)
         im.step(cur.time, cur.vehicles, cur.tls)
         if int(cur.time * 2) % 10 == 0:  # every 5 s, as the viewer
             im.unjam(cur.time, cur.vehicles)
-        if cur.time < keep_from or k % 2:
+        if probe is not None:
+            probe(cur, c, sod)
+        if cur.time < keep_from:
             continue
-        subs = c.lane.getAllSubscriptionResults()
-        for j, n in enumerate(nodes):
-            veh = halt = occ = sp = 0.0
-            for ln in n["lanes"]:
-                r = subs.get(ln, {})
-                veh += r.get(tc.LAST_STEP_VEHICLE_NUMBER, 0)
-                halt += r.get(tc.LAST_STEP_VEHICLE_HALTING_NUMBER, 0)
-                occ += r.get(tc.LAST_STEP_OCCUPANCY, 0.0)   # already a fraction (checked: 0.66 for 77 % covered)
-                sp += r.get(tc.LAST_STEP_MEAN_SPEED, 0.0)
-            nl = max(len(n["lanes"]), 1)
-            tls, idx = links[j]
-            st = cur.tls.get(tls, "")
-            green = (sum(st[i] in "Gg" for i in idx if i < len(st)) / len(idx)) if idx and st else math.nan
-            acc[:, j] += (halt, veh, sp / nl, occ / nl, green)
-        nsamp += 1
-        if cur.time >= win_end - 1e-6:
-            m = acc / max(nsamp, 1)
-            rows["t"].append(cur.time)
-            rows["tod"].append(sod)
-            rows["dem"].append(daily.demand_factor(sod / 3600.0) * a["scale"])
-            rows["dem_at"].append([daily.demand_factor(((sod + h * a["clock_speed"]) % 86400) / 3600.0) * a["scale"]
-                                   for h in HORIZONS_S])
-            for name, i in (("halt", 0), ("veh", 1), ("speed", 2), ("occ", 3), ("green", 4)):
-                rows[name].append(m[i].copy())
-            acc[:] = 0.0
-            nsamp = 0
-            win_end += dt
+        row = agg.sample(c, cur.time, cur.tls)
+        if row is None:
+            continue
+        rows["t"].append(row["t"])
+        rows["tod"].append(sod)
+        rows["dem"].append(daily.demand_factor(sod / 3600.0) * a["scale"])
+        rows["dem_at"].append([daily.demand_factor(((sod + h * a["clock_speed"]) % 86400) / 3600.0) * a["scale"]
+                               for h in HORIZONS_S])
+        for name in ("halt", "veh", "speed", "occ", "green"):
+            rows[name].append(np.asarray(row[name], dtype=np.float64))
+
     def stuck_one(v):  # waiting at a red or in a jam, not at a planned stop (deliveries, bus stops)
         try:
             return (not v.startswith("pt_") and c.vehicle.getWaitingTime(v) > STUCK_S
@@ -209,7 +184,7 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
         try:
             ln = c.vehicle.getLaneID(v)
             where[ln] = where.get(ln, 0) + 1
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110 - already gone
             pass
     vehicles_end = len(cur.vehicles) if cur else 0
     sumo.close()
@@ -218,15 +193,15 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int) -> d
     np.savez_compressed(Path(out_dir) / "runs" / f"seed{seed}.npz", t=arr["t"], tod_s=arr["tod"], demand=arr["dem"],
                         demand_at=arr["dem_at"].reshape(T, len(HORIZONS_S)),
                         **{n_: arr[n_].reshape(T, N) for n_ in ("halt", "veh", "speed", "occ", "green")})
-    return dict(seed=seed, steps=T, wall_s=round(time.time() - t_wall), vehicles_end=vehicles_end,
-                stuck_over_300s=stuck, stuck_lanes=dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
-                gridlock=stuck > 50, incidents=len(im.done) + len(im.incidents))
+    return {"seed": seed, "steps": T, "wall_s": round(time.time() - t_wall), "vehicles_end": vehicles_end,
+                "stuck_over_300s": stuck, "stuck_lanes": dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
+                "gridlock": stuck > 50, "incidents": len(im.done) + len(im.incidents)}
 
 
 def git_commit() -> str:
     try:
         return subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT,
-                              timeout=10).stdout.strip()
+                              timeout=10, check=False).stdout.strip()
     except Exception:  # noqa: BLE001
         return ""
 
@@ -270,7 +245,7 @@ def main(argv=None) -> int:
             try:
                 r = f.result()
             except Exception as e:  # noqa: BLE001 - one failed run is reported, the others go on
-                r = dict(seed=futs[f], error=f"{type(e).__name__}: {e}")
+                r = {"seed": futs[f], "error": f"{type(e).__name__}: {e}"}
             results.append(r)
             print(json.dumps(r), flush=True)
     good = sorted((r for r in results if "error" not in r), key=lambda r: seeds.index(r["seed"]))
@@ -280,11 +255,11 @@ def main(argv=None) -> int:
         return 2
     parts = [np.load(out / "runs" / f"seed{r['seed']}.npz") for r in good]
     T = [len(p["t"]) for p in parts]
-    meta = dict(dt_s=args.dt, horizons_s=list(HORIZONS_S), source="exact", controller=args.controller,
-                clock_speed=args.clock_speed, start_hour=args.start_hour, scale=args.scale, minutes=args.minutes,
-                warmup=args.warmup, accidents=args.accidents, careless_share=args.careless_share, buses=args.buses,
-                ring=args.ring, junction_blocker=args.junction_blocker, git_commit=git_commit(),
-                tool="tools/goflow_prediction_dataset.py", runs=good)
+    meta = {"dt_s": args.dt, "horizons_s": list(HORIZONS_S), "source": "exact", "controller": args.controller,
+                "clock_speed": args.clock_speed, "start_hour": args.start_hour, "scale": args.scale, "minutes": args.minutes,
+                "warmup": args.warmup, "accidents": args.accidents, "careless_share": args.careless_share, "buses": args.buses,
+                "ring": args.ring, "junction_blocker": args.junction_blocker, "git_commit": git_commit(),
+                "tool": "tools/goflow_prediction_dataset.py", "runs": good}
     np.savez_compressed(
         out / "dataset.npz", nodes=np.array([n["node"] for n in nodes]),
         storage=np.array([n["storage"] for n in nodes], dtype=np.float64),

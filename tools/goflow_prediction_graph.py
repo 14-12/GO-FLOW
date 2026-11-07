@@ -48,7 +48,7 @@ def approaches(net, layout) -> list[dict]:
         e = net.getEdge(edges.pop())
         lanes = [ln.getID() for ln in e.getLanes() if ln.allows("passenger") or ln.allows("bus") or ln.allows("truck")]
         storage = sum(net.getLane(ln).getLength() for ln in lanes) / VEH_M
-        out.append(dict(node=name, tls=tls, edge=e.getID(), lanes=lanes, storage=round(storage, 2)))
+        out.append({"node": name, "tls": tls, "edge": e.getID(), "lanes": lanes, "storage": round(storage, 2)})
     assert tls_nodes >= {a["tls"] for a in out}
     edges = [a["edge"] for a in out]
     if len(set(edges)) != len(edges):

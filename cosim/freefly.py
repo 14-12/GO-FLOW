@@ -67,6 +67,18 @@ def parse_args(argv=None):
     ap.add_argument("--agent-hud", action=argparse.BooleanOptionalAction, default=False,
                     help="with the agents: their decisions on the overlay, over each junction and top right "
                          "(cosim/agent_hud.py). Off by default since 24 Oct (too many notices); the accident markers stay")
+    ap.add_argument("--goflow-prediction", action=argparse.BooleanOptionalAction, default=False,
+                    help="DSO4's congestion forecaster in its own process (agents/goflow_prediction, its own venv): "
+                         "every 30 s the 55 approaches' state goes to it, its spill-back alerts are drawn over the "
+                         "junctions (cosim/goflow_prediction.py). Off by default; the town never waits for it")
+    ap.add_argument("--goflow-prediction-model", action="append", default=None, metavar="DIR",
+                    help="trained model folder(s) (default out/goflow_prediction/models/lgbm_real_v2, plus "
+                         "lgbm_gf_v2 with --goflow-traffic)")
+    ap.add_argument("--goflow-traffic", action=argparse.BooleanOptionalAction, default=False,
+                    help="with --goflow-prediction: GO-FLOW's traffic agent too (agents/goflow_traffic), whose "
+                         "occupancy forecast and state DSO4 reads")
+    ap.add_argument("--goflow-traffic-model", default=None, metavar="DIR",
+                    help="GO-FLOW's model folder (default out/goflow_traffic/models/xgb_120s_v1)")
     ap.add_argument("--radius", type=float, default=500.0, help="draw the vehicles within this many metres of you")
     ap.add_argument("--rate", type=float, default=60.0,
                     help="vehicle updates per second sent to CARLA (the picture's own rate is the GPU's)")
@@ -959,6 +971,7 @@ class FreeFly:
         self.signal_heads = None
         self.first_tf = None
         self.incidents = self.scene = None
+        self.forecast = None  # --goflow-prediction (cosim/goflow_prediction.py)
         self.models: dict = {}
 
     # ------------------------------------------------------------ loading (a thread)
@@ -1065,6 +1078,8 @@ class FreeFly:
         self.shown_log: collections.deque = collections.deque(maxlen=64)  # (segment start, its SUMO time): depicted_at
         self.incidents = None
         self._wire_agents(a)
+        if getattr(a, "goflow_prediction", False):
+            self._wire_forecast(a)
         if a.accidents:
             from cosim import incidents as incidents_mod
             from cosim.incidents import IncidentManager
@@ -1863,6 +1878,8 @@ class FreeFly:
 
         cur = self.sumo.step()
         self.sim_now = cur.time
+        if self.forecast is not None:  # --goflow-prediction: a few additions, a message every 30 s, never a wait
+            self.forecast.on_step(cur, self.sumo.conn, self.clock.seconds_of_day)
         lap("sumo.step")
         fx, fy = self.focus()
         R = self.args.radius
@@ -2134,7 +2151,28 @@ class FreeFly:
         d = [x for x in d if x > 0]
         return len(d) / sum(d) if d else 0.0
 
+    def _wire_forecast(self, a) -> None:
+        """--goflow-prediction: DSO4's forecaster (and with --goflow-traffic GO-FLOW's agent) in their own processes.
+        Any failure to start is logged and the viewer goes on without them."""
+        try:
+            from cosim.goflow_prediction import GoflowPrediction
+
+            out = ROOT / "out"
+            models = a.goflow_prediction_model or (
+                [str(out / "goflow_prediction" / "models" / "lgbm_real_v2")]
+                + ([str(out / "goflow_prediction" / "models" / "lgbm_gf_v2")] if a.goflow_traffic else []))
+            gf = (a.goflow_traffic_model or str(out / "goflow_traffic" / "models" / "xgb_120s_v1")) \
+                if a.goflow_traffic else None
+            self.forecast = GoflowPrediction(self.sumo.conn, model_dirs=models, goflow_model=gf,
+                                             clock_speed=self.clock.speed)
+            log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
+        except Exception:  # noqa: BLE001 - the town goes on without it
+            self.forecast = None
+            log.error("goflow forecast not started:\n%s", traceback.format_exc())
+
     def close(self) -> None:
+        if getattr(self, "forecast", None) is not None:
+            self.forecast.close()
         if getattr(self, "cams", None) is not None:
             self.cams.shutdown()
         for a in getattr(self, "shelters", []):
@@ -3567,23 +3605,33 @@ def main(argv=None) -> int:
     from cosim.agent_hud import AgentHud
 
     agent_hud = AgentHud(mode="cameras" if args.controller.startswith("agents_observed") else "exact counts")
+    forecast_hud = None
+    if args.goflow_prediction:
+        from cosim.goflow_prediction_hud import ForecastHud
+
+        forecast_hud = ForecastHud()
 
     def markers_draw():
-        """The accident markers and the junction agents' decisions (cosim/agent_hud.py), or None when neither."""
+        """The accident markers, the junction agents' decisions (cosim/agent_hud.py) and DSO4's spill-back alerts
+        (cosim/goflow_prediction_hud.py), or None when none."""
         scene = getattr(ff, "scene", None)
         ms = list(scene.markers) if scene is not None and scene.markers else []
         evs = ff.agent_events() if args.agent_hud and getattr(ff, "agents", None) is not None else []
-        if not ms and not evs:
+        fc = getattr(ff, "forecast", None) if forecast_hud is not None else None
+        if not ms and not evs and fc is None:
             return None
         tf = ff.view_transform()
         plates = getattr(ff, "plate_text", {})
-        centres = {t: (x, y, ff.zs.get(t, 0.0)) for t, (x, y, _) in ff.centres.items()} if evs else {}
+        centres = {t: (x, y, ff.zs.get(t, 0.0)) for t, (x, y, _) in ff.centres.items()} if evs or fc else {}
         now = ff.sim_now
 
         def paint(scr):
             rects = agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
             if ms:
                 rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
+            if fc is not None:
+                rects += forecast_hud.draw_alerts(scr, tuple(size), tf, centres, fc.recent_alerts(now), fc.status(),
+                                                  now)
             return rects
 
         return paint
@@ -3828,6 +3876,8 @@ def main(argv=None) -> int:
                     clock.pause()
                 elif k in ("F6", "F7"):
                     clock.shift(3600.0 if k == "F7" else -3600.0)
+                    if getattr(ff, "forecast", None) is not None:  # the forecasters' windows would mix two hours
+                        ff.forecast.reset(ff.sim_now)
                     note, note_until = f"jumped to {clock.hhmm()}", time.time() + 3
                 elif k == "F8":
                     tid = ff.next_junction()
