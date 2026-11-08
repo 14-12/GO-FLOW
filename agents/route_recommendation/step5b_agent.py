@@ -61,6 +61,10 @@ def set_costs(alerts):
         elif a["agent"] == 4:
             for u, v, d in G.edges(data=True):
                 d["cost"] *= P_CITY[a["niveau"]]
+        elif a.get("type") == "congestion":
+            e = edge_by_id(a["route"])
+            if e and G.has_edge(*e):
+                G[e[0]][e[1]]["cost"] *= a["penalty"]
 
 def apply_timed(alerts, path):
     t = 0.0
