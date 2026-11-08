@@ -1,5 +1,5 @@
 {
- "version": "xgb_c30_v4",
+ "version": "xgb_c30_v5",
  "features": [
   "location",
   "slot_in_day",
@@ -93,7 +93,7 @@
   "1126-3",
   "1126-4"
  ],
- "best_iteration": 178,
+ "best_iteration": 298,
  "neighbours": {
   "1427-1": [
    "1126-1",
@@ -685,12 +685,12 @@
   "min_child_weight": 10
  },
  "thresholds_train_only": {
-  "occupancy_median": 0.018262173980474472,
-  "occupancy_high": 0.286209046840668,
-  "occupancy_severe": 0.4603857493400566,
-  "speed_low": 5.0933332443237305,
-  "speed_median": 9.723333358764648,
-  "strong_change": 0.09777176789939404
+  "occupancy_median": 0.028619805350899696,
+  "occupancy_high": 0.25843865573406216,
+  "occupancy_severe": 0.4261635372042661,
+  "speed_low": 5.738682985305786,
+  "speed_median": 9.63762617111206,
+  "strong_change": 0.1358410120010376
  },
  "train_seeds": [
   101,
@@ -736,7 +736,7 @@
   19,
   20
  ],
- "dataset": "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_mix_acc/dataset.npz",
+ "dataset": "/home/claude/gf/out/goflow_prediction/datasets/D5_c30_mix_ao/dataset.npz",
  "dataset_meta": {
   "dt_s": 30.0,
   "horizons_s": [
@@ -749,7 +749,10 @@
   "merged_from": [
    "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x1_acc/dataset.npz",
    "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x2_acc/dataset.npz",
-   "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x3_acc/dataset.npz"
+   "/home/claude/gf/out/goflow_prediction/datasets/D4_c30_x3_acc/dataset.npz",
+   "/home/claude/gf/out/goflow_prediction/datasets/D5_ao_x1_acc/dataset.npz",
+   "/home/claude/gf/out/goflow_prediction/datasets/D5_ao_x2_acc/dataset.npz",
+   "/home/claude/gf/out/goflow_prediction/datasets/D5_ao_x3_acc/dataset.npz"
   ],
   "parts": [
    {
@@ -2117,6 +2120,1426 @@
       },
       "gridlock": false,
       "incidents": 3
+     }
+    ]
+   },
+   {
+    "dt_s": 30.0,
+    "horizons_s": [
+     60,
+     120,
+     300
+    ],
+    "source": "exact",
+    "controller": "agents_observed",
+    "clock_speed": 30.0,
+    "start_hour": 6.0,
+    "scale": 1.0,
+    "minutes": 30.0,
+    "warmup": 5.0,
+    "accidents": true,
+    "careless_share": null,
+    "buses": true,
+    "ring": true,
+    "junction_blocker": 60.0,
+    "git_commit": "6dff868",
+    "tool": "tools/goflow_prediction_dataset.py",
+    "runs": [
+     {
+      "seed": 101,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 102,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 103,
+      "steps": 60,
+      "wall_s": 33,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 104,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 105,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 106,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 107,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 108,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 109,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 110,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 24,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-20_4": 2,
+       "-20_3": 1
+      },
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 111,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 112,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 113,
+      "steps": 60,
+      "wall_s": 33,
+      "vehicles_end": 25,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 114,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 115,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 116,
+      "steps": 60,
+      "wall_s": 36,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 117,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 118,
+      "steps": 60,
+      "wall_s": 36,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 119,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 120,
+      "steps": 60,
+      "wall_s": 32,
+      "vehicles_end": 21,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-36_4": 3
+      },
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 121,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 24,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 122,
+      "steps": 60,
+      "wall_s": 33,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 0
+     },
+     {
+      "seed": 123,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 124,
+      "steps": 60,
+      "wall_s": 36,
+      "vehicles_end": 25,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "39_4": 2,
+       "39_3": 1
+      },
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 125,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 25,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-36_3": 2
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 126,
+      "steps": 60,
+      "wall_s": 38,
+      "vehicles_end": 24,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "37_3": 2,
+       "37_4": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 127,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 128,
+      "steps": 60,
+      "wall_s": 38,
+      "vehicles_end": 25,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "-20_4": 2,
+       "-20_3": 2
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 129,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 130,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 11,
+      "steps": 60,
+      "wall_s": 34,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 12,
+      "steps": 60,
+      "wall_s": 35,
+      "vehicles_end": 24,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-44_4": 2,
+       "-44_3": 1
+      },
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 13,
+      "steps": 60,
+      "wall_s": 33,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 0
+     },
+     {
+      "seed": 14,
+      "steps": 60,
+      "wall_s": 33,
+      "vehicles_end": 21,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 0
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 38,
+      "vehicles_end": 25,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "35_3": 2
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 36,
+      "vehicles_end": 23,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 37,
+      "vehicles_end": 22,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 41,
+      "vehicles_end": 23,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "19_4": 2,
+       "19_3": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 38,
+      "vehicles_end": 23,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "19_4": 2,
+       "19_3": 1
+      },
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 20,
+      "steps": 60,
+      "wall_s": 42,
+      "vehicles_end": 20,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "-52_3": 1
+      },
+      "gridlock": false,
+      "incidents": 1
+     }
+    ]
+   },
+   {
+    "dt_s": 30.0,
+    "horizons_s": [
+     60,
+     120,
+     300
+    ],
+    "source": "exact",
+    "controller": "agents_observed",
+    "clock_speed": 30.0,
+    "start_hour": 6.0,
+    "scale": 2.0,
+    "minutes": 30.0,
+    "warmup": 5.0,
+    "accidents": true,
+    "careless_share": null,
+    "buses": true,
+    "ring": true,
+    "junction_blocker": 60.0,
+    "git_commit": "6dff868",
+    "tool": "tools/goflow_prediction_dataset.py",
+    "runs": [
+     {
+      "seed": 101,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 102,
+      "steps": 60,
+      "wall_s": 49,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 103,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 104,
+      "steps": 60,
+      "wall_s": 52,
+      "vehicles_end": 30,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-20_4": 2
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 105,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 42,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":562_19_0": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 106,
+      "steps": 60,
+      "wall_s": 47,
+      "vehicles_end": 42,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":562_4_0": 1,
+       ":562_19_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 107,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 40,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 108,
+      "steps": 60,
+      "wall_s": 50,
+      "vehicles_end": 40,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-20_4": 2,
+       "-20_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 109,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 110,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 111,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 112,
+      "steps": 60,
+      "wall_s": 50,
+      "vehicles_end": 40,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":207_2_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 113,
+      "steps": 60,
+      "wall_s": 47,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 114,
+      "steps": 60,
+      "wall_s": 46,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 115,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 42,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":838_2_1": 1,
+       ":838_4_0": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 116,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 117,
+      "steps": 60,
+      "wall_s": 51,
+      "vehicles_end": 42,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":720_15_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 118,
+      "steps": 60,
+      "wall_s": 47,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 119,
+      "steps": 60,
+      "wall_s": 51,
+      "vehicles_end": 36,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "15_4": 2,
+       "21_4": 1,
+       ":207_9_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 120,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 43,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":1292_10_0": 1,
+       ":1292_11_0": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 121,
+      "steps": 60,
+      "wall_s": 47,
+      "vehicles_end": 41,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "-38_5": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 122,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 123,
+      "steps": 60,
+      "wall_s": 47,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 124,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 125,
+      "steps": 60,
+      "wall_s": 53,
+      "vehicles_end": 43,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "19_4": 3,
+       "19_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 126,
+      "steps": 60,
+      "wall_s": 53,
+      "vehicles_end": 30,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "6_4": 3,
+       "6_3": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 127,
+      "steps": 60,
+      "wall_s": 53,
+      "vehicles_end": 42,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-38_3": 2,
+       "-38_4": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 128,
+      "steps": 60,
+      "wall_s": 49,
+      "vehicles_end": 41,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 129,
+      "steps": 60,
+      "wall_s": 50,
+      "vehicles_end": 31,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "6_4": 2,
+       "6_3": 1,
+       "17_3": 1
+      },
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 130,
+      "steps": 60,
+      "wall_s": 43,
+      "vehicles_end": 42,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":2328_4_0": 1,
+       ":2328_3_0": 1
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 11,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 42,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-38_3": 2
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 12,
+      "steps": 60,
+      "wall_s": 50,
+      "vehicles_end": 42,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "-36_3": 2,
+       "35_2": 2,
+       "-36_4": 1
+      },
+      "gridlock": false,
+      "incidents": 7
+     },
+     {
+      "seed": 13,
+      "steps": 60,
+      "wall_s": 50,
+      "vehicles_end": 42,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-38_3": 2,
+       "-38_4": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 14,
+      "steps": 60,
+      "wall_s": 49,
+      "vehicles_end": 42,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-38_5": 2
+      },
+      "gridlock": false,
+      "incidents": 8
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 1
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 41,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       ":1574_15_0": 1,
+       ":1574_11_0": 1,
+       "39_4": 1
+      },
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 45,
+      "vehicles_end": 43,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 41,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 48,
+      "vehicles_end": 41,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 2
+     },
+     {
+      "seed": 20,
+      "steps": 60,
+      "wall_s": 56,
+      "vehicles_end": 42,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     }
+    ]
+   },
+   {
+    "dt_s": 30.0,
+    "horizons_s": [
+     60,
+     120,
+     300
+    ],
+    "source": "exact",
+    "controller": "agents_observed",
+    "clock_speed": 30.0,
+    "start_hour": 6.0,
+    "scale": 3.0,
+    "minutes": 30.0,
+    "warmup": 5.0,
+    "accidents": true,
+    "careless_share": null,
+    "buses": true,
+    "ring": true,
+    "junction_blocker": 60.0,
+    "git_commit": "6dff868",
+    "tool": "tools/goflow_prediction_dataset.py",
+    "runs": [
+     {
+      "seed": 101,
+      "steps": 60,
+      "wall_s": 65,
+      "vehicles_end": 55,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "22_4": 1,
+       "22_3": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 102,
+      "steps": 60,
+      "wall_s": 70,
+      "vehicles_end": 63,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "39_4": 3,
+       "39_3": 1,
+       ":1292_4_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 103,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 62,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "37_3": 2,
+       "37_5": 1,
+       "37_4": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 104,
+      "steps": 60,
+      "wall_s": 61,
+      "vehicles_end": 62,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 105,
+      "steps": 60,
+      "wall_s": 63,
+      "vehicles_end": 62,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 106,
+      "steps": 60,
+      "wall_s": 63,
+      "vehicles_end": 64,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 107,
+      "steps": 60,
+      "wall_s": 66,
+      "vehicles_end": 62,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":207_7_0": 1,
+       ":207_6_0": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 108,
+      "steps": 60,
+      "wall_s": 64,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 109,
+      "steps": 60,
+      "wall_s": 59,
+      "vehicles_end": 63,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":2086_17_0": 1
+      },
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 110,
+      "steps": 60,
+      "wall_s": 66,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 7
+     },
+     {
+      "seed": 111,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 62,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 112,
+      "steps": 60,
+      "wall_s": 64,
+      "vehicles_end": 55,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":1292_2_0": 1,
+       ":1292_14_0": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 113,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 44,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       "-28_5": 1,
+       "-20_4": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 114,
+      "steps": 60,
+      "wall_s": 66,
+      "vehicles_end": 62,
+      "stuck_over_300s": 8,
+      "stuck_lanes": {
+       "19_4": 5,
+       "19_3": 3
+      },
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 115,
+      "steps": 60,
+      "wall_s": 68,
+      "vehicles_end": 63,
+      "stuck_over_300s": 7,
+      "stuck_lanes": {
+       "-44_3": 4,
+       "-44_4": 1,
+       ":1574_1_0": 1,
+       ":1574_6_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 116,
+      "steps": 60,
+      "wall_s": 59,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 117,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 59,
+      "stuck_over_300s": 2,
+      "stuck_lanes": {
+       ":2062_8_0": 1,
+       ":2062_5_0": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 118,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 119,
+      "steps": 60,
+      "wall_s": 61,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 120,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 61,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 121,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 62,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       ":1292_17_0": 2,
+       ":1292_2_1": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 122,
+      "steps": 60,
+      "wall_s": 68,
+      "vehicles_end": 63,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       "37_4": 1
+      },
+      "gridlock": false,
+      "incidents": 8
+     },
+     {
+      "seed": 123,
+      "steps": 60,
+      "wall_s": 68,
+      "vehicles_end": 53,
+      "stuck_over_300s": 6,
+      "stuck_lanes": {
+       "-3_4": 2,
+       ":838_2_0": 1,
+       ":838_17_1": 1,
+       "-2_3": 1,
+       "44_3": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 124,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 61,
+      "stuck_over_300s": 4,
+      "stuck_lanes": {
+       "-44_3": 3,
+       "-44_4": 1
+      },
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 125,
+      "steps": 60,
+      "wall_s": 67,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 126,
+      "steps": 60,
+      "wall_s": 63,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 127,
+      "steps": 60,
+      "wall_s": 65,
+      "vehicles_end": 62,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":1930_8_0": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 128,
+      "steps": 60,
+      "wall_s": 63,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 129,
+      "steps": 60,
+      "wall_s": 59,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 130,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 11,
+      "steps": 60,
+      "wall_s": 64,
+      "vehicles_end": 60,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":1930_8_0": 1
+      },
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 12,
+      "steps": 60,
+      "wall_s": 61,
+      "vehicles_end": 59,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 5
+     },
+     {
+      "seed": 13,
+      "steps": 60,
+      "wall_s": 61,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 14,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 63,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 6
+     },
+     {
+      "seed": 15,
+      "steps": 60,
+      "wall_s": 61,
+      "vehicles_end": 60,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 16,
+      "steps": 60,
+      "wall_s": 58,
+      "vehicles_end": 62,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 3
+     },
+     {
+      "seed": 17,
+      "steps": 60,
+      "wall_s": 65,
+      "vehicles_end": 62,
+      "stuck_over_300s": 3,
+      "stuck_lanes": {
+       "-36_3": 2,
+       "-36_4": 1
+      },
+      "gridlock": false,
+      "incidents": 7
+     },
+     {
+      "seed": 18,
+      "steps": 60,
+      "wall_s": 60,
+      "vehicles_end": 62,
+      "stuck_over_300s": 0,
+      "stuck_lanes": {},
+      "gridlock": false,
+      "incidents": 4
+     },
+     {
+      "seed": 19,
+      "steps": 60,
+      "wall_s": 70,
+      "vehicles_end": 50,
+      "stuck_over_300s": 5,
+      "stuck_lanes": {
+       "0_4": 1,
+       ":1574_17_0": 1,
+       "-0_3": 1,
+       ":1574_13_0": 1,
+       ":53_8_0": 1
+      },
+      "gridlock": false,
+      "incidents": 7
+     },
+     {
+      "seed": 20,
+      "steps": 60,
+      "wall_s": 62,
+      "vehicles_end": 64,
+      "stuck_over_300s": 1,
+      "stuck_lanes": {
+       ":396_9_0": 1
+      },
+      "gridlock": false,
+      "incidents": 5
      }
     ]
    }

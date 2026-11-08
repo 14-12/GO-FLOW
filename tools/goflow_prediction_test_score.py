@@ -1,9 +1,12 @@
 """Scores the shipped GO-FLOW forecasters on the closed TEST seeds (21-30), once, through the live code path.
 
-    python tools/goflow_prediction_test_score.py --out out/goflow_prediction/test_v4 --reason "v4 under agents_observed" \
-        out/goflow_prediction/datasets/T_agents_observed_x1 out/goflow_prediction/datasets/T_agents_observed_x2 ...
+    python tools/goflow_prediction_test_score.py --seeds 21-30 --out out/goflow_prediction/test_v4 \
+        --reason "v4 under agents_observed" out/goflow_prediction/datasets/T_agents_observed_x1 ...
 
-Each dataset folder (tools/goflow_prediction_dataset.py, --seeds 21-30) is scored as it is, one result per folder:
+--models: a folder with dso4/, dso4_goflow/ and goflow_xgb/ (default: the shipped models/goflow). Seeds the models
+were trained or tuned on are refused.
+
+Each dataset folder (tools/goflow_prediction_dataset.py, on the test seeds) is scored as it is, one result per folder:
 
 * GO-FLOW (goflow_traffic.agent.GoFlowTown05, step by step): occupancy at +120 s, MAE against "it stays as now".
 * DSO4 (goflow_prediction.agent.ForecastAgent with dso4 + dso4_goflow, step by step, GO-FLOW's forecasts fed in as
@@ -36,7 +39,7 @@ from goflow_prediction.leakage import TestGuard  # noqa: E402
 from goflow_prediction.metrics import masked_metrics  # noqa: E402
 
 MODELS = ROOT / "models" / "goflow"
-TEST_SEEDS = list(range(21, 31))
+TEST_SEEDS: list[int] = []
 BANDS = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 1.01]
 
 
@@ -59,7 +62,7 @@ def score(folder: Path, tmp: Path) -> dict:
     with_goflow(src, gf)
     ds = load_dataset(str(gf))
     if sorted(set(ds.seed.tolist())) != TEST_SEEDS:
-        raise ValueError(f"{folder}: not the test seeds 21-30")
+        raise ValueError(f"{folder}: seeds {sorted(set(ds.seed.tolist()))}, not the test seeds {TEST_SEEDS}")
     res = {"dataset": str(folder), "meta": {k: ds.meta.get(k) for k in ("controller", "scale", "accidents", "clock_speed",
                                                                      "minutes", "warmup", "git_commit")}}
 
@@ -117,11 +120,21 @@ def score(folder: Path, tmp: Path) -> dict:
 
 
 def main(argv=None):
+    global MODELS, TEST_SEEDS
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("datasets", nargs="+", help="dataset folders (each with dataset.npz) on seeds 21-30")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--seeds", required=True, help="the test seeds, e.g. 31-40")
+    ap.add_argument("--models", default=str(MODELS), help="folder with dso4/, dso4_goflow/, goflow_xgb/")
     ap.add_argument("--reason", required=True, help="written in the lock: why the test is opened")
     a = ap.parse_args(argv)
+    from goflow_prediction.train_lgbm import seeds_arg
+
+    MODELS, TEST_SEEDS = Path(a.models), sorted(seeds_arg(a.seeds))
+    card = json.loads((MODELS / "dso4" / "model_card.json").read_text(encoding="utf-8"))
+    used = set(TEST_SEEDS) & set(card["train_seeds"] + card["dev_seeds"])
+    if used:
+        raise ValueError(f"seeds {sorted(used)} were used for training or tuning: not a test")
     out = Path(a.out)
     if out.exists():
         raise FileExistsError(f"{out} exists: results are never overwritten")

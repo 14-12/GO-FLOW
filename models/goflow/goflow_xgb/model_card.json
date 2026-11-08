@@ -1,5 +1,5 @@
 {
- "version": "xgb_c30_v4",
+ "version": "xgb_c30_v5",
  "task": "GO-FLOW occupancy forecast",
  "horizon_s": 120,
  "dt_s": 30.0,
@@ -9,6 +9,10 @@
   1.0,
   2.0,
   3.0
+ ],
+ "signal_controllers": [
+  "coordinated",
+  "agents_observed"
  ],
  "source": "exact",
  "train_seeds": [
@@ -81,10 +85,34 @@
     "clock_speed": 30.0,
     "minutes": 30.0,
     "controller": "coordinated"
+   },
+   {
+    "scale": 1.0,
+    "accidents": true,
+    "careless_share": null,
+    "clock_speed": 30.0,
+    "minutes": 30.0,
+    "controller": "agents_observed"
+   },
+   {
+    "scale": 2.0,
+    "accidents": true,
+    "careless_share": null,
+    "clock_speed": 30.0,
+    "minutes": 30.0,
+    "controller": "agents_observed"
+   },
+   {
+    "scale": 3.0,
+    "accidents": true,
+    "careless_share": null,
+    "clock_speed": 30.0,
+    "minutes": 30.0,
+    "controller": "agents_observed"
    }
   ]
  },
  "notes": [
-  "Retrained 7 Nov (v4) on D4_c30_x1_acc + D4_c30_x2_acc + D4_c30_x3_acc: the clock at 30 (2 real minutes a town hour), crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; 21-30 not opened."
+  "Retrained 8 Nov (v5) on D4_c30_x{1,2,3}_acc (coordinated) + D5_ao_x{1,2,3}_acc (agents_observed): the clock at 30, crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; test seeds 31-40 opened once (docs/WORKLOG.md 8 Nov)."
  ]
 }

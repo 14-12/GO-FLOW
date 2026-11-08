@@ -30,13 +30,21 @@ A queue sampled every 30 s swings with the signal (cycle 115 s), so `congestion.
 long queue *starts* when the mean reaches the level after a whole cycle under it, from under 0.6 x the level. A
 LightGBM classifier (the forecast's features plus the approach against its level) gives the chance of a start within
 6 steps (3 minutes); trained with `python -m goflow_prediction.congestion --dataset ... --model DIR --train-seeds ...
---dev-seeds ...`. Dev seeds 11-20 (5 h per traffic level), alert at 0.7, the shipped model (v4, the clock at 30):
+--dev-seeds ...`. The shipped model is v5 (8 Nov, clock 30), trained under both the coordinated signals and the
+junction agents (`agents_observed`). Test seeds 31-40 (5 h per row, never used before), alert at 0.7
+(`tools/goflow_prediction_test_score.py`):
 
-| Traffic | Long queues | Caught before they start | Alerts right | Median warning |
-| --- | --- | --- | --- | --- |
-| x1 | 5 | 2 | 2 of 2 | 45 s |
-| x2 | 48 | 31 | 31 of 49 | 60 s |
-| x3 | 134 | 102 | 107 of 203 | 60 s |
+| Signals | Traffic | Long queues | Caught before they start | Alerts right | Median warning |
+| --- | --- | --- | --- | --- | --- |
+| coordinated | x2 | 59 | 38 | 38 of 76 | 60 s |
+| coordinated | x3 | 129 | 101 | 109 of 216 | 60 s |
+| agents_observed | x1 | 6 | 2 | 2 of 5 | 105 s |
+| agents_observed | x2 | 116 | 86 | 87 of 213 | 60 s |
+| agents_observed | x3 | 285 | 240 | 269 of 610 | 90 s |
+
+`p_long` runs high: of the approaches given 0.7-0.9, about 45 % started a long queue within 3 minutes. v4, trained under
+the coordinated signals only, forecast queues under the junction agents no better than "it stays as now"
+(docs/WORKLOG.md, 8 Nov).
 
 The candidates are LightGBM (and LightGBM + GO-FLOW when her real forecast is in the message), last value, and the
 value one signal cycle (115 s) ago.

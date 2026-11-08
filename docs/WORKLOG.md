@@ -1791,3 +1791,40 @@ demand rather than in a 115 s cycle, so the queues swing differently, and the cl
 mean less; long queues also start about three times as often (172 against 52 at x2). Not fed to the junction agents
 yet. Next: datasets under agents_observed (train seeds 101-130, dev 11-20) in the training mix, retrain, and score
 on new test seeds (31-40: 21-30 are now open).
+
+### v5: the forecasters retrained under the junction agents too (8 Nov)
+
+After the test above: 120 more SUMO runs under `agents_observed` (train seeds 101-130, dev 11-20, x1 / x2 / x3, the
+same recipe: `D5_ao_x{1,2,3}_acc`), merged with v4's three coordinated datasets, and the v4 recipe again on all six
+(DSO4 LightGBM, GO-FLOW XGBoost, GO-FLOW's out-of-fold export, DSO4 + GO-FLOW, the long-queue classifier). One set of
+models for both controllers. Then scored once on new test seeds 31-40 (21-30 are open), v5 and the shipped v4 side by
+side on the same runs (`out/goflow_prediction/test2_v5`, `test2_v4`).
+
+Queue fill, MAE at +120 s / +300 s (v4, v5, "stays as now"); GO-FLOW occupancy +120 s (v4, v5, "stays as now"):
+
+| Signals | Traffic | Fill +120 s | Fill +300 s | GO-FLOW +120 s |
+|---|---|---|---|---|
+| coordinated | x2 | 0.040 / 0.041 / 0.054 | 0.048 / 0.049 / 0.077 | 0.029 / 0.030 / 0.036 |
+| coordinated | x3 | 0.049 / 0.051 / 0.068 | 0.060 / 0.061 / 0.098 | 0.034 / 0.036 / 0.044 |
+| agents_observed | x1 | 0.039 / 0.029 / 0.038 | 0.047 / 0.029 / 0.041 | 0.041 / 0.031 / 0.038 |
+| agents_observed | x2 | 0.081 / 0.063 / 0.083 | 0.103 / 0.064 / 0.097 | 0.064 / 0.053 / 0.069 |
+| agents_observed | x3 | 0.117 / 0.094 / 0.124 | 0.153 / 0.098 / 0.151 | 0.083 / 0.070 / 0.090 |
+
+Long-queue alerts at 0.7, v4 then v5 (each against its own levels: v5's are the Q95 of both controllers' traffic, so
+the long queues counted differ a little):
+
+| Signals | Traffic | Alerts right | Long queues caught |
+|---|---|---|---|
+| coordinated | x2 | 35 of 60 / 38 of 76 | 35 of 46 / 38 of 59 |
+| coordinated | x3 | 110 of 204 / 109 of 216 | 103 of 133 / 101 of 129 |
+| agents_observed | x2 | 62 of 115 / 87 of 213 | 62 of 173 / 86 of 116 |
+| agents_observed | x3 | 133 of 346 / 269 of 610 | 126 of 247 / 240 of 285 |
+
+At 0.8, v5 under agents_observed: x2 64 of 124 right, 63 of 116 caught; x3 225 of 385 right, 212 of 285 caught.
+`p_long` runs high: of the v5 approaches given 0.7-0.9, 43-54 % started a long queue within 3 min; 0.9-1.0: 70-100 %.
+
+Reading. Under the junction agents v5 forecasts the queues 25-35 % better than "stays as now" at every horizon (v4:
+no better), and catches three long queues in four (v4: one in three to one in two), with a minute's warning; about 2
+alerts in 5 are right at 0.7. Under the coordinated signals it is as good as v4. Shipped as v5 (`models/goflow`,
+model_card.json has the test numbers); the live connector runs it (SUMO under agents_observed, both agents ready).
+For the junction agents: a weight that grows with `p_long`, not a switch, since 0.7 means about 45 %.
