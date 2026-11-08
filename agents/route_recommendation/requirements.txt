@@ -6,3 +6,5 @@ langchain
 langchain-core
 langchain-ollama
 matplotlib
+streamlit
+plotly

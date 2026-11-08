@@ -1,26 +1,30 @@
 # Agent 6 : Route Recommendation
 
-Recommande un itinéraire, l'explique en français, et laisse l'humain valider.
-Prototype : il n'est pas encore branché sur la ville (Town05) en direct.
+Recommande 1 à 3 itinéraires distincts sur la carte Town05, les compare,
+laisse l'humain choisir, et explique le choix en français (Qwen).
 
 ## Fonctionnement
-- Graphe routier : `sumo_map.py` lit `scenarios/town05/town05.net.xml` (23 nœuds, 78 arêtes).
-  `grid_map.py` = grille synthétique 6x6 de test.
-- Alertes (mockées pour l'instant) : accident (x5), circulation prévue dans N min (x3), circulation ville (x1,3).
-- Calcul : A* sur le graphe avec coûts pénalisés (`step5b_agent.py`).
-- LLM : Qwen2.5-7B via Ollama + LangGraph, 3 outils : `get_network_state`, `find_routes`, `compare_routes`.
-  Le LLM explique, le code calcule.
-- Human-in-the-loop : `step6_hitl.py` (interrupt LangGraph).
-- Évaluation : `step8_eval_grid.py` (baseline vs agent, 100 scénarios sur grille).
+- `sumo_map.py` : lit `scenarios/town05/town05.net.xml` (23 nœuds, 78 arêtes) + index de tous les edge_id.
+- `step5b_agent.py` : coûts pénalisés par les alertes, A*, `k_routes` (jusqu'à 3 routes distinctes),
+  3 outils LangChain, Qwen2.5-7B via Ollama.
+- `adapter_traffic.py` : traduit les messages des autres agents vers le format interne
+  - DSO4 `forecast` (fill par approche) -> alerte `congestion` (pénalité 1 + 2 x fill)
+  - accident (edge, closed_lanes, total_lanes) -> alerte `accident` (x50 si tout est fermé)
+- `step6_hitl.py` : pause humaine (LangGraph interrupt), K options, explication Qwen.
+- `app.py` : interface Streamlit (carte Plotly, options, boutons Choisir, explication).
 
-## Dépendances
-Environnement séparé : `pip install -r requirements.txt`.
-Ollama doit être installé à part (`ollama pull qwen2.5:7b`).
+## Lancer
+pip install -r requirements.txt  (venv séparé, jamais le .venv du projet)
+ollama pull qwen2.5:7b
+streamlit run app.py   (depuis ce dossier)
 
-## État
-- Vérifié : chargement de town05.net.xml, A* sur ses edge_id.
-- Non vérifié : lecture en direct des incidents et des rapports caméra.
-- Limites : pénalités non calibrées, évaluation sur grille synthétique avec les mêmes pénalités que l'agent, LLM non évalué.
+## Vérifié
+- Chargement de la carte, A* = Dijkstra (test_astar.py)
+- 55/55 approches DSO4 retrouvées dans le graphe (test_nodes_map.py)
+- Une alerte (accident ou congestion) change la route (test_accident.py, test_congestion.py)
 
-## Notes
-Les fichiers sont copiés tels quels depuis le dossier de travail : chemins relatifs (`data/...`) à adapter.
+## Limites
+- Alertes simulées par boutons (format DSO4 et accident fixé par nous, pas encore reçu en direct).
+- Temps = longueur / vitesse limite, corrigé par des pénalités non calibrées.
+- Évaluation sur temps SUMO réels : à faire.
+- Pas de recalcul en cours de trajet.
