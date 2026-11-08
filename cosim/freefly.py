@@ -67,6 +67,17 @@ def parse_args(argv=None):
     ap.add_argument("--agent-hud", action=argparse.BooleanOptionalAction, default=False,
                     help="with the agents: their decisions on the overlay, over each junction and top right "
                          "(cosim/agent_hud.py). Off by default since 24 Oct (too many notices); the accident markers stay")
+    ap.add_argument("--route-guide", action=argparse.BooleanOptionalAction, default=True,
+                    help="(8 Nov) F near a car: follow it (V changes the view) with the route agent's mini-map; the "
+                         "agent (agents/route_recommendation, cosim/route_guidance.py) gives the car its route and "
+                         "plans again as the alerts change (DSO4's forecasts with --goflow-prediction, reported crashes)")
+    ap.add_argument("--route-costs", choices=["typical", "free"], default="typical",
+                    help="with --route-guide: the route agent's costs: the typical times from past trips (signals in, "
+                         "models/route_guidance/movement_times.json; better on the dev seeds, docs/WORKLOG.md 8 Nov) or "
+                         "the free-flow times it was built with")
+    ap.add_argument("--route-explain", action=argparse.BooleanOptionalAction, default=True,
+                    help="with --route-guide: a sentence on each decision from the local LLM (Ollama, qwen2.5:7b), in "
+                         "a thread of its own; off for the run if Ollama does not answer")
     ap.add_argument("--goflow-prediction", action=argparse.BooleanOptionalAction, default=False,
                     help="DSO4's congestion forecaster in its own process (agents/goflow_prediction, its own venv): "
                          "every 30 s the 55 approaches' state goes to it, its spill-back alerts are drawn over the "
@@ -194,6 +205,11 @@ def parse_args(argv=None):
                     help="--demo: instead of the flight, this many cars standing in traffic seen close from the "
                          "driver's side and the front (cosim/drivers.py), a screenshot of each "
                          "(out/freefly/<scenario>_drivers_*.png, out/<scenario>_freefly_drivers.json)")
+    ap.add_argument("--demo-follow", type=float, default=0.0, metavar="SECONDS",
+                    help="--demo: instead of the flight, a car is followed with the route agent (F) for at most this "
+                         "long; a breakdown is staged on its way (written as staged), the views are cycled, screenshots "
+                         "and the camera's distance to the car (out/freefly/<scenario>_follow_*.png, "
+                         "out/<scenario>_freefly_follow.json)")
     ap.add_argument("--demo-depots", type=int, default=0,
                     help="--demo: instead of the flight, this many rounds of the hospital, the police station and the "
                          "recovery yard (cosim/depots.py), a screenshot of each (out/freefly/<scenario>_depot_*.png, "
@@ -1020,6 +1036,7 @@ class FreeFly:
         self.first_tf = None
         self.incidents = self.scene = None
         self.forecast = None  # --goflow-prediction (cosim/goflow_prediction.py)
+        self.route_guide = None  # --route-guide (cosim/route_guidance.py)
         self.models: dict = {}
 
     # ------------------------------------------------------------ loading (a thread)
@@ -1174,6 +1191,16 @@ class FreeFly:
         self.calls = None  # (--profile: the counter of calls to the server)
         if a.depots and self.incidents is not None and a.scenario == "town05":
             self._wire_depots(a, net)
+        if getattr(a, "route_guide", False) and a.scenario == "town05":
+            try:  # (8 Nov) the route agent for the car you follow; the town goes on without it if it cannot load
+                from cosim.route_guidance import RouteGuide
+
+                self.route_guide = RouteGuide(explain=getattr(a, "route_explain", False),
+                                              typical_routing=getattr(a, "route_costs", "typical") == "typical")
+                log.info("route guide: %d roads", len(self.route_guide.router.roads))
+            except Exception:  # noqa: BLE001
+                self.route_guide = None
+                log.error("route guide not started:\n%s", traceback.format_exc())
         sod = self.clock.seconds_of_day
         target = self.pop.target(sod)
         self.stage = f"Filling the town for {self.clock.hhmm()}: {target:.0f} vehicles"
@@ -1787,6 +1814,22 @@ class FreeFly:
         return {v: x for v, x in vehicles.items()
                 if not (hw is not None and hw.is_ring_car(v)) and not (dep is not None and dep.owns(v))}
 
+    def not_guided(self, vid: str) -> str:
+        """Why the route agent leaves this vehicle's route alone ("" when it may route it)."""
+        hw, dep, im = getattr(self, "highway", None), getattr(self, "depots", None), self.incidents
+        ex = self.sumo.extras
+        if vid.startswith("pt_"):
+            return "a line bus keeps its line"
+        if hw is not None and hw.is_ring_car(vid):
+            return "a ring-road car on its loop"
+        if dep is not None and dep.owns(vid):
+            return "a police, ambulance or recovery vehicle"
+        if ex is not None and vid in getattr(ex, "emergency", {}):
+            return "an emergency vehicle"
+        if im is not None and im.protected(vid):
+            return "part of an accident scene"
+        return ""
+
     def in_view(self, x: float, y: float) -> bool:
         """Whether CARLA point (x, y) may be on screen: near the camera, or ahead of it within
         60 deg of where it looks (wider than the 90 deg picture) and 500 m. Occlusion ignored."""
@@ -1856,6 +1899,8 @@ class FreeFly:
         im = self.incidents
         for vid, v in vehicles.items():
             if vid not in alive or (im is not None and im.protected(vid)):  # an accident's vehicles keep their routes
+                continue
+            if self.route_guide is not None and self.route_guide.holds(vid):  # the route agent's until it arrives
                 continue
             try:
                 idx = subs[vid][tc.VAR_ROUTE_INDEX]
@@ -1953,6 +1998,10 @@ class FreeFly:
             lap("depots")
         self.city_vehicles = len(cur.vehicles)
         self._k += 1
+        if self.route_guide is not None:  # (8 Nov) the followed car's route agent
+            self.route_guide.step(cur, self.sumo.conn, self.forecast.latest if self.forecast is not None else None,
+                                  im, special=self.not_guided)
+            lap("route_guide")
         if self._k % 2 == 0:  # every second
             self.keep_driving(cur.vehicles)
             lap("keep_driving")
@@ -3672,6 +3721,7 @@ def main(argv=None) -> int:
         return surf
 
     keys_pill = pill("F5 pause    F6 / F7  -1 h / +1 h    F8 next junction    F9 hide clock    H inspect a camera    "
+                     + ("F follow a car    M mini-map    " if args.route_guide else "")
                      + ("F10 forecast    " if args.goflow_prediction else "") + "Esc quit")
     lat, lon = INGOLSTADT
     ticker = pygame.time.Clock()
@@ -3700,6 +3750,40 @@ def main(argv=None) -> int:
     from cosim.agent_hud import AgentHud
 
     agent_hud = AgentHud(mode="cameras" if args.controller.startswith("agents_observed") else "exact counts")
+    # (8 Nov) following a car with the route agent's mini-map (cosim/route_guidance.py, route_minimap.py)
+    fol = {"vid": None, "view": "chase", "cand": None, "cand_t": 0.0, "show_until": 0.0, "t0": 0.0, "map": None,
+           "done": False, "cam0": None}
+    ui["minimap"] = True   # M: the town's live mini-map while flying (the followed car's always shows)
+
+    def free_view() -> dict:
+        """What the free-fly mini-map shows: the camera (SUMO x, y, heading), the car F would follow, every car's
+        place and speed, the alerts the route agent sees."""
+        frame = ff.scen.frame
+        tf = ff.view_transform()
+        x, y = frame.to_sumo_xy(tf.location.x, tf.location.y)
+        prev = getattr(ff, "prev", None)
+        vs = prev.vehicles if prev is not None else {}
+        cand = None
+        if fol["cand"] is not None and fol["cand"] in vs:
+            v = vs[fol["cand"]]
+            cand = (fol["cand"], v.x, v.y)
+        pend = None
+        if fol["vid"] is not None and fol["vid"] in vs:
+            v = vs[fol["vid"]]
+            pend = (fol["vid"], v.x, v.y, v.angle)
+        return {"cam": (x, y, tf.rotation.yaw + 90.0), "cand": cand, "cam0": fol["cam0"], "pending": pend,
+                "cars": [(vid, v.x, v.y, v.speed) for vid, v in vs.items()],
+                "alerts": list(getattr(ff.route_guide, "live_alerts", []))}
+
+    def follow_snap():
+        rg = getattr(ff, "route_guide", None)
+        snap = rg.snapshot() if rg is not None else None
+        if snap is None or (fol["vid"] is None and time.time() > fol["show_until"]):
+            return None
+        if fol["vid"] is not None and snap["vid"] != fol["vid"]:   # the last car's: the new one is on its way
+            return None
+        return snap
+
     forecast_hud = None
     if args.goflow_prediction:
         from cosim.goflow_prediction_hud import ForecastHud
@@ -3713,8 +3797,16 @@ def main(argv=None) -> int:
         ms = list(scene.markers) if scene is not None and scene.markers else []
         evs = ff.agent_events() if args.agent_hud and getattr(ff, "agents", None) is not None else []
         fc = getattr(ff, "forecast", None) if forecast_hud is not None else None
-        if not ms and not evs and fc is None:
+        fsnap = follow_snap()
+        rg = getattr(ff, "route_guide", None)
+        mini = rg is not None and (fsnap is not None or fol["vid"] is not None or ui["minimap"])
+        if mini and fol["map"] is None:
+            from cosim.route_minimap import MiniMap
+
+            fol["map"] = MiniMap(rg.router)
+        if not ms and not evs and fc is None and not mini:
             return None
+        free = free_view() if mini else None
         tf = ff.view_transform()
         plates = getattr(ff, "plate_text", {})
         centres = {t: (x, y, ff.zs.get(t, 0.0)) for t, (x, y, _) in ff.centres.items()} if evs or fc else {}
@@ -3724,9 +3816,17 @@ def main(argv=None) -> int:
             rects = agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
             if ms:
                 rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
-            if fc is not None:  # chips and pills only with --goflow-hud; the panel always
+            mm_h = 0
+            if mini:  # the mini-map, bottom right: the town live while flying, the followed trip (cosim/route_minimap)
+                from cosim.route_minimap import INTRO_S
+
+                intro = min(1.0, (time.time() - fol["t0"]) / INTRO_S) if fol["vid"] is not None else 1.0
+                mm = fol["map"].render(fsnap, time.time(), fol["view"], free=free, intro=intro)
+                rects.append(scr.blit(mm, (size[0] - mm.get_width() - 16, size[1] - mm.get_height() - 16)))
+                mm_h = mm.get_height() + 10
+            if fc is not None:  # chips and pills only with --goflow-hud; the panel above the mini-map, unless following
                 rects += forecast_hud.draw(scr, tuple(size), tf, centres, getattr(ff, "forecast_anchors", {}), fc,
-                                           now, args.goflow_hud)
+                                           now, args.goflow_hud, panel=fsnap is None, bottom=16 + mm_h)
             return rects
 
         return paint
@@ -3922,7 +4022,188 @@ def main(argv=None) -> int:
                 log.debug("arrow turn: %s", e)
 
         fly_cb = ff.world.on_tick(fly_tick)
+    def follow_stop(why: str | None = None, keep_map: float = 0.0) -> None:
+        """The camera let go of the followed car (the free-fly camera goes on from there); the mini-map stays keep_map
+        seconds (its arrival result)."""
+        if fol["vid"] is None:
+            return
+        fol["vid"] = None
+        fol["show_until"] = time.time() + keep_map
+        if getattr(ff, "pose_q", None) is not None:
+            ff.pose_q.put(("follow", None))
+        if keep_map <= 0 and ff.route_guide is not None:
+            ff.route_guide.stop()
+        if why:
+            log.info("follow: %s", why)
+
+    def follow_tick() -> str | None:
+        """The car you may follow (nearest, in front, within 35 m); the followed one arrived or gone; you flew off."""
+        from cosim.route_guidance import mmss_s, nearest_car
+
+        rg = ff.route_guide
+        if fol["vid"] is None:
+            if fol["show_until"] and time.time() > fol["show_until"]:
+                fol["show_until"] = 0.0
+                rg.stop()
+            if time.time() - fol["cand_t"] > 0.25:
+                fol["cand_t"] = time.time()
+                prev = getattr(ff, "prev", None)
+                c = nearest_car(prev.vehicles, ff.scen.frame, ff.view_transform()) if prev is not None else None
+                fol["cand"] = c[0] if c else None
+            return None
+        if ov.moving():  # flying again: the camera is yours
+            follow_stop("flown away", keep_map=0.0)
+            return "stopped following"
+        snap = rg.snapshot()
+        if snap is not None and snap["vid"] != fol["vid"]:   # the last car's, until the agent has the new one
+            snap = None
+        if snap is None:
+            if time.time() - fol["t0"] > 3.0:
+                follow_stop("lost")
+                return "the car left the road"
+            return None
+        if snap["status"] == "arrived" and not fol["done"]:
+            fol["done"] = True
+            follow_stop("arrived", keep_map=15.0)
+            est = snap.get("est_free_s")
+            return (f"{snap['vid']} arrived in {mmss_s(snap.get('real_s'))}"
+                    + (f"  (agent's estimate {mmss_s(est)} without waiting at signals)" if est else ""))
+        if snap["status"] == "gone" and not fol["done"]:
+            fol["done"] = True
+            follow_stop("gone", keep_map=5.0)
+            return f"{snap['vid']} left the road"
+        return None
+
+    def demo_follow(st: dict, t_el: float) -> bool:
+        """--demo-follow: pick a town car driving with a long way to go, follow it (as F does), stage a breakdown on
+        its way, cycle the views with a screenshot of each, measure where the camera is against the car each half
+        second; out/<scenario>_freefly_follow.json. True when done."""
+        from cosim.pose_proc import ChaseCam
+
+        rg = ff.route_guide
+        out = ROOT / "out" / "freefly"
+        out.mkdir(parents=True, exist_ok=True)
+        if rg is None or getattr(ff, "pose_q", None) is None:
+            (ROOT / "out" / f"{args.scenario}_freefly_follow.json").write_text(
+                json.dumps({"error": "no route guide or no pose process"}), encoding="utf-8")
+            return True
+        if t_el < DEMO_WARMUP_S + 15.0:
+            return False
+        now = time.time()
+
+        def shot(name):
+            for _ in range(3):
+                draw(state(fps=fps_shown), prompt=None)
+                time.sleep(0.1)
+            f = f"{args.scenario}_follow_{len(st['shots']) + 1:02d}_{name}.png"
+            st["shots"].append({"file": f if shooter.grab_window(out / f) else None, "view": fol["view"],
+                                "what": name, "sim_s": ff.sim_now})
+
+        st.setdefault("shots", [])
+        st.setdefault("cam", [])
+        st.setdefault("tried", set())
+        if fol["vid"] is None and not st.get("done_follow"):
+            prev = ff.prev
+            cands = [vid for vid, v in (prev.vehicles.items() if prev else []) if vid.startswith("live")
+                     and v.vclass == "passenger" and v.speed > 4.0 and vid in ff.cs.actors and vid not in st["tried"]
+                     and not ff.not_guided(vid)]
+            if not cands:
+                return t_el > DEMO_WARMUP_S + 15.0 + args.demo_follow
+            vid = min(cands)
+            st["tried"].add(vid)
+            if not st["shots"]:     # the free-fly mini-map, the car about to be followed ringed
+                fol["cand"] = vid
+                shot("flying")
+            tf_ = ff.view_transform()
+            fol.update(vid=vid, t0=now, done=False, view="chase",
+                       cam0=(*ff.scen.frame.to_sumo_xy(tf_.location.x, tf_.location.y), tf_.rotation.yaw + 90.0))
+            rg.follow(vid)
+            ff.pose_q.put(("follow", vid, "chase"))
+            st.update(t_follow=now, phase="check")
+            return False
+        snap = rg.snapshot()
+        if "fly_in" not in st and fol["vid"] is not None and now - st.get("t_follow", now) >= 0.8:
+            st["fly_in"] = True     # half way through the camera's flight to the car, the mini-map's with it
+            shot("fly_in")
+        if st.get("phase") == "check":
+            if snap is None or snap["vid"] != fol["vid"]:
+                if now - st["t_follow"] > 3.0:
+                    follow_stop("demo: lost")
+                return False
+            if not snap["guided"] or len(snap.get("left") or []) < 5:   # another car: this one is nearly there
+                follow_stop("demo: too short a trip")
+                return False
+            st.update(phase="follow", vid=snap["vid"], t_start=now, done_follow=True)
+            return False
+        el = now - st.get("t_start", now)
+        # the camera against the car, every half second: distance, and how far from where its view puts it
+        if fol["vid"] is not None and now - st.get("t_cam", 0.0) >= 0.5:
+            st["t_cam"] = now
+            try:
+                aid = ff.cs.actors.get(fol["vid"])
+                car = ff.world.get_actor(aid).get_transform() if aid is not None else None
+                cam = ff.view_transform()
+                if car is not None:
+                    back, up, _ = ChaseCam.place(fol["view"], None)
+                    d = math.dist((car.location.x, car.location.y, car.location.z),
+                                  (cam.location.x, cam.location.y, cam.location.z))
+                    st["cam"].append({"view": fol["view"], "d": round(d, 2), "want": round(math.hypot(back, up), 2),
+                                      "speed": round((snap or {}).get("speed") or 0.0, 1)})
+            except Exception as e:  # noqa: BLE001 - measured only
+                log.debug("demo follow camera: %s", e)
+        if st.get("phase") == "follow":
+            if el > 6.0 and "chase" not in st:
+                st["chase"] = True
+                shot("chase")
+            if el > 8.0 and rg.staged is None and st.get("stage_tries", 0) < 12 and now >= st.get("stage_next", 0.0):
+                st["stage_tries"] = st.get("stage_tries", 0) + 1     # again every 4 s until a car on its way can
+                st["stage_next"] = now + 4.0
+                left = (snap or {}).get("left") or []
+                rg.stage_breakdown(left[1:6])
+            for view, at in (("roof", 22.0), ("drone", 34.0), ("chase", 46.0)):
+                if el > at and f"view_{view}_{at}" not in st:
+                    st[f"view_{view}_{at}"] = True
+                    fol["view"] = view
+                    ff.pose_q.put(("follow_view", view))
+                    st["shot_at"] = (now + 3.0, view)
+            if st.get("shot_at") and now >= st["shot_at"][0]:
+                shot(st["shot_at"][1])
+                st["shot_at"] = None
+            evs = (snap or {}).get("events") or []
+            if any(e["kind"] == "reroute" for e in evs) and "reroute_shot" not in st:
+                st["reroute_shot"] = now + 2.0
+            if st.get("reroute_shot") and st["reroute_shot"] is not True and now >= st["reroute_shot"]:
+                st["reroute_shot"] = True
+                shot("rerouted")
+        if fol["vid"] is None and st.get("phase") == "follow":   # arrived (or gone): the mini-map's result
+            st["phase"] = "end"
+            st["t_end"] = now
+            st["final"] = rg.snapshot()
+            st["shot_at"] = None
+        if st.get("phase") == "end" and now - st["t_end"] > 2.0:
+            shot("arrived")
+            st["phase"] = "written"
+        if st.get("phase") == "written" or el > args.demo_follow:
+            fin = st.get("final") or rg.snapshot() or {}
+            cams = st["cam"]
+            by_view = {}
+            for v in ChaseCam.VIEWS:
+                xs = [c["d"] - c["want"] for c in cams if c["view"] == v]
+                if xs:
+                    xs.sort()
+                    by_view[v] = {"n": len(xs), "median_off_m": xs[len(xs) // 2], "max_off_m": max(xs, key=abs)}
+            res = {"vehicle": st.get("vid"), "status": fin.get("status"), "est_free_s": fin.get("est_free_s"),
+                   "est_typical_s": fin.get("est_typical_s"), "real_s": fin.get("real_s"),
+                   "events": fin.get("events"), "staged_breakdown": rg.staged, "staged": True,
+                   "camera_vs_car": by_view, "shots": st["shots"], "clock": clock.hhmm(), "args": sys.argv[1:]}
+            (ROOT / "out" / f"{args.scenario}_freefly_follow.json").write_text(json.dumps(res, indent=2),
+                                                                             encoding="utf-8")
+            follow_stop("demo done")
+            return True
+        return False
+
     t0 = time.time()
+    fol_demo: dict = {}
     inc_demo: dict = {}
     clip_st: dict = {}
     enf_st: dict = {}
@@ -3964,6 +4245,10 @@ def main(argv=None) -> int:
             if plate_proc is not None or ff.drivers_on:  # cars that need plates (and drivers' seats), plates made
                 ff.ask_plates()
                 ff.pump_plates()
+            if getattr(ff, "route_guide", None) is not None and getattr(ff, "pose_q", None) is not None:
+                note_f = follow_tick()
+                if note_f:
+                    note, note_until = note_f, time.time() + 6
             for k in ov.pressed():
                 if k == "ESC":
                     quit_ = True
@@ -3974,12 +4259,32 @@ def main(argv=None) -> int:
                     if getattr(ff, "forecast", None) is not None:  # the forecasters' windows would mix two hours
                         ff.forecast.reset(ff.sim_now)
                     note, note_until = f"jumped to {clock.hhmm()}", time.time() + 3
+                elif k == "F" and getattr(ff, "route_guide", None) is not None and getattr(ff, "pose_q", None) is not None:
+                    if fol["vid"] is not None:
+                        follow_stop("stopped following")
+                    elif fol["cand"] is not None:
+                        tf_ = ff.view_transform()
+                        fol.update(vid=fol["cand"], t0=time.time(), done=False,
+                                   cam0=(*ff.scen.frame.to_sumo_xy(tf_.location.x, tf_.location.y),
+                                         tf_.rotation.yaw + 90.0))
+                        ff.route_guide.follow(fol["vid"])
+                        ff.pose_q.put(("follow", fol["vid"], fol["view"]))
+                        note, note_until = f"following {fol['vid']}", time.time() + 3
+                elif k == "V" and fol["vid"] is not None:
+                    from cosim.pose_proc import ChaseCam
+
+                    fol["view"] = ChaseCam.VIEWS[(ChaseCam.VIEWS.index(fol["view"]) + 1) % len(ChaseCam.VIEWS)]
+                    ff.pose_q.put(("follow_view", fol["view"]))
                 elif k == "F8":
+                    follow_stop()
                     tid = ff.next_junction()
                     note, note_until = f"junction {tid}", time.time() + 3
                 elif k == "F9":
                     ui["show"] = not ui["show"]
+                elif k == "M":
+                    ui["minimap"] = not ui["minimap"]
                 elif k == "F10" and getattr(ff, "forecast", None) is not None:
+                    follow_stop()
                     # the approach of the last alert (if under 2 minutes old), else the one most at risk
                     al = ff.forecast.recent_alerts(ff.sim_now, window_s=120.0)
                     top = ff.forecast.at_risk(1)
@@ -4065,6 +4370,16 @@ def main(argv=None) -> int:
                 if done_v:
                     demo = None
                     quit_ = True
+            if demo is not None and args.demo_follow > 0:
+                demo_seg_ref[0] = None
+                try:
+                    done_f = demo_follow(fol_demo, time.time() - t0)
+                except Exception:  # noqa: BLE001 - a recording's failure is reported, it never stops the viewer
+                    log.exception("follow demo failed")
+                    done_f = True
+                if done_f:
+                    demo = None
+                    quit_ = True
             if demo is not None and args.demo_depots > 0:
                 demo_seg_ref[0] = None
                 try:
@@ -4141,7 +4456,7 @@ def main(argv=None) -> int:
                 continue
             if demo is not None and args.demo_incident <= 0 and args.demo_agents <= 0 and args.demo_highway <= 0 \
                     and args.demo_depots <= 0 and args.demo_signals <= 0 and args.demo_drivers <= 0 \
-                    and args.record_clips <= 0:
+                    and args.record_clips <= 0 and args.demo_follow <= 0:
                 el_s = time.time() - t0
                 seg, tf = demo_pose(ff, el_s, args.demo)
                 demo_seg_ref[0] = seg
@@ -4197,10 +4512,16 @@ def main(argv=None) -> int:
             native_feed = inspecting and cams.native
             # the overlay: 5 times a second; 15 with a camera open, 30 for the native feed (its boxes move)
             marking = getattr(ff, "scene", None) is not None and bool(ff.scene.markers)
-            if time.time() - last_hud >= (1 / 30 if native_feed or marking else 1 / 15 if inspecting else 0.2):
+            following = fol["vid"] is not None or time.time() < fol["show_until"]   # the free-fly map: 5 a second
+            if time.time() - last_hud >= (1 / 30 if native_feed or marking else 1 / 15 if inspecting
+                                          else 1 / 12 if following else 0.2):
                 prompt = None
                 if cams is not None and not inspecting and near_i is not None and near_d <= INSPECT_M:
                     prompt = f"H   Inspect traffic camera {cams.names[near_i]}"
+                if fol["vid"] is not None:
+                    prompt = f"F   Stop following      V   View: {fol['view']}"
+                elif fol["cand"] is not None and not inspecting:
+                    prompt = (prompt + "      " if prompt else "") + f"F   Follow car {fol['cand']}"
                 tm = time.perf_counter()
                 panel = native = None
                 if native_feed:

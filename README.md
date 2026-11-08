@@ -161,6 +161,9 @@ Press the keys while the CARLA window is in front.
 | **F8** | Fly to the next signalised junction |
 | **F9** | Hide / show the clock |
 | **H** | Near a traffic camera (a blue box on a pole): show its view with the detector's boxes and counts; H again closes it |
+| **F** | Near a car (within 35 m, in front of you): follow it. The camera flies to it, and the route agent gives it its route and replans on the way (section 5.9). F again, or any movement key, lets go |
+| **V** | While following: the camera's view (behind the car, on its roof, high above it) |
+| **M** | Hide / show the town's live mini-map (bottom right) |
 | **Esc** | Quit (CARLA closes too) |
 
 The movement keys are Z Q S D because the project was made on an AZERTY keyboard; on a QWERTY keyboard the same
@@ -214,6 +217,9 @@ town05_freefly.bat
 | `--windowed` | | Keep CARLA in a window (set by `CARLA_RES`) |
 | `--goflow-prediction` / `--goflow-traffic` | off | The GO-FLOW team's forecasters in their own processes (`agents/`, their own venvs: `tools\setup_goflow_prediction.bat`, `setup_goflow_traffic.bat`): DSO4's queue forecasts and its "long queue likely within 3 min" alerts (a classifier, `agents/goflow_prediction/goflow_prediction/congestion.py`), with GO-FLOW's occupancy forecast and traffic state as its input (`cosim/goflow_prediction.py`). The town never waits for them |
 | `--goflow-hud` | off | With `--goflow-prediction`: on the roads near you, a chip over each approach GO-FLOW calls congested or severe, or DSO4 forecasts at least half full; DSO4's alert pills over the junctions. The forecast panel (bottom right: the three roads most likely to get a long queue within 3 minutes, the last alert) shows whenever the forecasters run; F10 flies to the road most at risk (`cosim/goflow_prediction_hud.py`) |
+| `--route-guide / --no-route-guide` | on | The route agent and its mini-map: F follows a car (section 5.9) |
+| `--route-costs typical\|free` | typical | The route agent's costs: typical times from past trips (signals in) or the free-flow times it was built with (docs/WORKLOG.md, 8 Nov) |
+| `--route-explain / --no-route-explain` | on | With the route agent: one sentence on each of its decisions from the local LLM (Ollama running with `qwen2.5:7b`); off for the run if Ollama does not answer |
 | `--demand-scale X` | 1 | Multiplies the day's vehicle curve: 2 or 3 make queues fill at the junctions (no gridlock in SUMO at 3, crashes on). The forecasters are told the same scale, as in their training data |
 
 ### Signal sets
@@ -237,6 +243,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | What | Scripts | Needs CARLA |
 | --- | --- | --- |
 | Unattended viewer checks with screenshots | `town05_freefly_demo.bat`, `freefly_incident_demo.bat`, `freefly_breakdown_demo.bat`, `freefly_pileup_demo.bat`, `freefly_signals_demo.bat`, `freefly_agents_demo.bat`, `freefly_highway_demo.bat`, `freefly_depots_demo.bat`, `freefly_drivers_demo.bat`, `freefly_poles_demo.bat`, `freefly_demo_cctv.bat` | yes |
+| Follow a car with the route agent, unattended: views, a staged breakdown on its way, the camera measured against the car | `freefly_follow_demo.bat` | yes |
 | Close the viewer from outside | `stop_freefly.bat` | |
 | Render benchmark | `town05_fps_test.bat`, `town05_fps_dx12.bat` | yes |
 | Signal controllers compared, SUMO only (step 1) | `eval_town05_baseline.bat` | no |
@@ -255,6 +262,9 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | GO-FLOW forecasters: datasets, the live connector checked (agents answer, a killed one restarts, live = offline replay) | `tools\goflow_prediction_graph.py`, `goflow_prediction_dataset.py`, `goflow_prediction_live_check.py --goflow` | no |
 | GO-FLOW forecasters scored once on test seeds (live code path, long-queue alerts, calibration) | `.venv\Scripts\python tools\goflow_prediction_test_score.py --seeds ... --out ... --reason ...` | no |
 | Junction agents with and without the forecasters' warnings, paired seeds | `.venv\Scripts\python tools\eval_agents_forecast.py --seeds 11-20 --scales 2,3 --out ...` (needs the agents' packages in the venv) | no |
+| Route agent: a share of the town's cars routed by it, paired seeds | `.venv\Scripts\python tools\eval_route_guidance.py --seeds 11-20 --scales 2,3 --out ...` (as above) | no |
+| Route agent: typical times on each road from past trips (train seeds) | `.venv\Scripts\python tools\route_delay_table.py --seeds 101-110` | no |
+| Route agent on its own: Streamlit page, three options, the choice explained by Qwen | `setup_route_recommendation.bat` once, then `route_recommendation_app.bat` | no |
 
 `run_cosim.bat` and `python -m cosim.run --help` run the co-simulation as a recorder, in synchronous mode with
 camera sensors, instead of the free-fly viewer.
@@ -476,7 +486,36 @@ or timed: whether they reach the line on amber or red depends only on where they
 | Drivers seated in the cars you are close to | `cosim/drivers.py` |
 | CARLA blueprint for each SUMO vehicle type | `cosim/vmodels.py`, `blueprints.py`, `config/vehicle_models.json` |
 
-### 5.9 Repository map
+### 5.9 Route agent: following a car
+
+The route recommendation agent (`agents/route_recommendation`, Emna's agent 6) drives the car you follow.
+
+* **What it decides from** (what a navigation service would have):
+  * the map: the SUMO network road by road, with only the turns each junction allows (`router.py`);
+  * the car's own trip (where it is, where it goes);
+  * DSO4's queue forecasts (with `--goflow-prediction`);
+  * crashes and breakdowns once reported (from when the police are sent), with the lanes the scene closed;
+  * typical times on each road by the way a car leaves it, from past trips on the train seeds
+    (`models/route_guidance/movement_times.json`, `tools/route_delay_table.py`).
+* **What it does** (`cosim/route_guidance.py`): up to three different routes from the road the car is on to its
+  destination; the cheapest goes to the car (TraCI `setRoute`). Costs: the typical times times the alerts' penalties
+  (`--route-costs typical`, the default), or the free-flow times it was built with (`free`). It plans again whenever the alerts change, and
+  switches only for a route cheaper by 5 s and 10 %. Each decision is kept with its reason (the alerts avoided).
+* **The camera** (`cosim/pose_proc.ChaseCam`): worked out in the pose process for the same picture as the car's
+  pose, sent in the same batch, so the two never drift apart. It flies in from where the free-fly camera was
+  (1.8 s, eased, looking at the car all the way); a change of view (V) glides.
+* **The mini-map** (`cosim/route_minimap.py`, bottom right):
+  * flying: the whole town, every car as a dot coloured by its speed, the camera and its view, the alerts, the car
+    F would follow;
+  * following: the view eases in to the trip while the camera flies; the camera's marker slides onto the car; the
+    routes draw themselves in;
+  * then: the car's own route (dashed) and the agent's (green); the alerts; the next signals in this car's colour;
+    the time on the way, the agent's estimate and the metres left; the last decision and why; the options' costs;
+    on arrival the real time beside the estimate.
+* Every followed trip is written to `out/route_guidance/followed.csv` (estimate and real time).
+* Measured in SUMO with `tools/eval_route_guidance.py` (docs/WORKLOG.md, 8 Nov).
+
+### 5.10 Repository map
 
 ```
 Urban Traffic CARLA/
@@ -491,6 +530,8 @@ Urban Traffic CARLA/
 │  ├─ agents_actuated.py  agents.py  camera_reports.py  perception.py  inspector.py  cctv.py
 │  ├─ incidents.py  incident_scene.py  towing.py  depots.py  highway.py  drivers.py  extras.py
 │  ├─ enforcement.py  redlight.py  redlight_proc.py  anpr.py  register.py  red_runners.py   red-light camera
+│  ├─ goflow_prediction.py  goflow_prediction_hud.py   the GO-FLOW forecasters' connector and HUD
+│  ├─ route_guidance.py  route_minimap.py   the route agent driving the followed car, its mini-map
 │  ├─ daily.py  solar.py  interp.py  vmodels.py  blueprints.py  plates.py  clip_recorder.py  llm.py
 │  └─ town.py  opendrive.py  tlcomplete.py  tlmap.py  convert.py  scenario.py  run.py  live.py   builders, recorder
 ├─ scenarios/
@@ -501,7 +542,10 @@ Urban Traffic CARLA/
 │  ├─ plates/                number-plate meshes and their installer
 │  ├─ carla_config/          the DefaultInput.ini installed into CARLA (CARLA's key movement off)
 │  └─ fps_test/              CARLA render profiles (Engine.ini) used by the launcher
-├─ models/                   traffic-camera detector weights (AGPL-3.0)
+├─ models/                   traffic-camera detector weights (AGPL-3.0); goflow/ the forecasters' models;
+│                            route_guidance/ the route agent's typical road times
+├─ agents/                   the teammates' agents, each with its own venv: goflow_prediction and goflow_traffic
+│                            (forecasters), route_recommendation (the route agent, its Streamlit page)
 ├─ out/town05_cameras/       camera layout and lane masks, read at run time (the rest of out/ is generated)
 ├─ config/                   vehicle models, LLM providers, env.example
 ├─ assets/                   fonts and plate textures for the overlay and plates

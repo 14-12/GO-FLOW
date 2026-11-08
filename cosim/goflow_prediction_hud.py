@@ -207,15 +207,18 @@ class ForecastHud(AgentHud):
             yy += s.get_height() + 3
         return surf
 
-    def draw(self, screen, size, view_tf, centres: dict, anchors: dict, fc, now: float, pills: bool) -> list:
+    def draw(self, screen, size, view_tf, centres: dict, anchors: dict, fc, now: float, pills: bool,
+             panel: bool = True, bottom: int = 16) -> list:
         """Everything for one picture. fc: the GoflowPrediction; pills: --goflow-hud (the chips and the alert pills;
-        the panel always)."""
+        the panel unless panel is False: the route agent's mini-map takes its corner while you follow a car)."""
         w, h = size
         rects: list = []
         recent = fc.recent_alerts(now)
         if pills:
             rects += self.draw_chips(screen, size, view_tf, anchors, fc.at_risk(n=len(anchors) or 60))
             rects += self.draw_alerts(screen, size, view_tf, centres, [dict(a, now=now) for a in recent])
+        if not panel:
+            return rects
         alerts = fc.recent_alerts(now, window_s=1e9)
         last = alerts[-1] if alerts else None
         status, warm, top, n_recent = fc.status(), fc.warm_up_left_s(), fc.at_risk(3), len(recent)
@@ -227,5 +230,5 @@ class ForecastHud(AgentHud):
         if key != self._panel_key:          # rebuilt only when what it says changes
             self._panel_key, self._panel = key, self.panel(status, warm, top, last, now, n_recent)
         p = self._panel
-        rects.append(screen.blit(p, (w - p.get_width() - 16, h - p.get_height() - 16)))
+        rects.append(screen.blit(p, (w - p.get_width() - 16, h - p.get_height() - bottom)))
         return rects

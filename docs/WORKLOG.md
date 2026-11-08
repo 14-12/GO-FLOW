@@ -1901,3 +1901,86 @@ sets (waiting -1.6 s and -4.2 s, throughput +2 % and +4 %, 15 of 20 seeds better
 seed's spread. The agents' moves are few and gentle (they keep the actuated program's own order and limits), and a
 warning a minute ahead, right about half the time, gives them little to act on that their counts do not already show.
 Left in as an option (`agents_observed+forecast`) for heavy traffic, with the evaluation to repeat it.
+
+## The route agent: reviewed, made to drive a car you follow, measured in SUMO (8 Nov)
+
+**The branch.** `integration/route-recommendation-town05` (Emna, 1-8 Nov): agent 6, a route recommender. 15 new files
+in `agents/route_recommendation`, nothing else changed in the project, merges with `main` without conflict. What it
+was: a graph of Town05's junctions from `town05.net.xml`, A* and up to 3 different routes (less than 70 % of roads in
+common), costs = free-flow time (length / limit) times the alerts' penalties (DSO4's forecast fill at +120 s over 0.3:
+1 + 2 x fill; an accident: up to x50), a LangGraph pause for a person to choose, Qwen2.5-7B (Ollama) to explain, a
+Streamlit page with test buttons. No model, nothing trained, its tests were scripts that print.
+
+Measured on it (SUMO 1.27.1, Town05):
+* one link per pair of junctions: of the two parallel ring-road roads 35 and 37 (DSO4 approaches 2328-1, 2014-2)
+  only the other was kept, so an alert on them was put on the road next to them;
+* the turns were not the network's: 9 of the 1518 routes it offered over all 506 pairs of junctions needed a turn
+  the junction does not have; from a car's own first road to its last, 1065 of 2421 of its routes could not be
+  given to the car;
+* free-flow times leave out the signals: on 2326 car trips (coordinated signals, x1, seed 11), its estimate had a
+  median of 24 s, the real trips 183 s (118 s of it waiting), 6.4 times;
+* `step8_eval_grid.py` (52.8 % faster, 91/91) graded it on its own penalties with the alerts put on the route it
+  avoids: not a measure.
+
+**Her agent, fixed** (`agents/route_recommendation`):
+* `router.py` (new): the graph's points are the roads (80) and its links the network's own lane connections for
+  cars; Dijkstra, and Yen's algorithm for the 3 different routes; only sumolib, so the viewer imports it. Every best
+  route between any two roads is drivable (6320 pairs, all reachable); the alert on 35 stays on 35.
+* `adapter_traffic.py`: `nodes.json` from the working copy (it was read with `git show origin/main:`).
+* `step5b_agent.py`, `step6_hitl.py`, `app.py` on `router.py`; the times said to be "without waiting at signals".
+* `tests/test_router.py` (pytest, 9 tests) instead of the print scripts; `sumo_map.py`, `grid_map.py`,
+  `step8_eval_grid.py` removed; requirements pinned (as tested, Python 3.11 and 3.13);
+  `tools/setup_route_recommendation.bat`, `tools/route_recommendation_app.bat`.
+
+**Typical times from past trips** (`tools/route_delay_table.py`, `models/route_guidance/movement_times.json`). What a
+navigation service learns from its users' trips: the time a car spends on a road by the road it takes next, the wait
+at the signal included. From the train seeds only (101-110, x1 / x2 / x3, the forecasters' recipe under
+`agents_observed`, crashes on): 282 movements, 120 303 road times (`--vehroute-output.exit-times`; a trip's first road
+and cars whose route was changed on the way left out). Their median is 6.9 times the free-flow time. Used by the
+agent for its estimate, and (option) as its costs: `Router.set_typical`.
+
+**Following a car in the viewer** (`cosim/route_guidance.py`, `route_minimap.py`, `pose_proc.ChaseCam`; keys F, V, M):
+* F near a car (35 m, in front): the camera flies from where it is to behind the car (1.8 s, smootherstep, looking at
+  the car all the way, on a raised arc) and follows it; V glides between three views (behind, roof, drone); a movement
+  key or F lets go. The camera's pose is worked out in the pose process for the same picture as the car's and sent in
+  the same batch.
+* The agent (what a navigation service would have: map, the car's own trip, DSO4's forecasts, crashes once
+  reported, the typical times) gives the car its route, plans again when the alerts change, switches for 5 s and 10 %
+  better. `keep_driving` leaves the car alone until it arrives. Each trip goes to `out/route_guidance/followed.csv`.
+* The mini-map, bottom right: flying, the town live (every car as a dot by its speed, the camera's view, the alerts,
+  the car F would follow); following, the map eases to the trip, the camera's marker slides onto the car, the routes
+  draw themselves, the text unfolds: A and B, its own route dashed and the agent's green, the next signals in its
+  colour, time on the way, the agent's estimate, metres left, the decision and why, the options, what it sees; on
+  arrival the real time beside the estimate. The forecast panel moves above it while flying.
+* `--route-costs typical` (default, from the A/B below) or `free` (as built); `--route-explain`: a sentence from the
+  local Qwen per decision in a thread of its own (off when Ollama does not answer: it did not on the PC today).
+
+Checked in CARLA (`tools/freefly_follow_demo.bat`: 08:00, a town car followed, a breakdown staged on its way, the
+views cycled, screenshots `out/freefly/town05_follow_*.png`, `out/town05_freefly_follow.json`), third run: live24
+followed until it arrived, 2:44 real against 4:15 estimated (1:07 free flow); the camera against its place on the car,
+every half second: median 0.18 m behind (269 samples), roof -0.01 m, drone 0.13 m (the largest differences are the
+fly-in and the view changes); CARLA 36-47 fps while following. The staged breakdown (live70 on -0) did not change its
+route: the agent kept it. First run found two bugs, fixed: the mini-map's view took in the car's old route (zoomed out
+past the town) and a car picked right after an arrival read the last car's snapshot.
+
+**SUMO A/B** (`tools/eval_route_guidance.py`): 30 % of the town's cars (a hash of id and seed, the same in every
+variant) routed as they set off and, for the agent, again when the alerts change; the forecasters' recipe, junction
+agents (`agents_observed`) wired, both forecasters in the loop in every variant. Marked cars' delay = trip time minus
+the free-flow time of the shortest route between their first and last roads. Dev seeds 11-20, x3, paired against
+`none` (mean difference, seeds better):
+
+| Variant | Routes changed at start / later | Marked delay /trip | Marked trip | All: waiting /trip | All: throughput /h | Ambulance time loss | Long-queue approach-min |
+|---|---|---|---|---|---|---|---|
+| none | 0 / 0 | 156.1 s | 213.6 s | 140.8 s | 2561 | 107.4 s | 185.5 |
+| shortest (free-flow, at start) | 1628 / 0 | -7.8 s (9/10) | -8.8 s (7/10) | -4.9 s (6/10) | +80 (7/10) | -9.9 s (5/10) | -14.6 (8/10) |
+| agent, as built (free-flow x penalties) | 1698 / 326 | -4.8 s (8/10) | -5.7 s (6/10) | -1.5 s (4/10) | +36 (5/10) | +8.6 s (4/10) | -8.2 (7/10) |
+| agent, typical times x penalties | 2945 / 866 | -27.9 s (10/10) | -24.5 s (10/10) | -13.9 s (10/10) | +177 (10/10) | -17.5 s (6/10) | -18.9 (9/10) |
+
+The agent's estimate of a marked trip as it set off, against the trip (mean absolute error / mean real minus
+estimate): free flow 176-181 s / +56 to +145 s; with the typical times 67-90 s / +9 to +38 s.
+
+Reading. As built, the agent does less than plain shortest routes (its penalties multiply a free-flow time that is a
+sixth of the trip, and the ambulances lose on 6 of 10 seeds). With the typical times it is better on every seed for
+its own cars and for the whole town (waiting -10 %, throughput +7 %), and its estimate is two to three times closer.
+Dev seeds only: the test (seeds 61-70, x2 and x3, opened once) waits for the bar to be agreed; proposed: marked delay
+lower on at least 7 of 10 seeds, all-car waiting not worse, ambulance time loss not worse on the mean.

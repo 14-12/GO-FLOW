@@ -34,6 +34,7 @@ from __future__ import annotations
 import collections
 import math
 import time
+import typing
 
 from cosim.interp import Timed, Trails
 from cosim.mapping import Frame
@@ -343,6 +344,11 @@ class Driver:
         self.driver_in: dict[int, int] = {}       # car actor -> its driver walker
         self.doors_open: set[int] = set()         # cars whose driver got out (a door open at an accident scene)
         self.eyes: list = []                      # other cameras (x, y): a red-light camera site (cosim/enforcement)
+        self.follow: str | None = None            # (8 Nov) the SUMO vehicle the camera follows (F), or None
+        self.follow_view = "chase"                # chase | roof | drone (V)
+        self.vid_aid: dict[str, int] = {}         # this segment's SUMO vehicle -> its actor
+        self.follow_tf = None                     # the followed vehicle's pose in the last picture
+        self.follow_new = False                   # a new car to follow: the camera flies in from where it is
 
     def receive(self, msg) -> None:
         kind = msg[0]
@@ -381,6 +387,14 @@ class Driver:
             self.drivers_free += [w for w in msg[1] if w not in self.drivers_free]
         elif kind == "door":  # (car actor, open?, ...): the one at the wheel got out, or back in
             (self.doors_open.add if msg[2] else self.doors_open.discard)(msg[1])
+        elif kind == "follow":  # (8 Nov) (vid or None[, view]): the camera follows this vehicle (cosim/route_guidance)
+            self.follow_new = msg[1] is not None and msg[1] != self.follow
+            self.follow = msg[1]
+            if len(msg) > 2 and msg[2]:
+                self.follow_view = msg[2]
+            self.follow_tf = None
+        elif kind == "follow_view":
+            self.follow_view = msg[1]
         elif kind == "pause":  # the viewer sends the segments again on resume; keep their parks
             for seg in self.pending:
                 self.parks = (self.parks[0] + list(seg.get("park_v", ())), self.parks[1] + list(seg.get("park_w", ())))
@@ -400,6 +414,7 @@ class Driver:
         self.lights += list(seg.get("lights", ()))
         self.poser.frozen_s = None
         self.poser.set_segment(seg)
+        self.vid_aid = {v[1]: v[0] for v in seg["veh"]}
 
     def _changed(self, aid, tf) -> bool:
         loc, rot = tf.location, tf.rotation
@@ -482,6 +497,11 @@ class Driver:
                     vs.append((d, deck_tf(vs[at[ta]][1], deck_rel.get(ta, towing.deck_level()))))
         for a, tf in vs:
             self.last_tf[a] = tf
+        self.follow_tf = None
+        if self.follow is not None:
+            fa = self.vid_aid.get(self.follow)
+            if fa is not None:
+                self.follow_tf = self.last_tf.get(fa)
         # people at a scene (officer, drivers, the truck's crew): along their paths
         if self.walks:
             import carla
@@ -531,6 +551,103 @@ class Driver:
         w_out = [(a, tf, sp) for a, tf, sp in ws if self._changed(a, tf)]
         skipped = len(vs_send) + len(ws) - len(v_out) - len(w_out)
         return v_out, w_out, pv, pw, posed, skipped
+
+
+class ChaseCam:
+    """(8 Nov) The camera on a followed car (cosim/route_guidance.py, F in the viewer), worked out in this process for
+    the picture the car's own pose is for, so the two never drift apart. Its place is fixed to the car; only its turn
+    eases after the car's (a car's heading changes at a turn faster than a viewer's eye wants). Views (V):
+    chase = behind and above; roof = on the roof, looking ahead; drone = high behind, looking down.
+
+    Transitions: when the following starts, the camera flies from where the free-fly camera was to its place on the
+    car (FLY_IN_S, eased in and out, along a raised arc so it does not cut through what is between); a change of view
+    glides from the last view to the new one (SWITCH_S). Both aim at the moving car, so the car never leaves the
+    picture on the way."""
+
+    VIEWS = ("chase", "roof", "drone")
+    EASE_S: typing.ClassVar[dict] = {"chase": 0.35, "roof": 0.12, "drone": 0.6}
+    FLY_IN_S = 1.8
+    SWITCH_S = 0.9
+
+    def __init__(self):
+        self.yaw: float | None = None
+        self.from_tf = None      # where a transition started (a carla.Transform)
+        self.t = 0.0             # seconds into it
+        self.dur = 0.0
+        self.last = None         # the last pose sent
+        self.view = None
+
+    def reset(self) -> None:
+        self.yaw = None
+        self.from_tf = None
+        self.last = None
+        self.view = None
+
+    def begin(self, from_tf, dur: float) -> None:
+        """A transition from from_tf (the camera now) to the view's place, over dur seconds."""
+        self.from_tf, self.t, self.dur = from_tf, 0.0, dur
+
+    @staticmethod
+    def ease(k: float) -> float:
+        k = min(max(k, 0.0), 1.0)
+        return k * k * k * (k * (6.0 * k - 15.0) + 10.0)   # smootherstep: no jolt at either end
+
+    @staticmethod
+    def place(view: str, ext: tuple | None) -> tuple[float, float, float]:
+        """(back, up, pitch) for a car of half extents ext (x half length, y half width, z half height)."""
+        ex, _, ez = ext if ext else (2.3, 1.0, 0.75)
+        if view == "roof":
+            return -0.15 * ex, 2.0 * ez + 0.35, -5.0
+        if view == "drone":
+            return 22.0 + 2.0 * ex, 26.0, -48.0
+        return 4.5 + 2.0 * ex, 1.6 + 2.0 * ez, -11.0
+
+    def update(self, car_tf, dt: float, view: str = "chase", ext: tuple | None = None):
+        import carla
+
+        if self.view is not None and view != self.view and self.last is not None:
+            self.begin(self.last, self.SWITCH_S)          # a new view: glide there from the last one
+        self.view = view
+        tf = self._place(car_tf, dt, view, ext)
+        if self.from_tf is not None and self.dur > 0.0:
+            self.t += max(dt, 0.0)
+            k = self.ease(self.t / self.dur)
+            if k >= 1.0:
+                self.from_tf = None
+            else:
+                a, b = self.from_tf.location, tf.location
+                lift = 4.0 * math.sin(math.pi * k) * min(1.0, math.dist((a.x, a.y), (b.x, b.y)) / 40.0)
+                loc = carla.Location(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k + lift)
+                # look at the car all the way, blended into the view's own turn at the end
+                c = car_tf.location
+                dx, dy, dz = c.x - loc.x, c.y - loc.y, c.z + 1.0 - loc.z
+                look_yaw = math.degrees(math.atan2(dy, dx))
+                look_pitch = math.degrees(math.atan2(dz, max(math.hypot(dx, dy), 0.1)))
+                w = self.ease(min(1.0, k / 0.35))           # from the camera's own turn to looking at the car
+                y0, p0 = self.from_tf.rotation.yaw, self.from_tf.rotation.pitch
+                yaw = y0 + ((look_yaw - y0 + 180.0) % 360.0 - 180.0) * w
+                pitch = p0 + (look_pitch - p0) * w
+                m = self.ease(max(0.0, (k - 0.7) / 0.3))     # the last 30 %: into the view's own turn
+                yaw = yaw + ((tf.rotation.yaw - yaw + 180.0) % 360.0 - 180.0) * m
+                pitch = pitch + (tf.rotation.pitch - pitch) * m
+                tf = carla.Transform(loc, carla.Rotation(pitch, yaw, 0.0))
+        self.last = tf
+        return tf
+
+    def _place(self, car_tf, dt: float, view: str, ext: tuple | None):
+        import carla
+
+        target = car_tf.rotation.yaw
+        if self.yaw is None:
+            self.yaw = target
+        else:
+            k = min(1.0, max(dt, 0.0) / self.EASE_S.get(view, 0.35))
+            self.yaw += ((target - self.yaw + 180.0) % 360.0 - 180.0) * k
+        back, up, pitch = self.place(view, ext)
+        cy, sy = math.cos(math.radians(self.yaw)), math.sin(math.radians(self.yaw))
+        loc = car_tf.location
+        return carla.Transform(carla.Location(loc.x - back * cy, loc.y - back * sy, loc.z + up),
+                               carla.Rotation(pitch, self.yaw, 0.0))
 
 
 class CrashTrace:
@@ -892,6 +1009,8 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
     pacing = Pacing()
     lock = threading.Lock()
     spectator_id = world.get_spectator().id
+    chase = ChaseCam()
+    extents: dict[int, tuple] = {}   # actor -> its bounding box's half length, width, height (asked once, off the tick)
     st = {"frames": 0, "posed": 0, "ms": 0.0, "ms_max": 0.0, "frame_dt": 1 / 60, "errors": 0,
           "steep": 0, "error": None, "actors": [], "sent": 0, "skipped": 0, "waited": 0}
 
@@ -940,6 +1059,18 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
             batch += [carla.command.ApplyTransform(aid, park) for aid in pv]
             batch += [carla.command.ApplyWalkerState(aid, park, 0.0) for aid in pw]
             batch += [carla.command.SetVehicleLightState(aid, carla.VehicleLightState(ls)) for aid, ls in lights]
+            if drv.follow is not None and drv.follow_tf is not None:
+                # (8 Nov) the followed car's camera, in the same batch as the car: shown in the same picture
+                if drv.follow_new:
+                    chase.reset()
+                    if sp is not None:
+                        chase.begin(sp.get_transform(), ChaseCam.FLY_IN_S)
+                    drv.follow_new = False
+                cam = chase.update(drv.follow_tf, st["frame_dt"], drv.follow_view,
+                                   extents.get(drv.vid_aid.get(drv.follow)))
+                batch.append(carla.command.ApplyTransform(spectator_id, cam))
+            elif drv.follow is None:
+                chase.reset()
             if batch:
                 client.apply_batch(batch)
             lag.sent_now(vs)
@@ -990,6 +1121,13 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
                     with lock:
                         drv.receive(msg)
             scene.animate()
+            fa = drv.vid_aid.get(drv.follow) if drv.follow is not None else None
+            if fa is not None and fa not in extents:  # the followed car's size, for where its cameras sit
+                try:
+                    e = world.get_actor(fa).bounding_box.extent
+                    extents[fa] = (e.x, e.y, e.z)
+                except Exception:  # noqa: BLE001 - gone: the default size
+                    extents[fa] = None
             now = time.time()
             if force or now - last_report >= 10.0:
                 span = now - last_report
