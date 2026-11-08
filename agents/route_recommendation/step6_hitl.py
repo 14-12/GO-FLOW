@@ -28,15 +28,45 @@ class State(TypedDict, total=False):
 #         "2": {"nom": "Route recommandee (evite les alertes)", **rec},
 #     }}
 
+# def compute_options(state: State):
+#     o, d = state["origin"], state["destination"]
+
+#     ref = summarize(k_routes([], o, d)[0], ALERTS)       # route sans alerte
+#     ref_ids = set(ref["routes"])
+#     for s in options.values():
+#         evitees = [a for a in ALERTS
+#                    if a.get("route") in ref_ids - set(s["routes"])]
+#         s["alertes_evitees"] = [f"{a['type']} sur {a['route']}" for a in evitees]
+
+#     paths = k_routes(ALERTS, o, d)          # 1 à 3 itinéraires distincts
+#     options = {}
+#     for i, p in enumerate(paths, start=1):
+#         s = summarize(p, ALERTS)
+#         s["cout_estime_secondes"] = round(
+#             sum(G[u][v]["cost"] for u, v in zip(p, p[1:])), 1)
+#         s["nom"] = "Route recommandee" if i == 1 else f"Alternative {i - 1}"
+#         options[str(i)] = s
+    
+#     return {"options": options}
+
 def compute_options(state: State):
     o, d = state["origin"], state["destination"]
-    paths = k_routes(ALERTS, o, d)          # 1 à 3 itinéraires distincts
+
+    # 1. Référence : route sans alerte (calculée AVANT, car k_routes réinitialise les coûts)
+    ref_ids = set(summarize(k_routes([], o, d)[0], ALERTS)["routes"])
+
+    # 2. Routes avec alertes (1 à 3 itinéraires distincts)
+    paths = k_routes(ALERTS, o, d)
     options = {}
     for i, p in enumerate(paths, start=1):
         s = summarize(p, ALERTS)
         s["cout_estime_secondes"] = round(
             sum(G[u][v]["cost"] for u, v in zip(p, p[1:])), 1)
         s["nom"] = "Route recommandee" if i == 1 else f"Alternative {i - 1}"
+        # 3. Alertes de la route de référence que cette option évite
+        s["alertes_evitees"] = [
+            f"{a['type']} sur {a['route']}" for a in ALERTS
+            if a.get("route") in ref_ids - set(s["routes"])]
         options[str(i)] = s
     return {"options": options}
 
@@ -59,6 +89,7 @@ def explain(state: State):
         SYSTEM_PROMPT
         + "\nL'utilisateur a choisi cette route. Explique-la en 3 phrases maximum, "
             "en recopiant exactement les valeurs ci-dessous, sans rien inventer. "
+            "Mentionne aussi les alertes_evitees : c'est la raison de ce choix. "
             "Mentionne explicitement les alertes rencontrees si la liste n'est pas vide.\n"
         + str(route)
     )
