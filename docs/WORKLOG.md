@@ -1751,3 +1751,43 @@ pose. By lane position it was then the car ahead: the roles (`_order_rear_end`) 
 Now: the drawn pose at the hit is always where they touched (SUMO goes as far back as its lane allows); who is ahead is
 decided from where they touched, not from SUMO's lane positions; `_touching` sets the follower (the collider) behind
 the leader, and when the follower's lane has no room behind it, the leader goes on instead.
+
+### The forecasters on the test seeds, under the junction agents (8 Nov)
+
+Before feeding the long-queue alerts to the junction agents: the shipped v4 forecasters (clock 30) scored once on the
+closed test seeds 21-30 (`tools/goflow_prediction_test_score.py`, lock `out/goflow_prediction/test_v4/TEST_OPENED.lock`),
+through the live code path (GO-FLOW step by step, its forecasts fed to DSO4, DSO4's own `p_long`). Same recipe as the
+training data (30 min after 5 min warm-up from 06:00, crashes, buses, ring), 10 runs per row. The scorer was first
+checked on the dev seeds: it gives the dev numbers again (x2: 49 alerts, 31 right, 31 caught).
+
+Queue fill, MAE (agent / "stays as now"); GO-FLOW occupancy at +120 s, MAE (GO-FLOW / "stays as now"):
+
+| Signals | Traffic | Fill +60 s | Fill +120 s | Fill +300 s | GO-FLOW +120 s |
+|---|---|---|---|---|---|
+| coordinated | x2 | 0.030 / 0.043 | 0.039 / 0.054 | 0.046 / 0.075 | 0.028 / 0.036 |
+| coordinated | x3 | 0.038 / 0.056 | 0.048 / 0.068 | 0.059 / 0.099 | 0.034 / 0.044 |
+| agents_observed | x1 | 0.036 / 0.035 | 0.040 / 0.039 | 0.048 / 0.041 | 0.042 / 0.039 |
+| agents_observed | x2 | 0.077 / 0.075 | 0.083 / 0.084 | 0.106 / 0.097 | 0.065 / 0.070 |
+| agents_observed | x3 | 0.110 / 0.111 | 0.118 / 0.125 | 0.155 / 0.155 | 0.083 / 0.089 |
+
+Long-queue alerts at the shipped threshold 0.7 (right = a long queue starts within 3 min; caught = an alert in the
+3 min before it):
+
+| Signals | Traffic | Alerts right | Long queues caught | Median lead |
+|---|---|---|---|---|
+| coordinated | x2 | 36 of 58 (62 %) | 36 of 52 (69 %) | 30 s |
+| coordinated | x3 | 107 of 209 (51 %) | 100 of 131 (76 %) | 60 s |
+| agents_observed | x1 | 1 of 2 | 1 of 11 | 60 s |
+| agents_observed | x2 | 60 of 122 (49 %) | 60 of 172 (35 %) | 60 s |
+| agents_observed | x3 | 142 of 344 (41 %) | 138 of 236 (58 %) | 60 s |
+
+How often a long queue really started, by `p_long` band (0.7-0.9 / 0.9-1.0): coordinated x2 60 % / 84 %, x3 49 % /
+76 %; agents_observed x2 52 % / 57 %, x3 43 % / 67 %.
+
+Reading. Under the signals they were trained on (coordinated, all training data), the forecasters hold on new seeds:
+the dev numbers again. Under the junction agents they don't: queue forecasts no better than "it stays as now" (worse
+at +300 s), alerts right less than half the time, and at x2 two long queues in three missed. The agents switch on
+demand rather than in a 115 s cycle, so the queues swing differently, and the classifier's cycle features (4 steps)
+mean less; long queues also start about three times as often (172 against 52 at x2). Not fed to the junction agents
+yet. Next: datasets under agents_observed (train seeds 101-130, dev 11-20) in the training mix, retrain, and score
+on new test seeds (31-40: 21-30 are now open).
