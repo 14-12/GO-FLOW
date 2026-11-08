@@ -104,3 +104,36 @@ if origin != dest:
                      "Distance (m)": round(s["distance_metres"]),
                      "Alertes traversées": ", ".join(hit) if hit else "aucune"})
     st.dataframe(rows, hide_index=True, width="stretch")
+
+    from langchain_ollama import ChatOllama
+
+llm = ChatOllama(model="qwen2.5:7b", temperature=0)
+
+if origin != dest and paths:
+    st.subheader("Votre choix")
+    ref_ids = set(a._edge_ids(a.k_routes([], origin, dest)[0]))
+    a.k_routes(a.ALERTS, origin, dest)        # remet les coûts pénalisés
+    cols = st.columns(len(paths))
+    for i, p in enumerate(paths):
+        if cols[i].button(f"Choisir l'option {i + 1}", key=f"choix_{i}"):
+            s = a.summarize(p, a.ALERTS)
+            s["cout_estime"] = fmt(costs[i])
+            s["alertes_evitees"] = [
+                f"{al['type']} sur {al['route']}" for al in a.ALERTS
+                if al.get("route") in ref_ids - set(s["routes"])]
+            s["alertes_traversees"] = [
+                f"{al['type']} sur {al['route']}" for al in a.ALERTS
+                if al.get("route") in set(s["routes"])]
+            prompt = (
+                "Tu es l'agent de recommandation d'itineraire. Explique en 3 phrases "
+                "maximum, en francais, la route choisie par l'utilisateur. Recopie "
+                "exactement les valeurs ci-dessous, n'invente rien. Mentionne les "
+                "alertes evitees et traversees.\n"
+                f"Option {i + 1} : routes {s['routes']}, temps estime {s['cout_estime']}, "
+                f"distance {round(s['distance_metres'])} m, "
+                f"alertes evitees {s['alertes_evitees']}, "
+                f"alertes traversees {s['alertes_traversees']}")
+            with st.spinner("Qwen réfléchit..."):
+                st.session_state.explication = llm.invoke(prompt).content
+if "explication" in st.session_state:
+    st.info(st.session_state.explication)
