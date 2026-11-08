@@ -32,7 +32,7 @@ def set_alerts(new_alerts):
 
 def add_alert(alert):
     ALERTS.append(alert)
-    
+
 P_ACC = {"haute": 5.0, "moyenne": 2.0, "faible": 1.5}
 P_TRAF = {"forte": 3.0, "moyenne": 1.5, "faible": 1.2}
 P_CITY = {"forte": 1.5, "moyenne": 1.3, "faible": 1.1}
@@ -191,7 +191,7 @@ def compare_routes(origin: str, destination: str) -> dict:
 SYSTEM_PROMPT = """Tu es l'agent de recommandation d'itineraire.
 Regles strictes :
 - Utilise TOUJOURS les outils pour obtenir les chiffres. N'invente jamais un temps, une distance ou une route.
-- Les noeuds sont des identifiants SUMO (ex: 1126, 979)
+- Les noeuds sont des identifiants SUMO (ex: 24.11, 359).
 - Appelle d'abord get_network_state, puis find_routes, puis compare_routes.
 - Cite uniquement les chiffres renvoyes par les outils. Si une info manque, dis-le.
 - Reponds en francais, de facon courte : route recommandee, temps, alertes evitees ou rencontrees, et pourquoi.
