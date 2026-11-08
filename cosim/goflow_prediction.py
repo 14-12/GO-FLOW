@@ -77,6 +77,24 @@ def full_thresholds(model_dir, names: list[str]) -> dict[str, float]:
 ALERT_SHOW_S = 60.0          # an alert stays on the overlay this long (simulated seconds)
 
 
+def long_queue_risk(fc: dict | None, now: float | None = None, max_age_s: float = 45.0) -> dict[str, float]:
+    """Per approach, DSO4's chance that a long queue starts there within its horizon (p_long), 1.0 where the queue is
+    long already; {} when there is no forecast, its model has no long-queue classifier, or the forecast is older than
+    `max_age_s` simulated seconds at `now` (the agent offline or behind)."""
+    if fc is None or not fc.get("long_queue_s"):
+        return {}
+    if now is not None and fc.get("t") is not None and now - float(fc["t"]) > max_age_s:
+        return {}
+    out = {}
+    for node, v in (fc.get("nodes") or {}).items():
+        if not v:
+            continue
+        p = 1.0 if v.get("long_now") else v.get("p_long")
+        if p is not None:
+            out[node] = float(p)
+    return out
+
+
 # ----------------------------------------------------------------------------- aggregation
 class Aggregator:
     """Per approach (one per camera: tools/goflow_prediction_graph.py nodes.json), once a simulated second:
@@ -511,6 +529,12 @@ class GoflowPrediction:
                          "risk_level": g.get("risk_level")})
         rows.sort(key=lambda r: (-(r["p_long"] or 0.0), -r["risk"]) if fc.get("long_queue_s") else -r["risk"])
         return rows[:n]
+
+    def risk(self, now: float | None = None, max_age_s: float = 45.0) -> dict[str, float]:
+        """For the junction agents (cosim/agents_actuated.py, +forecast): long_queue_risk of DSO4's last forecast."""
+        with self.lock:
+            fc = self.latest
+        return long_queue_risk(fc, now, max_age_s)
 
     def states(self) -> dict[str, str]:
         """GO-FLOW's traffic state of each approach ("free", "moderate", "congested", "severe"), her latest answer."""

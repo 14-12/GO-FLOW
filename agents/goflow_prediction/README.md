@@ -30,21 +30,22 @@ A queue sampled every 30 s swings with the signal (cycle 115 s), so `congestion.
 long queue *starts* when the mean reaches the level after a whole cycle under it, from under 0.6 x the level. A
 LightGBM classifier (the forecast's features plus the approach against its level) gives the chance of a start within
 6 steps (3 minutes); trained with `python -m goflow_prediction.congestion --dataset ... --model DIR --train-seeds ...
---dev-seeds ...`. The shipped model is v5 (8 Nov, clock 30), trained under both the coordinated signals and the
-junction agents (`agents_observed`). Test seeds 31-40 (5 h per row, never used before), alert at 0.7
-(`tools/goflow_prediction_test_score.py`):
+--dev-seeds ...`. The shipped model is v6 (8 Nov, clock 30), trained under both the coordinated signals and the
+junction agents (`agents_observed`, wired as in the viewer: cameras and emergency requests). Test seeds 41-50 (5 h per
+row, never used before), alert at 0.7 (`tools/goflow_prediction_test_score.py`):
 
 | Signals | Traffic | Long queues | Caught before they start | Alerts right | Median warning |
 | --- | --- | --- | --- | --- | --- |
-| coordinated | x2 | 59 | 38 | 38 of 76 | 60 s |
-| coordinated | x3 | 129 | 101 | 109 of 216 | 60 s |
-| agents_observed | x1 | 6 | 2 | 2 of 5 | 105 s |
-| agents_observed | x2 | 116 | 86 | 87 of 213 | 60 s |
-| agents_observed | x3 | 285 | 240 | 269 of 610 | 90 s |
+| coordinated | x2 | 36 | 25 | 25 of 49 | 30 s |
+| coordinated | x3 | 89 | 70 | 75 of 162 | 60 s |
+| agents_observed | x1 | 3 | 0 | 0 of 2 | - |
+| agents_observed | x2 | 146 | 100 | 101 of 235 | 60 s |
+| agents_observed | x3 | 293 | 252 | 285 of 622 | 60 s |
 
 `p_long` runs high: of the approaches given 0.7-0.9, about 45 % started a long queue within 3 minutes. v4, trained under
-the coordinated signals only, forecast queues under the junction agents no better than "it stays as now"
-(docs/WORKLOG.md, 8 Nov).
+the coordinated signals only, forecast queues under the junction agents no better than "it stays as now"; v5's agent
+data had the agents unconnected (docs/WORKLOG.md, 8 Nov). The junction agents can read the warnings
+(`agents_observed+forecast`): off by default, see docs/WORKLOG.md (8 Nov) for what it does to the traffic.
 
 The candidates are LightGBM (and LightGBM + GO-FLOW when her real forecast is in the message), last value, and the
 value one signal cycle (115 s) ago.

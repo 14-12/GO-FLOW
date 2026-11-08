@@ -1828,3 +1828,76 @@ no better), and catches three long queues in four (v4: one in three to one in tw
 alerts in 5 are right at 0.7. Under the coordinated signals it is as good as v4. Shipped as v5 (`models/goflow`,
 model_card.json has the test numbers); the live connector runs it (SUMO under agents_observed, both agents ready).
 For the junction agents: a weight that grows with `p_long`, not a switch, since 0.7 means about 45 %.
+
+### The dataset tool ran agents_observed blind; the agents read the forecasts (8 Nov)
+
+**A bug in the datasets.** `tools/goflow_prediction_dataset.py` made the town as the viewer does but never connected
+the junction agents: the viewer gives `agents_observed` the cameras' reports and the emergency vehicles' requests
+(`FreeFly._wire_agents`), the dataset tool gave them nothing. Its `agents_observed` runs (`T_*`, `D5_*`, `T2_*` above)
+were agents on no counts and no requests: the actuated program plus a skip from the loops. So v5 was trained and
+tested on that, not on the agents the viewer runs. Now one function connects them for both
+(`cosim/agents_actuated.wire`), and the dataset records `agents_wired` and the agents' counters per run. A check run
+(dev seed 11, x2, 10 min) now shows them acting: 95 greens skipped, 34 ambulance jumps, 2 balance cuts. With the
+cameras a run takes about three times as long.
+
+**The agents read the forecasts** (`+forecast`, optional; `agents_observed+forecast`). `GoflowPrediction.risk` (and
+`goflow_prediction.long_queue_risk`) gives per approach DSO4's `p_long`, 1 where the queue is long already, nothing
+when the last forecast is older than 45 s. Each car green is matched to the approaches it serves (their lanes among
+the green's in-lanes: 54 greens). The forecast acts only through two of the agent's own moves, as a weight:
+* balance: a phase's fill counts `forecast_w` (0.5) x its risk more: a green whose road is about to queue is not ended
+  for being under `balance_low`, another phase about to queue reaches `balance_high` sooner;
+* at a green's maximum: with risk `forecast_extend_p` (0.8) or more, above every other green's, exits free and nobody
+  waiting to walk elsewhere, 5 s more at a time to 90 s.
+In the viewer: `--controller agents_observed+forecast --goflow-prediction --goflow-traffic`. A first check (dev seed 11,
+x3, 10 min): 3 balance cuts from the forecast; a green reached its maximum with a high risk twice, both times with
+another green as much at risk (not extended).
+
+`tools/eval_agents_forecast.py` measures it: the forecasters' recipe, the agents wired, both forecasters in the same
+process with the live agents' code (so two runs of a seed differ only by what the agents did), paired seeds; waiting
+and time loss per trip, throughput, ambulance time loss, and long-queue approach-minutes.
+
+### v6, and the agents with and without the forecasts (8 Nov)
+
+**v6.** The v5 recipe again with the agents wired: 120 runs under `agents_observed` (`D6_ao_x{1,2,3}_acc`, every run
+`agents_wired`), merged with v4's three coordinated datasets. Scored once on new test seeds 41-50
+(`out/goflow_prediction/test3_v6`; 31-40 were v5's). Queue fill MAE (v6 / "stays as now") and long-queue alerts at 0.7:
+
+| Signals | Traffic | Fill +120 s | Fill +300 s | GO-FLOW +120 s | Alerts right | Long queues caught |
+|---|---|---|---|---|---|---|
+| coordinated | x2 | 0.039 / 0.051 | 0.046 / 0.072 | 0.028 / 0.034 | 25 of 49 | 25 of 36 |
+| coordinated | x3 | 0.047 / 0.063 | 0.057 / 0.092 | 0.033 / 0.040 | 75 of 162 | 70 of 89 |
+| agents_observed | x1 | 0.031 / 0.041 | 0.031 / 0.043 | 0.033 / 0.040 | 0 of 2 | 0 of 3 |
+| agents_observed | x2 | 0.066 / 0.088 | 0.068 / 0.101 | 0.055 / 0.071 | 101 of 235 | 100 of 146 |
+| agents_observed | x3 | 0.097 / 0.126 | 0.104 / 0.151 | 0.072 / 0.091 | 285 of 622 | 252 of 293 |
+
+Of the approaches given 0.7-0.9, 44-47 % started a long queue within 3 min; 0.9-1.0: 68-100 %. Shipped as v6
+(`models/goflow`).
+
+**The agents with the forecasts** (`tools/eval_agents_forecast.py`, SUMO only, the forecasters' recipe: 30 min after
+5 min warm-up from 06:00, crashes, buses, ring road, clock 30; v6 in the loop). Agreed before the runs: kept on only if,
+on held-out seeds, waiting and long-queue minutes are lower on at least 7 of 10 seeds with no loss for the ambulances.
+
+Dev seeds 11-20 (`out/agents_forecast/dev`), paired against `agents_observed`, mean difference (seeds better):
+
+| Traffic | Setting | Waiting /trip | Throughput /h | Ambulance time loss | Long-queue approach-min |
+|---|---|---|---|---|---|
+| x2 | w 0.5, extend from 0.8 | +1.5 s (2/10) | -27 (4/10) | -5.2 s (7/10) | +5.0 (5/10) |
+| x2 | w 1.0, extend from 0.7 | +0.6 s (3/10) | -1 (3/10) | -2.6 s (6/10) | +0.5 (5/10) |
+| x3 | w 0.5, extend from 0.8 | -1.6 s (5/10) | +57 (7/10) | -5.8 s (6/10) | -12.6 (8/10) |
+| x3 | w 1.0, extend from 0.7 | -1.2 s (5/10) | +45 (5/10) | -1.7 s (6/10) | -4.4 (7/10) |
+
+Kept the first setting. Final, new seeds 51-60 (`out/agents_forecast/final`), reference 88.1 s / 134.0 s waiting:
+
+| Traffic | Waiting /trip | Time loss /trip | Throughput /h | Ambulance time loss | Long-queue approach-min |
+|---|---|---|---|---|---|
+| x2 | -0.2 s (6/10) | -0.2 s (6/10) | +3 (6/10) | -1.4 s (4/10) | -1.2 (5/10) |
+| x3 | -4.2 s (6/10) | -5.2 s (6/10) | +112 (8/10) | -0.2 s (6/10) | -1.4 (6/10) |
+
+What the agents did with it (final, per 35-min run): x2 36 greens extended, 4 greens ended for a road forecast to
+queue; x3 71 and 11. A seed's waiting changes by -19 s to +12 s at x3 (sd 10 s), -6 s to +6 s at x2.
+
+Reading. It does not meet the bar: off by default. At x2 it changes nothing. At x3 it goes the right way on both seed
+sets (waiting -1.6 s and -4.2 s, throughput +2 % and +4 %, 15 of 20 seeds better on throughput), but by less than a
+seed's spread. The agents' moves are few and gentle (they keep the actuated program's own order and limits), and a
+warning a minute ahead, right about half the time, gives them little to act on that their counts do not already show.
+Left in as an option (`agents_observed+forecast`) for heavy traffic, with the evaluation to repeat it.

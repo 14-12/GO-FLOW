@@ -512,3 +512,51 @@ def test_agent_hud_draws_decisions_where_they_happen(monkeypatch):
     assert len(hud.draw(scr, (1280, 720), tf, centres, stops, old, 100.0)) == 1   # only the list
     far = [dict(evs[0], tls="979")]
     assert len(hud.draw(scr, (1280, 720), tf, centres, stops, far, 100.0)) == 1   # too far for a pill
+
+
+def test_forecast_weighs_balance_and_extends_a_green_about_to_queue():
+    """+forecast (cosim/agents_actuated.py): the forecasters' risk counts in balance (a green whose road is about to
+    queue is kept; another about to queue ends the green sooner) and extends a green at its maximum; nothing without
+    a fresh forecast."""
+    from types import SimpleNamespace as NS
+
+    from cosim.agents_actuated import ActuatedAgents, _Agent
+    from cosim.goflow_prediction import long_queue_risk
+
+    calls = []
+    now = {"t": 100.0, "next": 130.0}
+    tc = NS(trafficlight=NS(getNextSwitch=lambda tls: now["next"],
+                            setPhaseDuration=lambda tls, d: calls.append(d)))
+    ag = ActuatedAgents(fallback=set(), extra={"forecast"})
+    assert "forecast" in ag.on and "forecast" not in ActuatedAgents(fallback=set()).on
+    ag._len = {"in0": 75.0, "in2": 75.0, "out0": 75.0, "out2": 75.0}
+    ag._waiting = {}
+    a = _Agent("J", ["GGrr", "yyrr", "rrrr", "rrGG", "rryy", "rrrr"], ["car", "yellow", "red", "car", "yellow", "red"],
+               [5.0, 3.0, 2.0, 5.0, 3.0, 2.0], [45.0, 3.0, 2.0, 45.0, 3.0, 2.0], [0, 3], {0: 5, 3: 2},
+               {0: [("in0", "out0")], 3: [("in2", "out2")]}, {}, {})
+    ag.served = {("J", 0): ["J-1"], ("J", 3): ["J-2"]}
+    a.green_since, ag._now = 75.0, 100.0                        # 25 s of green: balance may act
+
+    def go(counts, risk):
+        calls.clear()
+        ag._cache = {"in0": counts[0], "in2": counts[1], "out0": (0, 0), "out2": (0, 0)}
+        ag._risk = risk
+        ag._green(tc, a, 0, now["t"])
+        return list(calls)
+
+    # 1 of 10 queued here, 9 of 10 on the other road: balance ends this green; a long queue forecast here keeps it
+    assert go([(1, 1), (9, 9)], {}) == [0]
+    assert go([(1, 1), (9, 9)], {"J-1": 1.0}) == [] and ag.stats["forecast_balance_kept"] == 1
+    # the other road 6 of 10: not enough alone; with a 0.6 risk there (0.6 + 0.5 x 0.6 >= 0.85) the green ends
+    assert go([(1, 1), (6, 6)], {}) == []
+    assert go([(1, 1), (6, 6)], {"J-2": 0.6}) == [0] and ag.stats["forecast_balance_cuts"] == 1
+    # at its 45 s maximum: extended 5 s while its risk is high and above the other's, not otherwise
+    a.green_since, now["next"] = 55.0, 100.5
+    assert go([(5, 5), (2, 2)], {"J-1": 0.9, "J-2": 0.2}) == [5.0] and ag.stats["forecast_extensions"] == 1
+    assert go([(5, 5), (2, 2)], {"J-1": 0.9, "J-2": 0.9}) == []
+    assert go([(5, 5), (2, 2)], {"J-1": 0.5}) == []
+    assert go([(5, 5), (2, 2)], {}) == []
+    # what the agents read: p_long, 1 where long already; nothing from a stale forecast or one without the classifier
+    fc = {"t": 90.0, "long_queue_s": 180, "nodes": {"J-1": {"p_long": 0.4}, "J-2": {"p_long": 0.0, "long_now": True}}}
+    assert long_queue_risk(fc, 100.0) == {"J-1": 0.4, "J-2": 1.0}
+    assert long_queue_risk(fc, 140.0) == {} and long_queue_risk(dict(fc, long_queue_s=None), 100.0) == {}

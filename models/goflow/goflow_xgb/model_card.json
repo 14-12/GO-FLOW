@@ -1,5 +1,5 @@
 {
- "version": "xgb_c30_v5",
+ "version": "xgb_c30_v6",
  "task": "GO-FLOW occupancy forecast",
  "horizon_s": 120,
  "dt_s": 30.0,
@@ -113,6 +113,6 @@
   ]
  },
  "notes": [
-  "Retrained 8 Nov (v5) on D4_c30_x{1,2,3}_acc (coordinated) + D5_ao_x{1,2,3}_acc (agents_observed): the clock at 30, crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; test seeds 31-40 opened once (docs/WORKLOG.md 8 Nov)."
+  "Retrained 8 Nov (v6) on D4_c30_x{1,2,3}_acc (coordinated) + D6_ao_x{1,2,3}_acc (agents_observed, the agents wired as in the viewer): the clock at 30, crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; test seeds 41-50 opened once (docs/WORKLOG.md 8 Nov)."
  ]
 }

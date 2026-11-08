@@ -1,6 +1,6 @@
 {
  "bundle": "goflow",
- "retrained": "8 Nov 2026 (v5): clock 30, crashes on, traffic x1 / x2 / x3, signals coordinated AND agents_observed",
+ "retrained": "8 Nov 2026 (v6): clock 30, crashes on, traffic x1 / x2 / x3, signals coordinated AND agents_observed (the agents wired as in the viewer)",
  "trained_with_crashes": true,
  "accidents": true,
  "careless_share": null,
@@ -13,17 +13,17 @@
   "D4_c30_x1_acc",
   "D4_c30_x2_acc",
   "D4_c30_x3_acc",
-  "D5_ao_x1_acc",
-  "D5_ao_x2_acc",
-  "D5_ao_x3_acc"
+  "D6_ao_x1_acc",
+  "D6_ao_x2_acc",
+  "D6_ao_x3_acc"
  ],
  "train_seeds": "101-130",
  "dev_seeds": "11-20",
- "test_seeds": "21-30 opened once for v4 (8 Nov); 31-40 opened once for v5 and v4 side by side (8 Nov)",
+ "test_seeds": "21-30 opened for v4, 31-40 for v5 (agents not wired), 41-50 for v6 (8 Nov); each once",
  "models": [
   {
    "name": "dso4",
-   "version": "lgbm_c30_v5",
+   "version": "lgbm_c30_v6",
    "path": "models/goflow/dso4",
    "task": "queue-fill forecast",
    "horizons_s": [
@@ -35,7 +35,7 @@
   },
   {
    "name": "dso4_goflow",
-   "version": "lgbm_gf_c30_v5",
+   "version": "lgbm_gf_c30_v6",
    "path": "models/goflow/dso4_goflow",
    "task": "queue-fill forecast with GO-FLOW confirmation",
    "horizons_s": [
@@ -47,7 +47,7 @@
   },
   {
    "name": "goflow_xgb",
-   "version": "xgb_c30_v5",
+   "version": "xgb_c30_v6",
    "path": "models/goflow/goflow_xgb",
    "task": "GO-FLOW occupancy forecast at +120 s",
    "horizon_s": 120,
@@ -56,14 +56,14 @@
  ],
  "dev_results_queue_fill_mae_120s": {
   "all levels, both controllers": {
-   "dso4_v5": 0.0547,
-   "last_value": 0.0713
+   "dso4_v6": 0.0562,
+   "last_value": 0.0732
   }
  },
  "alerts": "DSO4's alerts come from its long-queue classifier (models/goflow/dso4/congestion_model.txt, agents/goflow_prediction/goflow_prediction/congestion.py): the chance that an approach starts a queue that stays over its level (Q95 of its fill averaged over a signal cycle, train seeds) within 3 minutes; alert at 0.7. The first rule (forecast at `full` from under `low`) caught no build-up on the dev seeds.",
  "notes": [
-  "v5 replaces v4 (coordinated only, in git history): v4's queue forecasts were no better than 'it stays as now' under the junction agents (test seeds, docs/WORKLOG.md 8 Nov).",
-  "p_long runs high: on the test seeds, of the approaches given 0.7-0.9 about 45 % started a long queue within 3 min (0.9-1.0: 70-100 %).",
+  "v6 replaces v5 (8 Nov, in git history): v5's agents_observed data had the junction agents unconnected (no camera reports, no emergency requests: tools/goflow_prediction_dataset.py, fixed by cosim/agents_actuated.wire).",
+  "p_long runs high: on the test seeds, of the approaches given 0.7-0.9 about 45 % started a long queue within 3 min (0.9-1.0: 68-100 %).",
   "The forecasters run only at the clock speed they were trained at.",
   "Dataset paths inside the cards are those of the machine that trained them."
  ],
@@ -71,62 +71,62 @@
   "coordinated x1": {
    "threshold": 0.7,
    "alerts": 5,
-   "right": 1,
+   "right": 2,
    "starts": 6,
-   "caught": 1,
-   "precision": 0.2,
-   "recall": 0.167,
-   "median_lead_s": 30.0
+   "caught": 2,
+   "precision": 0.4,
+   "recall": 0.333,
+   "median_lead_s": 60.0
   },
   "coordinated x2": {
    "threshold": 0.7,
-   "alerts": 72,
-   "right": 48,
-   "starts": 63,
-   "caught": 48,
-   "precision": 0.667,
-   "recall": 0.762,
+   "alerts": 68,
+   "right": 41,
+   "starts": 56,
+   "caught": 41,
+   "precision": 0.603,
+   "recall": 0.732,
    "median_lead_s": 60.0
   },
   "coordinated x3": {
    "threshold": 0.7,
-   "alerts": 193,
-   "right": 108,
-   "starts": 123,
-   "caught": 103,
-   "precision": 0.56,
-   "recall": 0.837,
+   "alerts": 194,
+   "right": 111,
+   "starts": 121,
+   "caught": 105,
+   "precision": 0.572,
+   "recall": 0.868,
    "median_lead_s": 60.0
   },
   "agents_observed x1": {
    "threshold": 0.7,
-   "alerts": 2,
+   "alerts": 4,
    "right": 1,
-   "starts": 3,
+   "starts": 5,
    "caught": 1,
-   "precision": 0.5,
-   "recall": 0.333,
+   "precision": 0.25,
+   "recall": 0.2,
    "median_lead_s": 30.0
   },
   "agents_observed x2": {
    "threshold": 0.7,
-   "alerts": 225,
-   "right": 86,
-   "starts": 114,
-   "caught": 82,
+   "alerts": 228,
+   "right": 87,
+   "starts": 126,
+   "caught": 86,
    "precision": 0.382,
-   "recall": 0.719,
+   "recall": 0.683,
    "median_lead_s": 60.0
   },
   "agents_observed x3": {
    "threshold": 0.7,
-   "alerts": 591,
-   "right": 248,
-   "starts": 257,
-   "caught": 216,
-   "precision": 0.42,
-   "recall": 0.84,
-   "median_lead_s": 90.0
+   "alerts": 619,
+   "right": 285,
+   "starts": 303,
+   "caught": 250,
+   "precision": 0.46,
+   "recall": 0.825,
+   "median_lead_s": 60.0
   }
  },
  "clock_speed": 30.0,
@@ -134,105 +134,125 @@
   "coordinated",
   "agents_observed"
  ],
- "test_results_seeds_31_40": {
+ "test_results_seeds_41_50": {
   "coordinated x2": {
    "fill_mae_120s": {
-    "dso4": 0.0409,
-    "last_value": 0.0535
+    "dso4": 0.0389,
+    "last_value": 0.0512
+   },
+   "fill_mae_300s": {
+    "dso4": 0.046,
+    "last_value": 0.0717
    },
    "goflow_occ_mae_120s": {
-    "goflow": 0.0303,
-    "last_value": 0.0365
+    "goflow": 0.0284,
+    "last_value": 0.0341
    },
    "long_queue_at_0.7": {
     "threshold": 0.7,
-    "alerts": 76,
-    "right": 38,
-    "starts": 59,
-    "caught": 38,
-    "precision": 0.5,
-    "recall": 0.644,
-    "median_lead_s": 60.0
+    "alerts": 49,
+    "right": 25,
+    "starts": 36,
+    "caught": 25,
+    "precision": 0.51,
+    "recall": 0.694,
+    "median_lead_s": 30.0
    }
   },
   "coordinated x3": {
    "fill_mae_120s": {
-    "dso4": 0.0506,
-    "last_value": 0.0681
+    "dso4": 0.047,
+    "last_value": 0.0627
+   },
+   "fill_mae_300s": {
+    "dso4": 0.0567,
+    "last_value": 0.0919
    },
    "goflow_occ_mae_120s": {
-    "goflow": 0.0358,
-    "last_value": 0.0435
+    "goflow": 0.0332,
+    "last_value": 0.0401
    },
    "long_queue_at_0.7": {
     "threshold": 0.7,
-    "alerts": 216,
-    "right": 109,
-    "starts": 129,
-    "caught": 101,
-    "precision": 0.505,
-    "recall": 0.783,
+    "alerts": 162,
+    "right": 75,
+    "starts": 89,
+    "caught": 70,
+    "precision": 0.463,
+    "recall": 0.787,
     "median_lead_s": 60.0
    }
   },
   "agents_observed x1": {
    "fill_mae_120s": {
-    "dso4": 0.0291,
-    "last_value": 0.038
+    "dso4": 0.0308,
+    "last_value": 0.0405
+   },
+   "fill_mae_300s": {
+    "dso4": 0.0308,
+    "last_value": 0.0432
    },
    "goflow_occ_mae_120s": {
-    "goflow": 0.031,
-    "last_value": 0.0383
+    "goflow": 0.0325,
+    "last_value": 0.0402
    },
    "long_queue_at_0.7": {
     "threshold": 0.7,
-    "alerts": 5,
-    "right": 2,
-    "starts": 6,
-    "caught": 2,
-    "precision": 0.4,
-    "recall": 0.333,
-    "median_lead_s": 105.0
+    "alerts": 2,
+    "right": 0,
+    "starts": 3,
+    "caught": 0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "median_lead_s": null
    }
   },
   "agents_observed x2": {
    "fill_mae_120s": {
-    "dso4": 0.0626,
-    "last_value": 0.0829
+    "dso4": 0.0656,
+    "last_value": 0.0883
+   },
+   "fill_mae_300s": {
+    "dso4": 0.0677,
+    "last_value": 0.101
    },
    "goflow_occ_mae_120s": {
-    "goflow": 0.0533,
-    "last_value": 0.0689
+    "goflow": 0.055,
+    "last_value": 0.0711
    },
    "long_queue_at_0.7": {
     "threshold": 0.7,
-    "alerts": 213,
-    "right": 87,
-    "starts": 116,
-    "caught": 86,
-    "precision": 0.408,
-    "recall": 0.741,
+    "alerts": 235,
+    "right": 101,
+    "starts": 146,
+    "caught": 100,
+    "precision": 0.43,
+    "recall": 0.685,
     "median_lead_s": 60.0
    }
   },
   "agents_observed x3": {
    "fill_mae_120s": {
-    "dso4": 0.0936,
-    "last_value": 0.1239
+    "dso4": 0.097,
+    "last_value": 0.126
+   },
+   "fill_mae_300s": {
+    "dso4": 0.1037,
+    "last_value": 0.151
    },
    "goflow_occ_mae_120s": {
-    "goflow": 0.0696,
-    "last_value": 0.0896
+    "goflow": 0.0718,
+    "last_value": 0.0911
    },
    "long_queue_at_0.7": {
     "threshold": 0.7,
-    "alerts": 610,
-    "right": 269,
-    "starts": 285,
-    "caught": 240,
-    "precision": 0.441,
-    "recall": 0.842,
-    "median_lead_s": 90.0
+    "alerts": 622,
+    "right": 285,
+    "starts": 293,
+    "caught": 252,
+    "precision": 0.458,
+    "recall": 0.86,
+    "median_lead_s": 60.0
    }
   }
  }

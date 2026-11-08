@@ -190,7 +190,7 @@ town05_freefly.bat
 
 | Viewer option | Default | What it does |
 | --- | --- | --- |
-| `--controller` | `coordinated` | Who runs the signals: `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents_observed` (junction agents fed by the cameras), `agents` (the same agents on exact counts) |
+| `--controller` | `coordinated` | Who runs the signals: `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents_observed` (junction agents fed by the cameras), `agents` (the same agents on exact counts). `agents_observed+forecast` with `--goflow-prediction --goflow-traffic`: the agents also weigh the forecasters' long-queue warnings (balance, extending a green at its maximum; off by default, `cosim/agents_actuated.py`) |
 | `--set-time HH:MM` | saved clock | Start the clock at this time |
 | `--clock-speed` | 30 | Town seconds per real second: 30 = 2 real minutes a town hour, a day in 48 minutes (60 until 7 Nov); 1 = real time. The GO-FLOW forecasters run only at the speed they were trained at (30) |
 | `--accidents / --no-accidents` | on | Careless drivers crash; the police and recovery trucks respond |
@@ -253,6 +253,8 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Every kind of incident, SUMO only, with the ring road and the bus lines | `.venv\Scripts\python tools\check_accidents.py --ring --buses --minutes 60` | no |
 | Fly with the GO-FLOW forecasters on (forecast panel, road chips, long-queue alerts, F10), traffic x2 (`normal`: as it is) | `town05_freefly_forecast.bat` | yes |
 | GO-FLOW forecasters: datasets, the live connector checked (agents answer, a killed one restarts, live = offline replay) | `tools\goflow_prediction_graph.py`, `goflow_prediction_dataset.py`, `goflow_prediction_live_check.py --goflow` | no |
+| GO-FLOW forecasters scored once on test seeds (live code path, long-queue alerts, calibration) | `.venv\Scripts\python tools\goflow_prediction_test_score.py --seeds ... --out ... --reason ...` | no |
+| Junction agents with and without the forecasters' warnings, paired seeds | `.venv\Scripts\python tools\eval_agents_forecast.py --seeds 11-20 --scales 2,3 --out ...` (needs the agents' packages in the venv) | no |
 
 `run_cosim.bat` and `python -m cosim.run --help` run the co-simulation as a recorder, in synchronous mode with
 camera sensors, instead of the free-fly viewer.

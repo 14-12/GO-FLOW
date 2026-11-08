@@ -49,6 +49,16 @@ its approaches and steps in only with commands that keep the program's own state
          `extend_margin` above every other phase's, with free exits and nobody waiting to walk, is
          extended 5 s at a time, to 90 s at most. Off by default: in the ablation it acted 0-8 times an
          hour and changed nothing measurable (x0.8 no change, x1.0 within the runs' spread).
+* forecast (optional, "+forecast", since 8 Nov) The GO-FLOW forecasters' warning (cosim/goflow_prediction.py,
+         `GoflowPrediction.risk`): per approach, the chance that a long queue starts there within 3 minutes
+         (DSO4's p_long; 1 when the queue is long already). Read every step through `forecast` (a callable
+         -> {approach: risk}, {} when it has nothing fresh: warming up, offline, a forecast older than 45 s). It acts
+         only through two of the agent's own moves, as a weight, never as a command:
+         - balance: a phase's fill counts `forecast_w` x its risk more. A green whose road is about to queue is not
+           ended for being under `balance_low`; another phase about to queue reaches `balance_high` sooner.
+         - at the green's maximum, an approach with risk `forecast_extend_p` or more, above every other phase's
+           risk, its exits free and nobody waiting to walk elsewhere, gets 5 s more at a time, to 90 s at most.
+         Off by default; switched on with the forecasters running (tools/eval_agents_forecast.py measures it).
 * batch  (optional, "+batch") The walk is served once `batch_n` people wait at its crossings or the
          first has waited `batch_s`, instead of for the first person: fewer 15 s walks, more
          car green, at a cost in pedestrian delay.
@@ -78,7 +88,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COVERAGE = ROOT / "out" / "town05_cameras" / "coverage.json"
 VEH_M = 7.5
 FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall")
-OPTIONAL = ("batch", "extend", "noflow")  # off unless named: "agents+batch"
+OPTIONAL = ("batch", "extend", "noflow", "forecast")  # off unless named: "agents+batch"
 DEFAULT_OFF = ("trickle",)  # off unless named ("agents+trickle") since 25 Oct: with two greens a cycle
 # (tools/build_town05_signals.py, opposite approaches together) ending a green kept alive by moving cars costs a
 # whole switch; measured (tools/check_highway.py, 20 min at 17:30, 8 seeds): town's share of cars standing 0.437
@@ -162,6 +172,8 @@ class ActuatedAgents:
     noflow_s = 4.0                 # a green under which nobody moves for this long is ended (noflow)
     noflow_tol = 1                 # vehicles on a waiting lane that may still be moving (arriving at the back)
     min_coverage = 0.70
+    forecast_w = 0.5               # +forecast: fill counted this much more per unit of risk (balance)
+    forecast_extend_p = 0.8        # +forecast: risk from which a green at its maximum is extended
 
     def __init__(self, off: set[str] | frozenset[str] = frozenset(), fallback: set[str] | None = None,
                  record: bool = False, emergency=None, extra: set[str] | frozenset[str] = frozenset()):
@@ -177,6 +189,9 @@ class ActuatedAgents:
         self.fallback = set(fallback)
         self.record = record
         self.emergency = emergency or (lambda: ())
+        self.forecast = None            # +forecast: callable -> {approach node: risk 0-1} (GoflowPrediction.risk)
+        self.forecast_nodes: list[dict] | None = None  # the approaches (nodes.json); default models/goflow/graph
+        self._risk: dict[str, float] = {}
         self.junctions: dict[str, _Agent] = {}
         self.obs: dict[str, tuple[int, int]] = {}
         self.visible: dict[str, list] | None = None  # camera mode: lane -> visible stretches (Layout.visible)
@@ -184,7 +199,9 @@ class ActuatedAgents:
                       "balance_cuts": 0, "extensions": 0, "noflow_cuts": 0,
                       "ev_holds": 0, "ev_cuts": 0, "ev_jumps": 0, "corridor_requests": 0, "ev_dropped": 0,
                       "ev_patience": 0, "ev_starved": 0,
-                      "ev_exit_full": 0, "ev_queued": 0}
+                      "ev_exit_full": 0, "ev_queued": 0,
+                      "forecast_steps": 0, "forecast_balance_cuts": 0, "forecast_balance_kept": 0,
+                      "forecast_extensions": 0}
         self._stopped_on_green: dict[str, float] = {}
         self.requests: dict[str, set[int]] = {}
         self.request_by: dict[str, str] = {}   # junction -> the emergency vehicle asking (for the events)
@@ -283,6 +300,28 @@ class ActuatedAgents:
             a.phase = tc.trafficlight.getPhase(tls)
             a.entered = a.green_since = now
             self.junctions[tls] = a
+        self._map_forecast()
+
+    def _map_forecast(self) -> None:
+        """Each car green -> the forecasters' approaches it serves (an approach's lanes among the green's in-lanes)."""
+        self.served: dict[tuple[str, int], list[str]] = {}
+        if "forecast" not in self.on:
+            return
+        nodes = self.forecast_nodes
+        if nodes is None:
+            f = ROOT / "models" / "goflow" / "graph" / "nodes.json"
+            nodes = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else []
+        for n in nodes:
+            a = self.junctions.get(n["tls"])
+            if a is None:
+                continue
+            for k, prs in a.pairs.items():
+                if set(n["lanes"]) & {i for i, _ in prs}:
+                    self.served.setdefault((a.tls, k), []).append(n["node"])
+        self.stats["forecast_phases_served"] = len(self.served)
+
+    def _risk_of(self, a: _Agent, k: int) -> float:
+        return max((self._risk.get(n, 0.0) for n in self.served.get((a.tls, k), ())), default=0.0)
 
     # ------------------------------------------------------------------ lanes
     def _graph(self, tc) -> None:
@@ -426,6 +465,13 @@ class ActuatedAgents:
         self._cache: dict[str, tuple[int, int]] = {}
         self._pedestrians(tc)
         self._requests(tc, now)
+        if "forecast" in self.on and self.forecast is not None:
+            try:
+                self._risk = self.forecast() or {}
+            except Exception:  # noqa: BLE001 - the signals never wait for, or fail with, the forecasters
+                self._risk = {}
+            if self._risk:
+                self.stats["forecast_steps"] += 1
         for a in self.junctions.values():
             self._decide(tc, a, now)
 
@@ -689,14 +735,46 @@ class ActuatedAgents:
                     self._event(a, "trickle", [ph], "green ended: only a trickle, a queue elsewhere")
                     return
         if "balance" in self.on and spent >= self.balance_min_s:
-            if self._fill(tc, a, ph) < self.balance_low:
+            w = self.forecast_w if self._risk else 0.0
+            if self._fill(tc, a, ph) + w * self._risk_of(a, ph) < self.balance_low:
                 full = [k for k in others if a.kind[k] == "car" and self._fill(tc, a, k) >= self.balance_high
                         and not self._blocked(tc, a, k)]
-                if full:
+                ahead = [k for k in others if a.kind[k] == "car" and k not in full and not self._blocked(tc, a, k)
+                         and self._fill(tc, a, k) + w * self._risk_of(a, k) >= self.balance_high]
+                if full or ahead:
                     tc.trafficlight.setPhaseDuration(a.tls, 0)
                     self.stats["balance_cuts"] += 1
-                    self._event(a, "balance", [ph], "green ended: a short road is filling up")
+                    if full:
+                        self._event(a, "balance", [ph], "green ended: a short road is filling up")
+                    else:
+                        self.stats["forecast_balance_cuts"] += 1
+                        self._event(a, "forecast", [ph], "green ended: a long queue forecast on another road")
                     return
+            elif w and self._fill(tc, a, ph) < self.balance_low and any(
+                    a.kind[k] == "car" and self._fill(tc, a, k) >= self.balance_high and not self._blocked(tc, a, k)
+                    for k in others):
+                self.stats["forecast_balance_kept"] += 1  # (cut without the forecast: kept, its road is to queue)
+        if self._risk and spent >= max_d - 1.0 and spent < self.extend_max_s - self.extend_step_s \
+                and remaining < 1.0:
+            r = self._risk_of(a, ph)
+            self.stats["forecast_risk_at_max"] = max(self.stats.get("forecast_risk_at_max", 0.0), round(r, 3))
+            why = None
+            if r < self.forecast_extend_p:
+                why = "low"
+            elif any(self._exit_full(tc, o) for _, o in a.pairs[ph]):
+                why = "exit"
+            elif r <= max((self._risk_of(a, k) for k in others if a.kind[k] == "car"), default=0.0):
+                why = "other"
+            elif any(self._peds(a, k) for k in others):
+                why = "peds"
+            if why is not None and why != "low":
+                self.stats[f"forecast_not_extended_{why}"] = self.stats.get(f"forecast_not_extended_{why}", 0) + 1
+            if why is None:
+                tc.trafficlight.setPhaseDuration(a.tls, self.extend_step_s)
+                self.stats["forecast_extensions"] += 1
+                if spent < max_d + 1.0:
+                    self._event(a, "forecast", [ph], "green extended: a long queue forecast")
+                return
         if "extend" in self.on and spent >= max_d - 1.0 and spent < self.extend_max_s - self.extend_step_s \
                 and remaining < 1.0:
             f = self._fill(tc, a, ph)
@@ -715,6 +793,44 @@ class ObservedActuatedAgents(ActuatedAgents):
 
     name = "agents_observed"
     uses_cameras = True
+
+
+def wire(pol, sumo, seed: int, more_on_run=None, cam_dir: Path | None = None) -> bool:
+    """Connects the junction agents to the town as the viewer runs them (cosim/freefly.py) and the datasets record
+    them (tools/goflow_prediction_dataset.py): the emergency vehicles on a run ask for green (the extras' and, through
+    `more_on_run`, others such as the accidents' police cars); agents_observed reads the cameras' reports
+    (camera_reports.SimulatedCameras: the 53 cameras' visible lane stretches with the detector's measured misses and
+    false boxes, every 2 s), fed before the agents' step (sumo.pre_policy). False if `pol` is not a junction agent.
+    (8 Nov: the dataset tool did not do this, and its agents_observed ran on no counts and no requests.)"""
+    if pol is None or not hasattr(pol, "events"):
+        return False
+
+    def on_run() -> list:
+        ex = sumo.extras
+        out = [v for v in (ex.emergency if ex is not None else ()) if sumo.on_run(v)]
+        if more_on_run is not None:
+            out += list(more_on_run())
+        return out
+
+    pol.emergency = on_run
+    if getattr(pol, "uses_cameras", False):
+        from cosim.camera_reports import Layout, SimulatedCameras
+
+        cam_dir = Path(cam_dir or ROOT / "out" / "town05_cameras")
+        parked_file = cam_dir / "parked_static.json"
+        parked = json.loads(parked_file.read_text(encoding="utf-8")) if parked_file.is_file() else None
+        cams = SimulatedCameras(Layout.load(cam_dir), seed=seed, parked=parked)
+        pol.visible = cams.layout.visible
+
+        def feed(c) -> None:
+            ex = sumo.extras
+            reps = cams.step(c, c.simulation.getTime(),
+                             {v: sumo.on_run(v) for v in (ex.emergency if ex is not None else ())})
+            if reps is not None:
+                pol.observe(reps)
+
+        sumo.pre_policy = feed
+    return True
 
 
 def make(name: str):

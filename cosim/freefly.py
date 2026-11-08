@@ -1348,38 +1348,17 @@ class FreeFly:
         (camera_reports.SimulatedCameras: the 53 cameras' visible lane stretches with the detector's measured misses
         and false boxes, every 2 s; the YOLO detector itself stays on the camera you inspect with H). Their decisions
         are drawn on the overlay (cosim/agent_hud.py)."""
+        from cosim.agents_actuated import wire
+
         pol = self.sumo.policy
-        if pol is None or not hasattr(pol, "events"):
+
+        def more_on_run() -> list:  # the accidents' police cars
+            im = self.incidents
+            return [v for v in list(im.role) if im.on_run(v)] if im is not None else []
+
+        if not wire(pol, self.sumo, a.seed, more_on_run):
             return
         self.agents = pol
-        sumo = self.sumo
-
-        def on_run() -> list:
-            ex = sumo.extras
-            out = [v for v in (ex.emergency if ex is not None else ()) if sumo.on_run(v)]
-            im = self.incidents
-            if im is not None:
-                out += [v for v in list(im.role) if im.on_run(v)]
-            return out
-
-        pol.emergency = on_run
-        if getattr(pol, "uses_cameras", False):
-            from cosim.camera_reports import Layout, SimulatedCameras
-
-            cam_dir = ROOT / "out" / "town05_cameras"
-            parked_file = cam_dir / "parked_static.json"
-            parked = json.loads(parked_file.read_text(encoding="utf-8")) if parked_file.is_file() else None
-            cams = SimulatedCameras(Layout.load(cam_dir), seed=a.seed, parked=parked)
-            pol.visible = cams.layout.visible
-
-            def feed(c) -> None:
-                ex = sumo.extras
-                reps = cams.step(c, c.simulation.getTime(),
-                                 {v: sumo.on_run(v) for v in (ex.emergency if ex is not None else ())})
-                if reps is not None:
-                    pol.observe(reps)
-
-            sumo.pre_policy = feed
         frame = self.scen.frame
         for tls, ag in pol.junctions.items():  # where to draw: each green's stop lines, in CARLA's frame
             z = self.zs.get(tls, 0.0)
@@ -2214,6 +2193,10 @@ class FreeFly:
                                              clock_speed=self.clock.speed)
             log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
             self.forecast_anchors, self.forecast_dirs = self._approach_anchors(self.forecast.nodes)
+            if self.agents is not None and "forecast" in getattr(self.agents, "on", ()):
+                fc, sumo = self.forecast, self.sumo   # --controller agents_observed+forecast: the agents read it
+                self.agents.forecast = lambda: fc.risk(sumo.time)
+                log.info("junction agents: reading the forecasters' long-queue warnings (+forecast)")
         except Exception:  # noqa: BLE001 - the town goes on without it
             self.forecast = None
             log.error("goflow forecast not started:\n%s", traceback.format_exc())

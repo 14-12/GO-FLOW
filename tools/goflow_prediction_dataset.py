@@ -48,7 +48,7 @@ def seeds_arg(s: str) -> list[int]:
     return out
 
 
-def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, probe=None) -> dict:
+def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, probe=None, hook=None) -> dict:
     """probe(cur, conn, seconds_of_day): called after every step (tools/goflow_prediction_live_check.py
     plugs the live connector in through it, on exactly this traffic)."""
     from cosim import daily, vmodels
@@ -70,7 +70,7 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     rids = daily.write_pool_routes(pool, pf)
     et = vmodels.extras_types_file(models, work / f"extras_types_{seed}.add.xml", vmodels.LANE_CHANGE_ATTRS)
     curve = [v * a["scale"] for v in daily.population_curve(None, pool, mean_trip_min=140 / 60.0)]
-    extra = ["--route-files", str(pf), "--end", "100000000"] + VIEWER_SUMO_ARGS
+    extra = ["--route-files", str(pf), "--end", "100000000"] + VIEWER_SUMO_ARGS + list(a.get("sumo_extra", []))
     if a["junction_blocker"]:
         extra += ["--ignore-junction-blocker", str(a["junction_blocker"])]
     sumo = SumoSide(scen.folder, a["controller"], seed=seed, port=port, label=f"gfp{port}", extras=True,
@@ -95,6 +95,13 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         kw = {"share": a["careless_share"]}
     im = IncidentManager(c, scen.net_file, typer, seed=seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
+    # the junction agents connected as the viewer connects them: the cameras' reports and the emergency requests
+    # (cosim/agents_actuated.wire; before 8 Nov agents_observed ran here on no counts and no requests)
+    from cosim.agents_actuated import wire
+
+    wired = wire(sumo.policy, sumo, seed, lambda: [v for v in list(im.role) if im.on_run(v)])
+    if hook is not None:  # tools/eval_agents_forecast.py: the forecasters in the loop, its own measurements
+        hook(sumo, im)
     bus = ring = None
     if a["buses"]:
         bus_types = [t for t, vt in pool.vtypes.items() if 'vClass="bus"' in vt]
@@ -195,7 +202,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
                         **{n_: arr[n_].reshape(T, N) for n_ in ("halt", "veh", "speed", "occ", "green")})
     return {"seed": seed, "steps": T, "wall_s": round(time.time() - t_wall), "vehicles_end": vehicles_end,
                 "stuck_over_300s": stuck, "stuck_lanes": dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
-                "gridlock": stuck > 50, "incidents": len(im.done) + len(im.incidents)}
+                "gridlock": stuck > 50, "incidents": len(im.done) + len(im.incidents), "agents_wired": wired,
+                **({"agent_stats": dict(sumo.policy.stats)} if wired else {})}
 
 
 def git_commit() -> str:
