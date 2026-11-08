@@ -98,6 +98,26 @@ def k_routes(alerts, o, d, k_max=K_MAX):
             break
     return kept
 
+from itertools import islice
+
+K_MAX = 3          # maximum d'options affichées
+MAX_OVERLAP = 0.7  # une alternative doit différer d'au moins 30 % des routes
+
+def _edge_ids(path):
+    return [G[u][v]["edge_id"] for u, v in zip(path, path[1:])]
+
+def k_routes(alerts, o, d, k_max=K_MAX):
+    """Jusqu'à k_max itinéraires réellement différents (1 à k_max)."""
+    set_costs(alerts)
+    kept = []
+    for path in islice(nx.shortest_simple_paths(G, o, d, weight="cost"), 50):
+        ids = set(_edge_ids(path))
+        if all(len(ids & set(_edge_ids(p))) / len(ids) < MAX_OVERLAP for p in kept):
+            kept.append(path)
+        if len(kept) == k_max:
+            break
+    return kept
+
 def summarize(path, alerts):
     ids = [G[u][v]["edge_id"] for u, v in zip(path, path[1:])]
     real_time = sum(G[u][v]["travel_time"] for u, v in zip(path, path[1:]))
