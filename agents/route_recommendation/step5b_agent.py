@@ -4,40 +4,26 @@ from langchain_ollama import ChatOllama
 # from langgraph.prebuilt import create_react_agent
 from langchain.agents import create_agent
 from grid_map import build_grid
+from sumo_map import build_from_sumo, EDGE_INDEX
 
 # ---------- 1. Graphe ----------
 
-def load_graph():
-    # return build_grid()
-    return build_from_sumo("data/town05.net.xml")
-
-
-# ROUTES = [
-#     ("R1", "A", "B", 200, 36), ("R2", "B", "C", 150, 36),
-#     ("R3", "A", "D", 300, 36), ("R4", "D", "C", 100, 36),
-#     ("R5", "B", "D", 120, 36), ("R6", "C", "E", 250, 36),
-#     ("R7", "D", "E", 400, 36),
-# ]
-# POS = {"A": (0, 0), "B": (200, 100), "C": (350, 100),
-#        "D": (300, -50), "E": (550, 50)}
-
 # def load_graph():
-#     G = nx.DiGraph()
-#     for n, (x, y) in POS.items():
-#         G.add_node(n, x=x, y=y)
-#     for eid, u, v, length, speed in ROUTES:
-#         tt = length / (speed / 3.6)
-#         G.add_edge(u, v, edge_id=eid, length=length, speed=speed,
-#                    travel_time=tt, cost=tt)
-#     return G
+#     # return build_grid()
+#     return build_from_sumo("data/town05.net.xml")
+
+from pathlib import Path
+
+
+NET = Path(__file__).resolve().parents[2] / "scenarios" / "town05" / "town05.net.xml"
+
+def load_graph():
+    return build_from_sumo(str(NET))
+
+
 
 G = load_graph()
 
-# ---------- 2. Alertes mockées ----------
-# ALERTS = [
-#     {"agent": 1, "route": "R2", "type": "accident", "severite": "haute"},
-#     {"agent": 2, "route": "R6", "dans_minutes": 1, "niveau": "forte"},
-#     {"agent": 4, "zone": "ville", "niveau": "moyenne"},
 
 ALERTS = [
     {"agent": 1, "route": "R49", "type": "accident", "severite": "haute"},
@@ -49,15 +35,20 @@ P_ACC = {"haute": 5.0, "moyenne": 2.0, "faible": 1.5}
 P_TRAF = {"forte": 3.0, "moyenne": 1.5, "faible": 1.2}
 P_CITY = {"forte": 1.5, "moyenne": 1.3, "faible": 1.1}
 
+VMAX = max(d["speed"] for _, _, d in G.edges(data=True)) / 3.6   # m/s
+
 def heuristic(u, v):
     dx = G.nodes[u]["x"] - G.nodes[v]["x"]
     dy = G.nodes[u]["y"] - G.nodes[v]["y"]
-    return ((dx**2 + dy**2) ** 0.5) / (70 / 3.6)  # 10 m/s = 36 km/h
+    return ((dx**2 + dy**2) ** 0.5) / VMAX
+
+# def edge_by_id(eid):
+#     for u, v, d in G.edges(data=True):
+#         if d["edge_id"] == eid:
+#             return u, v
 
 def edge_by_id(eid):
-    for u, v, d in G.edges(data=True):
-        if d["edge_id"] == eid:
-            return u, v
+    return EDGE_INDEX.get(eid)
 
 def set_costs(alerts):
     for u, v, d in G.edges(data=True):
@@ -86,6 +77,26 @@ def compute(alerts, o, d):
     p1 = nx.astar_path(G, o, d, heuristic=heuristic, weight="cost")
     apply_timed(alerts, p1)
     return nx.astar_path(G, o, d, heuristic=heuristic, weight="cost")
+
+from itertools import islice
+
+K_MAX = 3          # maximum d'options affichées
+MAX_OVERLAP = 0.7  # une alternative doit différer d'au moins 30 % des routes
+
+def _edge_ids(path):
+    return [G[u][v]["edge_id"] for u, v in zip(path, path[1:])]
+
+def k_routes(alerts, o, d, k_max=K_MAX):
+    """Jusqu'à k_max itinéraires réellement différents (1 à k_max)."""
+    set_costs(alerts)
+    kept = []
+    for path in islice(nx.shortest_simple_paths(G, o, d, weight="cost"), 50):
+        ids = set(_edge_ids(path))
+        if all(len(ids & set(_edge_ids(p))) / len(ids) < MAX_OVERLAP for p in kept):
+            kept.append(path)
+        if len(kept) == k_max:
+            break
+    return kept
 
 def summarize(path, alerts):
     ids = [G[u][v]["edge_id"] for u, v in zip(path, path[1:])]
