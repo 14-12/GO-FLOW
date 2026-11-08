@@ -24,7 +24,15 @@ def load_graph():
 G = load_graph()
 
 
-ALERTS = []
+ALERTS = []   # état courant : rempli par les adaptateurs (accident, DSO4)
+
+def set_alerts(new_alerts):
+    ALERTS.clear()
+    ALERTS.extend(new_alerts)
+
+def add_alert(alert):
+    ALERTS.append(alert)
+    
 P_ACC = {"haute": 5.0, "moyenne": 2.0, "faible": 1.5}
 P_TRAF = {"forte": 3.0, "moyenne": 1.5, "faible": 1.2}
 P_CITY = {"forte": 1.5, "moyenne": 1.3, "faible": 1.1}
