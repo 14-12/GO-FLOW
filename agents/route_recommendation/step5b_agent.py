@@ -44,19 +44,35 @@ def heuristic(u, v):
 def edge_by_id(eid):
     return EDGE_INDEX.get(eid)
 
+# def set_costs(alerts):
+#     for u, v, d in G.edges(data=True):
+#         d["cost"] = d["travel_time"]
+#     for a in alerts:
+#         if a.get("type") == "congestion":
+#             e = edge_by_id(a["route"])
+#             if e and G.has_edge(*e):
+#                 G[e[0]][e[1]]["cost"] *= a["penalty"]
+#         elif a["agent"] == 1:
+#             e = edge_by_id(a["route"])
+#             if e:
+#                 G[e[0]][e[1]]["cost"] *= P_ACC[a["severite"]]
+#         elif a["agent"] == 4:
+#             for u, v, d in G.edges(data=True):
+#                 d["cost"] *= P_CITY[a["niveau"]]
+
 def set_costs(alerts):
     for u, v, d in G.edges(data=True):
         d["cost"] = d["travel_time"]
     for a in alerts:
-        if a.get("type") == "congestion":
+        if a.get("type") in ("congestion", "accident") and "penalty" in a:
             e = edge_by_id(a["route"])
             if e and G.has_edge(*e):
                 G[e[0]][e[1]]["cost"] *= a["penalty"]
-        elif a["agent"] == 1:
+        elif a.get("agent") == 1:                      # ancien format mock
             e = edge_by_id(a["route"])
-            if e:
+            if e and G.has_edge(*e):
                 G[e[0]][e[1]]["cost"] *= P_ACC[a["severite"]]
-        elif a["agent"] == 4:
+        elif a.get("agent") == 4:
             for u, v, d in G.edges(data=True):
                 d["cost"] *= P_CITY[a["niveau"]]
         

@@ -23,3 +23,13 @@ def forecast_to_alerts(msg, approach_map, horizon_index=1):
             alerts.append({"agent": 2, "route": edge, "type": "congestion",
                            "penalty": 1 + A_COEF * min(fill, 1.0), "fill": fill})
     return alerts
+
+def accident_to_alert(msg):
+    """Message accident (contrat) -> alerte interne avec pénalité calculée."""
+    closed, total = msg.get("closed_lanes", 0), max(msg.get("total_lanes", 1), 1)
+    if closed >= total:
+        penalty = 50.0                       # route quasi bloquée
+    else:
+        penalty = 1 + 4 * closed / total     # ralentissement proportionnel
+    return {"agent": 1, "type": "accident", "route": msg["edge"],
+            "penalty": penalty, "severity": msg.get("severity", "unknown")}
