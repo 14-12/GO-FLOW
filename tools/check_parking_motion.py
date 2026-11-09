@@ -81,6 +81,16 @@ def main(argv=None) -> int:
             v_ = cur.vehicles[a.trace]
             st["trace"][-1] += ["shown", round(v_.x, 1), round(v_.y, 1)]
         on_drive |= set(m.drives)
+        # (9 Nov) what of CARLA's map a car on a drive runs into (parking_obstacles: parked cars, posts, trees...)
+        if m.drives:
+            import parking_obstacles as po
+            if "obst" not in st:
+                st["obst"] = po.load(removed=set(m.removed), gates=set(m.gates))
+            for vid, dv in m.drives.items():
+                x_, y_, f_, _v, _g = dv.at_s(min(max(dv.progress(cur.time), 0.0), dv.duration))
+                for name in po.hits(x_, y_, f_, dv.length, st["obst"], margin=0.15):
+                    key = f"{dv.area} {dv.kind} x {name}"
+                    st.setdefault("static_hits", {})[key] = st.setdefault("static_hits", {}).get(key, 0) + 1
         # (9 Nov) how close the cars on drives come to each other and to the road's cars (bodies as circles)
         if m.drives:
             from check_parking_crowd import circles, clearance
@@ -140,6 +150,7 @@ def main(argv=None) -> int:
            "drive_step_max_m": ds[0][0] if ds else None, "drive_steps_over_2m": [x for x in ds if x[0] > 2.0][:20],
            "overlap_steps": len(st.get("overlaps", [])), "overlaps": st.get("overlaps", [])[:40],
            "overlaps_by": _count_by(st.get("overlaps", [])),
+           "static_hit_steps": sum(st.get("static_hits", {}).values()), "static_hits": st.get("static_hits", {}),
            "seams": m.seams if m else None, "no_place": st.get("no_place", [])[:20],
            "trace": st.get("trace"), "wall_s": round(time.time() - t)}
     Path(a.out).write_text(json.dumps(res, indent=1), encoding="utf-8")

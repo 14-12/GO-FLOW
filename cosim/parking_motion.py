@@ -56,7 +56,9 @@ RATE_UP = 0.34          # ... and back to its own pace over 3 steps
 GIVE_UP_S = 20.0        # ... held this long by a car held behind another drive: it goes on (by a drive: GIVE_UP_DRIVE_S)
 GIVE_UP_DRIVE_S = 40.0
 NEAR_M = 30.0           # the road's cars looked at: this near a drive
-KEEP_RIGHT_M = 1.3      # along the strip and the aisles, cars keep to the right of the way by this
+KEEP_RIGHT_M = 1.3      # along the strip and the aisles, cars keep to the right of the way by this (less in a
+                        # narrow aisle: keep_right_m)
+SPACE_HALF_M = 2.6      # half a space's depth (a parked car's nose is this far from its space's middle)
 DOOR_OPEN_M = 6.0       # a building's door opens when a car on its drive is this far from it
 DOOR_SHUT_M = 4.0       # ... and shuts when the car is this far past it
 ON_LANE_M = 2.2         # a body this near its lane's line stands on the lane (the cars behind on it wait)
@@ -315,6 +317,23 @@ class ParkingMotion:
             x0, y0 = self.c.simulation.convert2D(a["edge"], max(p - 1.0, 0.0), idx)
         return (x0, y0), _unit(x1 - x0, y1 - y0)
 
+    def keep_right_m(self, aid, bay_c, h):
+        """(9 Nov, 2nd) How far right of an aisle's middle a car keeps: KEEP_RIGHT_M where the aisle has room for two,
+        less in a narrow one (the Parking du Square's: 4.3 m between the cars' fronts; at 1.3 m a car going along
+        it touched the parked cars' noses). The aisle's width: from this space to the row facing it across."""
+        cache = self.__dict__.setdefault("_kr", {})
+        key = (aid, round(bay_c[0], 1), round(bay_c[1], 1))
+        if key not in cache:
+            gap = None
+            for sx, sy, _ang in self.areas[aid].get("spaces", ()):
+                dx, dy = sx - bay_c[0], sy - bay_c[1]          # (the row across the aisle: behind this space)
+                along, side = -(dx * h[0] + dy * h[1]), abs(dx * h[1] - dy * h[0])
+                if along > 3.0 and side < 1.5:
+                    gap = along if gap is None else min(gap, along)
+            aisle = (gap - 2 * SPACE_HALF_M) if gap is not None else 99.0
+            cache[key] = max(0.0, min(KEEP_RIGHT_M, (aisle - WIDTH_M) / 2.0 - 0.45))
+        return cache[key]
+
     def lot_corners(self, aid, road_c, dr, bay_c, h):
         """Corners of the way in (road -> space), middles of the car; and the aisle's way out (towards the road)."""
         spaces = self.areas[aid]["spaces"]
@@ -368,10 +387,11 @@ class ParkingMotion:
         if "spaces" in self.areas[aid]:
             bay_c = (v.x - h[0] * L / 2, v.y - h[1] * L / 2)       # (its middle: the space's, freefly.produce)
             corners, n, across = self.lot_corners(aid, road_c, dr, bay_c, h)
-            way = keep_right([road_c, *corners, bay_c], (2, 3) if across else (2,))
+            kr = self.keep_right_m(aid, bay_c, h)
+            way = keep_right([road_c, *corners, bay_c], (2, 3) if across else (2,), off=kr)
             P, before = corners[-1], corners[-2]
             a = _unit(P[0] - before[0], P[1] - before[1])            # down the aisle: on its right half
-            way[-2] = (P[0] + a[1] * KEEP_RIGHT_M, P[1] - a[0] * KEEP_RIGHT_M)
+            way[-2] = (P[0] + a[1] * kr, P[1] - a[0] * kr)
             pts = fillet(way)
             side = RIGHT if (dr[0] * n[1] - dr[1] * n[0]) < 0 else LEFT
             self.stats["in"] += 1
@@ -427,7 +447,8 @@ class ParkingMotion:
                 k = (e0[0] - P[0]) * dr[0] + (e0[1] - P[1]) * dr[1]
                 u_out = dr if k >= 0 else (-dr[0], -dr[1])
             # (on the right half of the aisle, as it will drive off: a car coming the other way passes)
-            P = (P[0] + u_out[1] * KEEP_RIGHT_M, P[1] - u_out[0] * KEEP_RIGHT_M)
+            kr = self.keep_right_m(aid, bay_c, h)
+            P = (P[0] + u_out[1] * kr, P[1] - u_out[0] * kr)
             back_end = (P[0] - u_out[0] * 3.5, P[1] - u_out[1] * 3.5)
             back = Leg(fillet([bay_c, P, back_end], r_max=3.5), V_BACK, reverse=True)
             e0 = (road_c[0] - dr[0] * ROAD_ON_M, road_c[1] - dr[1] * ROAD_ON_M)
@@ -436,12 +457,12 @@ class ParkingMotion:
                 strip = (g[0] - road_c[0]) * n[0] + (g[1] - road_c[1]) * n[1]
                 s_ = corners[2]
                 g2 = (e0[0] + n[0] * strip, e0[1] + n[1] * strip)
-                fwd = keep_right([back_end, P, s_, g2, e0, road_c], (2, 3))
+                fwd = keep_right([back_end, P, s_, g2, e0, road_c], (2, 3), off=kr)
             else:
                 k = (e0[0] - P[0]) * n[0] + (e0[1] - P[1]) * n[1]
                 t2 = (P[0] + dr[0] * ((e0[0] - P[0]) * dr[0] + (e0[1] - P[1]) * dr[1]),
                       P[1] + dr[1] * ((e0[0] - P[0]) * dr[0] + (e0[1] - P[1]) * dr[1]))
-                fwd = keep_right([back_end, t2, e0, road_c], (1,)) if math.dist(back_end, t2) > 1.0 \
+                fwd = keep_right([back_end, t2, e0, road_c], (1,), off=kr) if math.dist(back_end, t2) > 1.0 \
                     else [back_end, e0, road_c]
             pts = fillet(_dedupe(fwd))
             side = LEFT if (dr[0] * n[1] - dr[1] * n[0]) < 0 else RIGHT   # (turning onto the road: the other way)
