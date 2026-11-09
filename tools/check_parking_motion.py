@@ -81,16 +81,30 @@ def main(argv=None) -> int:
             v_ = cur.vehicles[a.trace]
             st["trace"][-1] += ["shown", round(v_.x, 1), round(v_.y, 1)]
         on_drive |= set(m.drives)
-        # (9 Nov) what of CARLA's map a car on a drive runs into (parking_obstacles: parked cars, posts, trees...)
+        # (9 Nov) what of CARLA's map a car on a drive runs into (cosim/obstacles.py: parked cars, posts, trees...)
         if m.drives:
-            import parking_obstacles as po
+            from cosim import obstacles as po
             if "obst" not in st:
                 st["obst"] = po.load(removed=set(m.removed), gates=set(m.gates))
-            for vid, dv in m.drives.items():
+            standing = []           # (9 Nov, 3rd) the cars standing in their spaces, as shown
+            for pid, paid in d.parked.items():
+                pv = cur.vehicles.get(pid)
+                if pid in m.drives or pv is None or abs(pv.x) > 1e5 or d.places.areas[paid].get("hidden"):
+                    continue
+                r_ = math.radians(pv.angle)
+                standing.append((pid, po.car_box(pv.x - math.sin(r_) * pv.length / 2,
+                                                 pv.y - math.cos(r_) * pv.length / 2, pv.angle, pv.length,
+                                                 margin=0.1)))
+            for dv in m.drives.values():
                 x_, y_, f_, _v, _g = dv.at_s(min(max(dv.progress(cur.time), 0.0), dv.duration))
                 for name in po.hits(x_, y_, f_, dv.length, st["obst"], margin=0.15):
                     key = f"{dv.area} {dv.kind} x {name}"
                     st.setdefault("static_hits", {})[key] = st.setdefault("static_hits", {}).get(key, 0) + 1
+                body = po.car_box(x_, y_, f_, dv.length, margin=0.1)
+                for pid, pb in standing:
+                    if math.dist(pb[0], (x_, y_)) < 9.0 and po.boxes_touch(body, pb):
+                        key = f"{dv.area} {dv.kind}"
+                        st.setdefault("parked_hits", {})[key] = st.setdefault("parked_hits", {}).get(key, 0) + 1
         # (9 Nov) how close the cars on drives come to each other and to the road's cars (bodies as circles)
         if m.drives:
             from check_parking_crowd import circles, clearance
@@ -112,7 +126,9 @@ def main(argv=None) -> int:
                     if g < -0.2:
                         st.setdefault("overlaps", []).append((round(g, 2), vid, oid, round(cur.time, 1),
                                                               m.drives[vid].kind, oid in m.drives,
-                                                              m.drives[vid].area))
+                                                              m.drives[vid].area,
+                                                              round(m.drives[vid].progress(cur.time), 1),
+                                                              round(m.drives[vid].duration, 1)))
         last, nxt = st["last"], {}
         for vid in on_drive | {v for v in last if v in cur.vehicles}:
             v = cur.vehicles.get(vid)
@@ -148,9 +164,11 @@ def main(argv=None) -> int:
     ds = sorted(st["drive_steps"], reverse=True)
     res = {"seed": a.seed, "start": a.start, "hours": a.hours, "stats": m.stats if m else None,
            "drive_step_max_m": ds[0][0] if ds else None, "drive_steps_over_2m": [x for x in ds if x[0] > 2.0][:20],
-           "overlap_steps": len(st.get("overlaps", [])), "overlaps": st.get("overlaps", [])[:40],
+           "overlap_steps": len(st.get("overlaps", [])), "overlaps": st.get("overlaps", [])[:400],
            "overlaps_by": _count_by(st.get("overlaps", [])),
            "static_hit_steps": sum(st.get("static_hits", {}).values()), "static_hits": st.get("static_hits", {}),
+           "parked_hit_steps": sum(st.get("parked_hits", {}).values()), "parked_hits": st.get("parked_hits", {}),
+           "touches": m.touches if m else None,
            "seams": m.seams if m else None, "no_place": st.get("no_place", [])[:20],
            "trace": st.get("trace"), "wall_s": round(time.time() - t)}
     Path(a.out).write_text(json.dumps(res, indent=1), encoding="utf-8")

@@ -84,7 +84,15 @@
   }
  },
  "removed": [
+  "BP_RepSpline36_Inst_12_12",
+  "BP_RepSpline36_Inst_13_13",
+  "BP_RepSpline36_Inst_14_14",
+  "BP_RepSpline36_Inst_17_17",
+  "BP_RepSpline36_Inst_18_18",
+  "BP_RepSpline36_Inst_19_19",
+  "SM_TrafficCones_03_611_SM_0",
   "Vh_Car_JeepWranglerRubicon_NOrig2_SM_0",
   "Vh_Car_JeepWranglerRubicon_NOrig_560_SM_0"
- ]
+ ],
+ "removed_why": "the viewer takes these CARLA objects away: two parked jeeps in front of Parking Central's way in; (9 Nov, 3rd) six pieces of the Parking du Marche's low fence along its road, two openings where its cars drive in and out (Town05 has none on that side: they drove through it); traffic cones just inside the Parking du Square's way in, in the way of every car going in"
 }

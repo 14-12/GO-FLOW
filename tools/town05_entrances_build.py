@@ -198,7 +198,15 @@ def smooth(cells, free):
 # (9 Nov) two jeeps CARLA keeps parked for good in the Parking du Square's south row, side by side in front of
 # Parking Central's open ground floor: the only way into it is between them and the guard hut. The viewer takes them
 # away (world.enable_environment_objects) and the ground there is a way.
-REMOVED = ("Vh_Car_JeepWranglerRubicon_NOrig2_SM_0", "Vh_Car_JeepWranglerRubicon_NOrig_560_SM_0")
+# (9 Nov, 3rd) and six pieces of the Parking du Marche's low fence along its road (BP_RepSpline36, 0.15 to 1 m high):
+# Town05 has no opening on that side, the cars driven in and out went through it; two openings where they go. And a
+# group of traffic cones just inside the Parking du Square's way in, in the way of every car going in
+REMOVED = ("Vh_Car_JeepWranglerRubicon_NOrig2_SM_0", "Vh_Car_JeepWranglerRubicon_NOrig_560_SM_0",
+           *(f"BP_RepSpline36_Inst_{i}_{i}" for i in (12, 13, 14, 17, 18, 19)), "SM_TrafficCones_03_611_SM_0")
+REMOVED_WHY = ("the viewer takes these CARLA objects away: two parked jeeps in front of Parking Central's way in; "
+               "(9 Nov, 3rd) six pieces of the Parking du Marche's low fence along its road, two openings where "
+               "its cars drive in and out (Town05 has none on that side: they drove through it); traffic cones "
+               "just inside the Parking du Square's way in, in the way of every car going in")
 
 
 def removed_boxes(env_objects, names=REMOVED):
@@ -387,13 +395,42 @@ def main(argv=None) -> int:
         OUT.write_text(json.dumps({"what": __doc__.split("\n\n")[0], "entrances": {
             aid: {k: v for k, v in e.items() if k != "raw"} for aid, e in res.items() if e["found"]},
             "gates": {n: {"box": b} for n, b in sorted(gates.items())},
-            "removed": sorted(removed_boxes(env))}, indent=1, ensure_ascii=False),
+            "removed": sorted(removed_boxes(env)), "removed_why": REMOVED_WHY}, indent=1, ensure_ascii=False),
             encoding="utf-8")
         print("->", OUT)
         move_stops({aid: e for aid, e in res.items() if e["found"]})
+        write_obstacles(removed_boxes(env), gates)
     if a.figure:
         figure(probe, res, gates)
     return 0
+
+
+def write_obstacles(env_removed=(), gates=(), near_m=20.0):
+    """scenarios/town05/parking_obstacles.json: what of CARLA's map a parking drive could touch (cosim/obstacles.py),
+    within near_m of a car park's spaces, a kerb's lane or a building's way in; read by cosim/parking_motion.py."""
+    import sumolib
+
+    from cosim import obstacles as ob
+
+    card = json.loads((ROOT / "scenarios" / "town05" / "places.json").read_text(encoding="utf-8"))
+    net = sumolib.net.readNet(str(ROOT / "scenarios" / "town05" / "town05.net.xml"))
+    pts = []
+    for a in card["parking_areas"]:
+        pts += [(sx, sy) for sx, sy, _a in a.get("spaces", ())] if not a.get("hidden") else []
+        sh = net.getLane(a["lane"]).getShape()
+        for (x0, y0), (x1, y1) in itertools.pairwise(sh):
+            n = max(1, int(math.dist((x0, y0), (x1, y1)) / 5.0))
+            pts += [(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n) for k in range(n + 1)]
+    if OUT.is_file():
+        for e in json.loads(OUT.read_text(encoding="utf-8")).get("entrances", {}).values():
+            pts += [tuple(p) for p in [*e.get("approach", []), e["front"], *e["way"]]]
+    keep = [o for o in ob.load(removed=set(env_removed), gates=set(gates))
+            if any(abs(o[1] - x) < near_m and abs(o[2] - y) < near_m for x, y in pts)]
+    path = ROOT / "scenarios" / "town05" / "parking_obstacles.json"
+    path.write_text(json.dumps({"what": write_obstacles.__doc__.split("\n")[0].strip(), "obstacles": [
+        [o[0], round(o[1], 2), round(o[2], 2), round(o[3], 2), round(o[4], 2), round(o[5], 4)] for o in keep]},
+        indent=0, ensure_ascii=False), encoding="utf-8")
+    print(f"-> {path} ({len(keep)} obstacles)")
 
 
 def move_stops(found):

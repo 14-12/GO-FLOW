@@ -27,6 +27,30 @@ def test_a_fillet_is_smooth_and_ends_where_asked():
     assert sig & pm.BACK                                                  # reversing lights
 
 
+def test_arcs_turn_on_a_car_s_radius_where_there_is_room():
+    # (9 Nov, 3rd) backing out of a space: 5.6 m straight to the aisle, then along it: a turn of 4.5 m (fillet's
+    # curve there was 1.2 m: the body swept through the cars beside it)
+    pts = pm.arcs([(0.0, 0.0), (0.0, 5.6), (-6.0, 5.6)], 4.5, keep_end=0.8)
+    assert pm.min_radius(pts) == pytest.approx(4.5, abs=0.05)
+    assert pm.min_radius(pm.fillet([(0.0, 0.0), (0.0, 5.6), (-3.5, 5.6)], r_max=3.5)) < 1.5
+    assert math.dist(pts[0], (0.0, 0.0)) < 1e-9 and math.dist(pts[-1], (-6.0, 5.6)) < 0.03
+    assert max(math.dist(a, b) for a, b in zip(pts, pts[1:], strict=False)) <= pm.STEP_M + 1e-6
+    short = pm.arcs([(0.0, 0.0), (0.0, 3.0), (-3.0, 3.0)], 4.5, keep_end=0.5)   # (no room: tighter)
+    assert pm.min_radius(short) < 3.0
+
+
+def test_a_leg_about_its_rear_axle_puts_the_middle_ahead_of_its_path():
+    pts = pm.resample([(0.0, 0.0), (0.0, 10.0)])
+    lg = pm.Leg(pts, 2.5, pivot=1.3)
+    x, y, face, _v, _s = lg.at(lg.duration / 2)
+    px, py = lg.path_at(lg.duration / 2)
+    assert face == pytest.approx(0.0) and y - py == pytest.approx(1.3) and x == pytest.approx(px)
+    back = pm.Leg(list(reversed(pts)), 1.3, reverse=True, pivot=1.3)
+    x, y, face, _v, _s = back.at(back.duration / 2)
+    px, py = back.path_at(back.duration / 2)
+    assert face == pytest.approx(0.0) and y - py == pytest.approx(1.3)      # (facing north, backing south)
+
+
 @pytest.mark.slow
 def test_a_car_drives_into_its_space_and_out_without_a_jump():
     import sumolib

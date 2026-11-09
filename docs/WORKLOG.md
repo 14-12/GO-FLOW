@@ -2205,3 +2205,58 @@ Found at 02:20 (seed 102, 12:00, which drive, which leg, against what; for the n
 * **Kerbs**: drives pass pines (`TreePine_*`, trunk at the box's middle) and lamp posts on the pavement edge (Allée
   des Pins, Allée des Cyprès, Rue du Sud); check which kerb places have one beside them and keep the drive's swing
   off it (or leave that place empty).
+
+## 9 Nov (3rd, 05:15-06:10): parking drives without going through anything
+
+The user saw the cars glitch while parking. Measured first (`tools/check_parking_motion.py`, which now also counts
+the steps a drive's body is inside a car standing in its space, `parked_hit_steps`; before, those were not looked at),
+then changed `cosim/parking_motion.py`:
+* **Turns a car can make.** `arcs()`: each corner a circular arc (a car's radius, 4.5 m where there is room); the
+  fillet's curves were tighter than their size (the back-out turned on 1.2 m). Backing out: straight until the nose is
+  out, a turn of 3 to 5 m, 0.8 m straight on along the aisle.
+* **Every way tested before it is used** (`_sweep`, `_pick`): the body every half metre, 0.15 m kept, against
+  CARLA's map near the car parks and kerbs (`scenarios/town05/parking_obstacles.json`, 1044 boxes from
+  `cosim/obstacles.py`, written by `tools/town05_entrances_build.py`) and the cars standing in their spaces; the first
+  of up to 11 ways (lane offset, radius) that touches nothing and turns no tighter than 3 m is taken.
+* **The Parking du Square**: its own ways in and out (`places.json` "way_in"/"way_out"): in by the south gate, out by
+  the north one, through the middle of each, between the barriers inside them; its aisle's middle from its two rows
+  (4.7 m from a space, not 5.6). Three of its painted bays had a CARLA truck or container in them: dropped (14 left).
+  Two of the Marché's moved 0.6 m back off a lamp post at their head.
+* **CARLA objects taken away** (`entrances.json` "removed", hidden by the viewer): the Marché has a low fence (0.15 to
+  1 m) all along its road and no opening there; its cars drove through it. Six pieces taken away: two openings where
+  they go in and out. A group of cones just inside the Square's way in.
+* **Kerbs, as one parks along a pavement.** SUMO stops the car on its lane beside its place and puts it back there.
+  The viewer now shows the parked car 6.5 m further on (`kerb_fronts`: less near the lane's end, 6 m between two, a
+  metre or two off a tree or a post): the car stops behind its place and pulls in forwards (an S), the cars behind it
+  waiting while it is on the lane. To leave, SUMO's car is moved 8 m past the place (`vehicle.moveTo`) once that
+  stretch of lane is clear, and held there; the shown car pulls out forwards (an S about its rear axle) and meets it
+  there: no seam. SUMO puts a kerb car back only when its way out is clear (its stop made 2 s longer, or a trip's
+  resume put off by 1 s, until it is).
+* **Taken out on its way in** (`_then_out`): it goes on into its space, stands 2 s and drives out (SUMO keeps it
+  parked meanwhile), instead of backing all the way along the way it came. At a kerb SUMO's car is held where SUMO put
+  it until the car has parked, then out as any. The turn-back (still used when SUMO takes a car out by itself) ended
+  with a loop: its facing was taken for its way (5.6 m off, seen at a kerb); fixed.
+* A car SUMO had put back and this module holds was let go by the follower logic of another drive (`_hold_followers`);
+  only a car wholly behind a car turning in is held (one beside it, or put inside it by SUMO, is let go: the drive
+  waits for it).
+
+Same three runs before (the code at 278a815) and after, 1.5 town hours each, steps:
+
+| run | overlaps with moving cars | inside CARLA's objects | inside parked cars | largest step | worst seam |
+|---|---|---|---|---|---|
+| seed 101, 07:30 | 107 -> 42 | 94 -> 21 | 69 -> 7 | 2.8 -> 5.5 m | 5.6 -> 5.3 m |
+| seed 102, 12:00 | 89 -> 4 | 220 -> 18 | 23 -> 1 | 2.3 -> 2.4 m | 1.5 -> 1.6 m |
+| seed 103, 17:30 | 63 -> 85 | 153 -> 13 | 45 -> 1 | 2.7 -> 3.5 m | 3.3 -> 5.1 m |
+
+(The "inside CARLA's objects" before counts the Marché's fence pieces and the Square's dropped bays.) 8 cars to the
+Marché one every 4 s (`tools/check_parking_crowd.py`): 0 overlaps, as before; 16 of 18 ways touch nothing (the 2
+others touch a fence piece's corner at its north-west for 1 m).
+
+Left:
+* The Square's aisle (4.7 m) cannot hold two cars side by side; with several drives at once (seed 103, 17:40) cars
+  meeting in it overlapped for 62 steps (39 before): one should wait at the gate or in its space until the aisle is
+  clear (reserve with the slipped timetables).
+* The two shortest kerbs (Rue 4, 23 m; Rue 51, 32 m): SUMO puts the car back at the lane's end, moveTo can't take it
+  on; seams of 5.1 and 5.3 m there (2 of 26 kerb drives out).
+* At a kerb, SUMO inserts a car leaving its place on the lane where a car turning in still stands (20 steps, seed 101).
+* Not yet seen in CARLA (the computer was not reachable for it this run).

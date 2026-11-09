@@ -696,7 +696,7 @@
    "n_meshes": 0,
    "static_taken": 9,
    "parking": "pa_lot_square",
-   "capacity": 17,
+   "capacity": 14,
    "door": {
     "lane": "49_3",
     "edge": "49",
@@ -9295,7 +9295,7 @@
      270.0
     ],
     [
-     246.92,
+     247.52,
      238.73,
      270.0
     ],
@@ -9435,7 +9435,7 @@
      90.0
     ],
     [
-     279.8,
+     280.4,
      238.73,
      270.0
     ],
@@ -9494,11 +9494,6 @@
      180.0
     ],
     [
-     189.29,
-     264.88,
-     180.0
-    ],
-    [
      203.23,
      264.88,
      180.0
@@ -9529,16 +9524,6 @@
      0.0
     ],
     [
-     183.71,
-     255.41,
-     0.0
-    ],
-    [
-     186.5,
-     255.41,
-     0.0
-    ],
-    [
      189.29,
      255.41,
      0.0
@@ -9563,7 +9548,33 @@
    "edge": "49",
    "start": 27.0,
    "end": 39.0,
-   "depart": 61.5
+   "depart": 61.5,
+   "way_in": [
+    [
+     149.51,
+     259.6
+    ],
+    [
+     166.0,
+     259.6
+    ]
+   ],
+   "way_out": [
+    [
+     166.0,
+     260.7
+    ],
+    [
+     160.0,
+     262.6
+    ],
+    [
+     149.53,
+     262.6
+    ]
+   ],
+   "way_why": "9 Nov: its own ways in and out, through its two gates (in at the south one, out at the north one) clear of the barriers inside them, keeping right in its 4.7 m aisle",
+   "spaces_why": "9 Nov: 3 of its painted bays dropped (a CARLA truck and two containers stand in them), 14 left; 2 of the Marché's moved 0.6 m back off a lamp post at their head"
   },
   {
    "id": "pa_silo",
