@@ -23,11 +23,27 @@ def load(removed=(), gates=()):
     if not ENV.is_file():
         return []
     out = []
-    for o in json.loads(ENV.read_text(encoding="utf-8")):
+    objs = json.loads(ENV.read_text(encoding="utf-8"))
+    heads = {}                       # a light's head (high up, same name but its last part): where its arm points
+    for o in objs:
+        if o["label"] == "Poles" and o["carla"][2] > 6.0 and max(o["ext"][:2]) < 1.0:
+            heads.setdefault(o["name"].rsplit("_SM_", 1)[0], o["sumo"])
+    for o in objs:
         if o["label"] not in SOLID or any(n in o["name"] for n in NOT) or o["name"] in removed or o["name"] in gates:
             continue
         z, ez = o["carla"][2], o["ext"][2]
         ex, ey = o["ext"][0], o["ext"][1]
+        if o["label"] == "Poles" and max(ex, ey) > 0.8:
+            # a post with an arm: its box is mostly the arm, over the road. The post: the box's end away from the
+            # lamp head (a highway light: 7.9 m box, the post in the barrier line); without a head, its middle
+            a = -math.radians(o["yaw"])
+            u = (math.cos(a), math.sin(a)) if ex >= ey else (-math.sin(a), math.cos(a))
+            half = max(ex, ey)
+            ends = [(o["sumo"][0] + u[0] * k * half, o["sumo"][1] + u[1] * k * half) for k in (-1, 1)]
+            head = heads.get(o["name"].rsplit("_SM_", 1)[0])
+            px, py = max(ends, key=lambda e: math.dist(e, head)) if head else o["sumo"]
+            out.append((o["name"], px, py, 0.25, 0.25, 0.0))
+            continue
         if o["label"] == "Vegetation":
             if ez > 1.5:                               # a tree: its trunk, not its crown
                 ex = ey = 0.3
