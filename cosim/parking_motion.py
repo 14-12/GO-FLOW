@@ -37,6 +37,7 @@ The viewer's vehicles carry their front bumper (cosim/mapping.py); the paths her
 """
 from __future__ import annotations
 
+import copy
 import itertools
 import math
 from pathlib import Path
@@ -85,6 +86,7 @@ KERB_SHIFT_M = 6.5
 KERB_ROOM_M = 6.0       # ... the spaces as shown this far apart at least (front to front)
 KERB_OUT_M = 8.0
 KERB_WAIT_S = 15.0      # ... that stretch not clear this long: it backs out to where SUMO put it instead
+KERB_EARLY_S = 8.0      # ... its drive out starts this long before its stay ends (SUMO keeps it parked until it is out)
 REAR_AXLE_M = 1.0       # at a kerb a car turns about its rear axle, this far in front of its back
 LC_TO_STOP = 0b001001000101    # SUMO lane change mode: strategic, cooperative, right; no speed gain, no sublane moves
 PARKED_PAUSE_S = 2.0    # a car taken out for a trip on its way in: it stands this long in its space first
@@ -334,6 +336,18 @@ class Leg:
         return x, y, face, speed, sig
 
 
+def _rest(dv, s0):
+    """(9 Nov, 6th) The middles of a drive's car from drive time s0 to its end, every 0.5 s."""
+    s0 = max(s0, 0.0)
+    n = max(int((dv.duration - s0) / 0.5), 1)
+    return [dv.at_s(s0 + (dv.duration - s0) * i / n)[:2] for i in range(n + 1)]
+
+
+def _apart(pa, pb, m):
+    """Whether no point of pa is within m of a point of pb."""
+    return all(math.dist(p, q) > m for p in pa for q in pb)
+
+
 class Drive:
     """Legs one after the other, from t0 (SUMO seconds), with pauses between. lag: the seconds it has been held up
     giving way (ParkingMotion.give_way): it is that far behind its own timetable."""
@@ -403,6 +417,7 @@ class ParkingMotion:
         self.touches: list = []                    # the drives whose way still touches something (the last 50)
         self._outs: dict[str, tuple] = {}          # a drive out made before its time: (when, drive, area)
         self._lc: dict[str, int] = {}              # held: its lane change mode before
+        self._lastv: dict = {}                     # a car on a drive as last shown (SUMO may lose it for a moment)
         self._passing: set[str] = set()            # asked to pass a car waiting at the road on the next lane
         self._lc_near: set[str] = set()            # coming to park where a car stands: kept to its lane's middle
         self._kerb_wait: dict[str, float] = {}     # put back at a kerb, waiting for its way out to be clear: since
@@ -504,9 +519,15 @@ class ParkingMotion:
         for oid, od in self.drives.items():
             if oid == vid or od.area != dv.area or od.done(now):
                 continue
-            if od.progress(now) >= 0.5 or (od.t0, oid) < (dv.t0, vid):
+            if od.progress(now) >= 0.5:
+                # (9 Nov, 6th) not when their ways are apart (a car waiting at the road at the end of the Square's
+                # way out, a car going in by its way in, 3 m from it)
+                if _apart(_rest(od, od.progress(now)), _rest(dv, dv.progress(now)), 3.5):
+                    continue
                 return True
-        return False
+            if (od.t0, oid) < (dv.t0, vid) and not (dv.kind == "in" and od.kind == "out"):
+                return True         # (9 Nov, 6th: a car waiting at the road to go in goes before the cars still
+        return False                # waiting in their spaces to go out)
 
     def lot_corners(self, aid, road_c, dr, bay_c, h):
         """Corners of the way in (road -> space), middles of the car; and the aisle's way out (towards the road)."""
@@ -607,11 +628,41 @@ class ParkingMotion:
         fronts, ln = self.kerb_fronts(aid)
         i = round((f - a["start"]) / ln) - 1
         sf = fronts[i] if 0 <= i < len(fronts) else f
+        # (9 Nov, 6th) two of SUMO's cars on one of its spaces (seen: 0.5 m apart, Rue 51) would be shown on one
+        # another: the second shown at the nearest free place
+        used = {k_[6] for o, k_ in self._kerb.items() if o != vid and k_[4] == aid and len(k_) > 6
+                and self.d.parked.get(o) == aid}
+        if sf in used:
+            free = [g for g in set(fronts) if g not in used]
+            if free:
+                sf = min(free, key=lambda g: abs(g - sf))
         L = v.length if v is not None else 4.7
         (x, y), u = self._road(aid, sf - L / 2)
         lat = self._kerb_lat(aid)
-        k = (x - u[1] * lat, y + u[0] * lat, u, f, aid, L)
+        k = (x - u[1] * lat, y + u[0] * lat, u, f, aid, L, sf)
         self._kerb[vid] = k
+        return k
+
+    def _kerb_ahead(self, vid, aid, k):
+        """(9 Nov, 6th) A car SUMO stopped past its kerb place as shown, with a car close behind it on the lane: shown
+        at a free place ahead of it instead, which it pulls into forwards (before: it went on and backed into its
+        place, where the car behind stood, held for it: each waited for the other, 100 s, Rue 20). -> k."""
+        sf, L = self._shown_front(vid, k), k[5]
+        carf = k[3]
+        if sf - carf > 1.0 or self._kerb_blocker(vid, aid, carf - L - 10.0, carf - L) is None:
+            return k
+        fronts, _ln = self.kerb_fronts(aid)
+        used = {k_[6] for o, k_ in self._kerb.items() if o != vid and k_[4] == aid and len(k_) > 6
+                and (self.d.parked.get(o) == aid or o in self.drives)}
+        free = sorted(g for g in set(fronts) if g not in used and carf + 5.0 <= g <= carf + 25.0)
+        if not free:
+            return k
+        g = free[0]
+        (x, y), u = self._road(aid, g - L / 2)
+        lat = self._kerb_lat(aid)
+        k = (x - u[1] * lat, y + u[0] * lat, u, k[3], aid, L, g)
+        self._kerb[vid] = k
+        self.stats["kerb_place_ahead"] = self.stats.get("kerb_place_ahead", 0) + 1
         return k
 
     # ------------------------------------------------------------------ no glitch
@@ -644,12 +695,13 @@ class ParkingMotion:
         return out
 
     def _road_cars(self, vid, box):
-        """Bodies of the cars SUMO drives (not parked, not on drives) within box, as they are now."""
+        """Bodies of the cars SUMO drives standing (not parked, not on drives) within box, as they are now (the ones
+        moving pass on: give_way)."""
         out = []
         cur = getattr(self, "_cur", None) or {}
         x0, x1, y0, y1 = box
         for oid, v in cur.items():
-            if oid == vid or oid in self.drives or oid in self.d.parked or abs(v.x) > 1e5:
+            if oid == vid or oid in self.drives or oid in self.d.parked or abs(v.x) > 1e5 or v.speed > 1.0:
                 continue
             hh = _dir(v.angle)
             mx, my = v.x - hh[0] * v.length / 2, v.y - hh[1] * v.length / 2
@@ -769,6 +821,7 @@ class ParkingMotion:
         k = self.kerb_pose(vid, aid, v)
         if k is None:
             return None
+        k = self._kerb_ahead(vid, aid, k)
         kerb_c, hk = (k[0], k[1]), k[2]
         if math.dist(kerb_c, road_c) < 0.3:
             return None
@@ -875,12 +928,13 @@ class ParkingMotion:
             kr = self.keep_right_m(aid, bay_c, h)
             side = LEFT if (dr[0] * n[1] - dr[1] * n[0]) < 0 else RIGHT   # (turning onto the road: the other way)
 
-            def make(off, r_back):
+            def make(off, r_back, bs=BACK_STRAIGHT_M):
                 # (9 Nov, 3rd) straight back until its nose is out, then a turn of a car's radius (r_back), then on
-                # straight a little: the turn was 1.1 m before, its body swept through the cars beside it
+                # straight a little (bs): the turn was 1.1 m before, its body swept through the cars beside it
+                # (9 Nov, 6th: none, a fence close behind the Marche's corner space: its tail went 0.2 m into it)
                 P = (P0[0] + u_out[1] * off, P0[1] - u_out[0] * off)
-                back_end = (P[0] - u_out[0] * (r_back + BACK_STRAIGHT_M), P[1] - u_out[1] * (r_back + BACK_STRAIGHT_M))
-                back = Leg(arcs([bay_c, P, back_end], r_back, keep_end=BACK_STRAIGHT_M), V_BACK, reverse=True)
+                back_end = (P[0] - u_out[0] * (r_back + bs), P[1] - u_out[1] * (r_back + bs))
+                back = Leg(arcs([bay_c, P, back_end], r_back, keep_end=bs), V_BACK, reverse=True)
                 if way_out:
                     fwd = [back_end, P, *map(tuple, way_out), road_c]
                 elif across:
@@ -897,14 +951,16 @@ class ParkingMotion:
                 go = Leg(arcs(_dedupe(fwd), TURN_R_M, keep_end=1.0), V_DRIVE, signals=side)
                 return [back, go]
             cands = [(kr, 4.5), (kr, 5.0), (kr, 4.0), (kr / 2, 4.5), (kr / 2, 4.0), (0.0, 4.5), (0.0, 4.0), (kr, 3.5),
-                     (0.0, 3.5), (kr, 3.0), (0.0, 3.0)]
+                     (0.0, 3.5), (kr, 3.0), (0.0, 3.0),
+                     (kr * 1.5, 4.5), (kr * 1.5, 4.0), (-0.5, 4.5), (-0.5, 4.0), (kr, 5.5), (kr * 0.75, 4.5),
+                     (kr, 3.0, 0.0), (0.0, 3.0, 0.0), (kr, 3.5, 0.0), (kr / 2, 3.0, 0.0)]
             legs = self._pick("lot out", vid, L, cands, make, (bay_c[0], bay_c[1], v.angle))
             if legs is None:
                 return None
             return self._on_road(Drive(vid, "out", legs, t0, L, pauses=[PAUSE_S, 0.0]), aid, road_c, dr)
         return None         # (at a kerb: kerb_out, once SUMO has put the car back)
 
-    def kerb_out(self, vid, aid, now, front_pos):
+    def kerb_out(self, vid, aid, now, front_pos, road=False):
         """(9 Nov, 3rd) The drive out of a kerb's space, SUMO's car on its lane at front_pos (held there): forwards
         (an S about its rear axle) onto its lane, its front ending at front_pos."""
         k = self._kerb.get(vid)
@@ -921,11 +977,12 @@ class ParkingMotion:
 
         def make(back_m, sc):
             legs, pauses = [], []
-            if back_m in ("arc", "arcb"):   # (an S of two arcs about its rear axle: a hard turn out first;
-                ra0 = (kerb_c[0] - hk[0] * off, kerb_c[1] - hk[1] * off)   # arcb: backing 0.8 m first)
-                ra1 = (road_c[0] - dr[0] * off, road_c[1] - dr[1] * off)
-                if back_m == "arcb":
-                    rb = (ra0[0] - hk[0] * 0.8, ra0[1] - hk[1] * 0.8)
+            if back_m in ("arc", "arcb", "arcb2"):   # (an S of two arcs about its rear axle: a hard turn out
+                ra0 = (kerb_c[0] - hk[0] * off, kerb_c[1] - hk[1] * off)   # first; arcb: backing 0.8 m first, arcb2
+                ra1 = (road_c[0] - dr[0] * off, road_c[1] - dr[1] * off)   # 1.6 m, a car close in front)
+                if back_m != "arc":
+                    bm = 0.8 if back_m == "arcb" else 1.6
+                    rb = (ra0[0] - hk[0] * bm, ra0[1] - hk[1] * bm)
                     legs.append(Leg(resample([ra0, rb]), V_BACK, reverse=True, pivot=off))
                     pauses.append(PAUSE_S)
                     ra0 = rb
@@ -958,9 +1015,9 @@ class ParkingMotion:
             made[(back_m, sc)] = (legs, pauses)
             return legs
         cands = [("arc", 4.5), ("arc", 4.0), ("arcb", 4.5), ("arc", 5.0), ("arcb", 4.0), ("arc", 3.5), ("arcb", 3.5),
-                 (0.0, 1.0), (0.0, 0.8), (0.0, 1.2),
+                 ("arcb2", 4.0), ("arcb2", 3.5), (0.0, 1.0), (0.0, 0.8), (0.0, 1.2),
                  (0.8, 1.0), (0.8, 0.8), (0.0, 0.6), (0.8, 1.2), (0.0, 1.5)]
-        legs = self._pick("kerb out", vid, L, cands, make, (kerb_c[0], kerb_c[1], _angle(*hk)))
+        legs = self._pick("kerb out", vid, L, cands, make, (kerb_c[0], kerb_c[1], _angle(*hk)), road=road)
         if legs is None:
             return None
         pauses = next(p_ for lg_, p_ in made.values() if lg_ is legs)
@@ -997,6 +1054,62 @@ class ParkingMotion:
                 return oid
         return None
 
+    def _kerb_start(self, vid, aid, why):
+        """(9 Nov, 5th) The drive out of a kerb place, starting now while SUMO still has the car parked: forwards
+        onto its lane to KERB_OUT_M past its place; when SUMO puts the car back (its own place on the lane), SUMO's
+        car is moved there (no car of SUMO's held on the road while the drive is on its way: the cars coming up
+        stood behind it, in the drive's way, each waiting for the other)."""
+        k = self.kerb_pose(vid, aid)
+        if k is None or not self._kerb_way_clear(vid, aid):
+            return None
+        sf = self._shown_front(vid, k)
+        try:
+            lane_len = self.c.lane.getLength(self.areas[aid]["lane"])
+        except Exception:  # noqa: BLE001
+            return None
+        target = min(sf + KERB_OUT_M, lane_len - 3.0)
+        if target - sf < 4.0:
+            return None
+        n_touch = self.stats.get("ways_touching", 0)
+        dv = self.kerb_out(vid, aid, self._now, target, road=True)
+        if dv is None:
+            return None
+        if self.stats.get("ways_touching", 0) > n_touch:
+            # (a car standing in its way, on the next lane too (one broken down there, it waited beside it 2
+            # minutes): not now, it stays in its place)
+            self.stats["ways_touching"] = n_touch
+            self.touches.pop()
+            return None
+        dv.why, dv.kerb_target, dv.sumo_front = why, target, k[3]
+        self._kerb.pop(vid, None)
+        self._kerb_wait.pop(vid, None)
+        self.reserve(dv, self._now)
+        self.drives[vid] = dv
+        self.stats["kerb_out"] += 1
+        self.stats["kerb_early"] = self.stats.get("kerb_early", 0) + 1
+        return dv
+
+    def _kerb_cancel(self, vid, dv, now):
+        """A kerb drive out not started yet given up: the car stays in its place; SUMO keeps it parked a little longer
+        (its trip resumed later, its stop made longer)."""
+        d = self.d
+        self.drives.pop(vid, None)
+        self._release_hold(vid)
+        self.kerb_pose(vid, dv.area)
+        self._kerb_wait[vid] = now
+        if vid in d.resume_at:
+            d.resume_at[vid] = now + 5.0
+        else:
+            try:
+                st = self.c.vehicle.getStops(vid, 1)
+                if st and st[0].duration < 1e6:
+                    self.c.vehicle.setParkingAreaStop(vid, dv.area, duration=max(st[0].duration, 0.0) + 5.0)
+                    self.release[vid] = now + max(st[0].duration, 0.0) + 5.0
+            except Exception:  # noqa: BLE001, S110
+                pass
+        self.stats["kerb_out"] -= 1
+        self.stats["kerb_put_off"] = self.stats.get("kerb_put_off", 0) + 1
+
     def _kerb_way_clear(self, vid, aid):
         """Whether a kerb car's way out (its space as shown to KERB_OUT_M past it, on its lane) is clear now (or it
         has waited KERB_WAIT_S x 4 for it: SUMO's turn)."""
@@ -1014,9 +1127,15 @@ class ParkingMotion:
             aid = d.parked.get(vid)
             if aid is None or t - now > 0.6 or "spaces" in self.areas.get(aid, {}) or not self.visible(aid):
                 continue
+            if vid in self.drives:
+                continue
             if not self._kerb_way_clear(vid, aid):
                 d.resume_at[vid] = now + 1.0
                 self.stats["kerb_waits"] = self.stats.get("kerb_waits", 0) + 1
+                continue
+            dv = self._kerb_start(vid, aid, "taken out")
+            if dv is not None:
+                d.resume_at[vid] = now + dv.duration + dv.lag + EXIT_GUARD_S
 
     def _kerb_leave(self, now, vehicles, ending=()):
         """Kerb cars SUMO has just put back on their lane (or is about to drive off): held there; once the stretch
@@ -1103,6 +1222,13 @@ class ParkingMotion:
             if dv is None:
                 self._kerb.pop(vid, None)
                 continue
+            try:    # (9 Nov, 6th) and to the drive's end's x, y: SUMO keeps a car it put back beside its lane's
+                ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)     # line (1.6 m off in CARLA)
+                eh = _dir(ef)
+                c.vehicle.moveToXY(vid, self.areas[aid]["edge"], -1, ex + eh[0] * dv.length / 2,
+                                   ey + eh[1] * dv.length / 2, ef, keepRoute=1)
+            except Exception:  # noqa: BLE001, S110
+                pass
             dv.end_fixed = (0.0, 0.0)               # (SUMO's car is where the drive ends, held there)
             self._kerb.pop(vid, None)
             self.reserve(dv, now)
@@ -1120,6 +1246,8 @@ class ParkingMotion:
 
     def _shown_front(self, vid, k):
         """The lane position of a kerb car's front as shown."""
+        if len(k) > 6:
+            return k[6]
         fronts, ln = self.kerb_fronts(k[4])
         a = self.areas[k[4]]
         i = round((k[3] - a["start"]) / ln) - 1
@@ -1192,10 +1320,13 @@ class ParkingMotion:
         if not self.visible(aid):
             return 0.0
         if "spaces" not in self.areas[aid] and not self.areas[aid].get("hidden"):
-            # (a kerb: SUMO puts it back once its way out is clear (_kerb_gate), the drive out starts then:
-            # _kerb_leave)
+            # (a kerb, 9 Nov 5th: as at a car park, the drive out starts now if its way is clear, SUMO keeping the car
+            # parked until it is at the road; else SUMO waits (_kerb_gate) and the drive starts when it is clear)
             self._kerb_wait.setdefault(vid, self._now)
-            return 0.5
+            if vid in self.drives:
+                return 0.0
+            dv = self._kerb_start(vid, aid, "taken out")
+            return dv.duration + dv.lag + EXIT_GUARD_S if dv is not None else 1.0
         if vid in self.drives:
             return self._then_out(vid, aid)
         v = self._cur.get(vid) if getattr(self, "_cur", None) else None
@@ -1266,6 +1397,7 @@ class ParkingMotion:
         self._pk_prev = pk
         if self._k % 20 == 0:
             self._passing &= set(vehicles)
+            self._lastv = {k: v for k, v in self._lastv.items() if k in self.drives}
         try:
             starting = c.simulation.getParkingStartingVehiclesIDList()
             ending = set(c.simulation.getParkingEndingVehiclesIDList())
@@ -1316,6 +1448,13 @@ class ParkingMotion:
                 continue
             aid = d.parked[vid]
             if "spaces" not in self.areas[aid] and not self.areas[aid].get("hidden"):
+                if end - now <= KERB_EARLY_S:       # (a kerb: the drive out once its way out is clear)
+                    self._kerb_wait.setdefault(vid, now)
+                    if self._kerb_way_clear(vid, aid):
+                        dv = self._kerb_start(vid, aid, "time up")
+                        if dv is not None:
+                            self._sumo_waits(vid, dv, now)
+                            continue
                 if end - now <= 1.5:                # (a kerb: SUMO puts it back once its way out is clear)
                     self._kerb_wait.setdefault(vid, now)
                     if not self._kerb_way_clear(vid, aid):
@@ -1356,10 +1495,20 @@ class ParkingMotion:
         # move them
         for vid, dv in list(self.drives.items()):
             v = vehicles.get(vid)
+            if v is None and dv.kind == "out" and vid in self._lastv and getattr(dv, "end_fixed", None) is None:
+                # (9 Nov, 5th) SUMO has let the car go but not put it on the road yet (no room at that moment, up to
+                # 4 s): still shown on its drive, not gone for those seconds
+                try:
+                    c.vehicle.getLaneID(vid)
+                    v = vehicles[vid] = copy.copy(self._lastv[vid])
+                    self.stats["kept_shown_s"] = round(self.stats.get("kept_shown_s", 0.0) + 0.5, 1)
+                except Exception:  # noqa: BLE001
+                    v = None
             if v is None:
                 self.drives.pop(vid)
                 self._release_hold(vid)
                 continue
+            self._lastv[vid] = v
             if dv.kind == "in" and vid not in d.parked and vid not in ending and abs(v.x) < 1e5 \
                     and vid in self._kerb and not getattr(dv, "kerb_after", False):
                 # (9 Nov, 3rd) at a kerb: it goes on into its space, SUMO's car held where SUMO put it back; then
@@ -1404,7 +1553,7 @@ class ParkingMotion:
                 except Exception:  # noqa: BLE001, S110 - it left meanwhile
                     pass
             if dv.kind == "out" and vid not in d.parked and vid not in ending and getattr(dv, "end_fixed", None) \
-                    is None:
+                    is None and getattr(dv, "kerb_target", None) is None:
                 # SUMO has put it back on the road (its place now, before this step's drawing): the drive ends there
                 h = _dir(v.angle)
                 actual = (v.x - h[0] * dv.length / 2, v.y - h[1] * dv.length / 2)
@@ -1424,7 +1573,17 @@ class ParkingMotion:
                     c.vehicle.setSpeed(vid, 0.0)
                     self._lock(vid)
                     self.stats["held_sumo"] += 1
-                    if "spaces" in self.areas.get(dv.area, {}) and getattr(dv, "end_fixed", None) is None:
+                    if getattr(dv, "kerb_target", None) is not None and getattr(dv, "end_fixed", None) is None:
+                        # (9 Nov, 5th) a kerb's drive out: SUMO puts the car back at its place on the lane; moved on
+                        # to where the drive ends (9 Nov, 6th: to its x, y: on its lane position only, 1.0 m off)
+                        ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
+                        eh = _dir(ef)
+                        c.vehicle.moveToXY(vid, self.areas[dv.area]["edge"], -1, ex + eh[0] * dv.length / 2,
+                                           ey + eh[1] * dv.length / 2, ef, keepRoute=1)
+                        dv.legs[-1].end_offset = None
+                        dv.end_fixed = (0.0, 0.0)
+                        self.stats["ends_matched"] = self.stats.get("ends_matched", 0) + 1
+                    elif "spaces" in self.areas.get(dv.area, {}) and getattr(dv, "end_fixed", None) is None:
                         # (9 Nov, 4th) SUMO puts a car back from a car park 1.3 m beside its lane's line (the
                         # Square: a 1.5 m step at the hand-over): its car moved to where the drive ends
                         ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
@@ -1440,7 +1599,37 @@ class ParkingMotion:
                 if dv.kind == "out" and vid in ending:
                     pass            # (SUMO reports the car in its space at the step it puts it back: still shown)
                 elif dv.kind == "out" and abs(v.x) > 1e5:
-                    pass            # (SUMO has no place for it at this step yet: still shown where the drive ended)
+                    # (SUMO has no place for it at this step yet: still shown where the drive ended)
+                    if getattr(dv, "kerb_target", None) is not None and getattr(dv, "end_fixed", None) is None \
+                            and dv.progress(now) > dv.duration + 3.0 and not getattr(dv, "placed", False):
+                        # (9 Nov, 6th) SUMO let it go but has not put it back: a car leaving a kerb place waits for
+                        # room on its lane, and the cars behind were held for this one standing there (80 s, Rue
+                        # 20): SUMO's car put where the drive ended
+                        try:
+                            if c.vehicle.getLaneID(vid) == "" and c.vehicle.getStopState(vid) & 2 == 0:
+                                dv.placed = True
+                                ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
+                                eh = _dir(ef)
+                                c.vehicle.moveToXY(vid, self.areas[dv.area]["edge"], -1, ex + eh[0] * dv.length / 2,
+                                                   ey + eh[1] * dv.length / 2, ef, keepRoute=1)
+                                c.vehicle.setSpeed(vid, 0.0)
+                                self._lock(vid)
+                                dv.end_fixed = (0.0, 0.0)
+                                self.d.parked.pop(vid, None)    # (SUMO does not report it leaving its stop now)
+                                getattr(self.d, "where", {}).pop(vid, None)
+                                self.stats["kerb_placed"] = self.stats.get("kerb_placed", 0) + 1
+                        except Exception:  # noqa: BLE001, S110
+                            pass
+                elif getattr(dv, "kerb_target", None) is not None and getattr(dv, "end_fixed", None) is None \
+                        and dv.progress(now) < dv.duration + 60.0:
+                    # (9 Nov, 5th) a kerb's: shown at its end until SUMO has put its car back and it is moved here
+                    if vid in d.parked and dv.progress(now) > dv.duration + 2.0 and not getattr(dv, "resumed", False):
+                        dv.resumed = True               # (SUMO lets it go now, its stay made to end)
+                        try:
+                            c.vehicle.resume(vid)
+                            self.stats["kerb_resumed"] = self.stats.get("kerb_resumed", 0) + 1
+                        except Exception:  # noqa: BLE001, S110
+                            pass
                 elif dv.kind == "in" and getattr(dv, "kerb_after", False):
                     self.drives.pop(vid)            # (in its space as shown, SUMO's car still held: _kerb_leave)
                     k_ = self._kerb.get(vid)
@@ -1465,6 +1654,7 @@ class ParkingMotion:
                 elif not getattr(dv, "waited", False):  # its drive is over, SUMO has not put it back yet
                     dv.waited = True
                     self.stats["waited_at_road"] += 1
+
             if dv.kind == "out" and vid not in d.parked and vid not in self.held and not dv.done(now):
                 try:
                     c.vehicle.setSpeed(vid, 0.0)
@@ -1629,7 +1819,11 @@ class ParkingMotion:
                     g = _gap(body, ob)
                     # (only a car it drives into: closer than now, and standing, or in front of it on its way; one
                     # coming up behind it gives way itself)
-                    if g < GAP_M and _gap(cur[vid][0], ob) >= g - 1e-6 \
+                    # (9 Nov, 5th) a car standing a long while (broken down, in a queue) it can pass beside without
+                    # touching: passed, closer than GAP_M (it waited 2 minutes beside a car broken down on the next
+                    # lane)
+                    gap_m = GAP_M if not (dv.blocker == oid and dv.blocked_s > 10.0 and oid in still) else 0.05
+                    if g < gap_m and _gap(cur[vid][0], ob) >= g - 1e-6 \
                             and (oid in still or (ob[1][0] - x) * mx + (ob[1][1] - y) * my > 0.0):
                         hit = (k, oid, is_drive)
                         break
@@ -1646,6 +1840,14 @@ class ParkingMotion:
                                                                                             hit[1]):
                     want[vid] = None
         self._want = want
+        for vid, hit in list(want.items()):
+            dv = self.drives[vid]
+            if hit is not None and getattr(dv, "kerb_target", None) is not None and dv.blocked_s > 20.0 \
+                    and dv.progress(now) < 0.6 and vid in self.d.parked:
+                # (9 Nov, 5th) a kerb car about to pull out, waiting 20 s: it stays in its place (SUMO keeps it
+                # parked) and tries again when its way is clear (the cars waiting for it go on)
+                self._kerb_cancel(vid, dv, now)
+                want.pop(vid, None)
         # who waits on the road's traffic (a queue, a gap to merge into, SUMO to take it over), directly or behind
         # another that does: never gives up waiting (the road moves by itself)
         road = {vid for vid, dv in self.drives.items() if dv.done(now)}
@@ -1763,8 +1965,24 @@ class ParkingMotion:
             x, y, _f, _v, _g = dv.at_s(min(max(dv.progress(now), 0.0), dv.duration))
             # (at a kerb, a car pulling out: from when it moves, beside its lane already; SUMO's cars coming up
             # behind it stopped beside it to park, inside its way)
-            kerb_out = dv.kind == "out" and "spaces" not in self.areas.get(dv.area, {}) and dv.progress(now) > 0.5
+            kerb_out = dv.kind == "out" and "spaces" not in self.areas.get(dv.area, {}) and \
+                (dv.progress(now) > 0.5 or (getattr(dv, "kerb_target", None) is not None and dv.progress(now) >= 0.0))
             pos = self.on_lane(dv, x, y, within=4.0 if kerb_out else ON_LANE_M)
+            if pos is not None and getattr(dv, "sumo_front", None) is not None:
+                # (9 Nov, 5th) and the lane where SUMO will put its car back kept clear (SUMO needs it free)
+                pos = min(pos, dv.sumo_front - dv.length / 2 - 1.0)
+            if pos is not None and dv.kind == "in" and "spaces" not in self.areas.get(dv.area, {}) and \
+                    any(lg.reverse for lg in dv.legs) and self._kerb.get(vid) is not None:
+                # (9 Nov, 6th) a car going on past its kerb place to back into it: the lane kept clear back to the
+                # place's rear too (before: the car behind was held just behind it, beside its place, where it
+                # backs into: each waited for the other, 100 s, Rue 20); one held there already while it waits
+                # for it is asked to pass on the next lane
+                k_ = self._kerb[vid]
+                standing.setdefault(dv.road[2], []).append(
+                    (self._shown_front(vid, k_) - k_[5] - 1.0, 0.3, False, vid))
+                stuck_in = dv.blocked_s > 3.0 and dv.blocker in self.followers
+            else:
+                stuck_in = False
             if pos is not None:     # (its rear; and how close a car may be to be held: SUMO puts a car back in front)
                 # (9 Nov, 3rd) only a car wholly behind it: one beside it, or inside it (SUMO put a car on the
                 # road where a car turning in still stood, seen at a kerb), is let go on: the drive waits for it
@@ -1772,7 +1990,7 @@ class ParkingMotion:
                 # (before: let through, it drove through it) and asked to pass it on the next lane (SUMO needs
                 # that room to put the car back)
                 standing.setdefault(dv.road[2], []).append((pos - dv.length / 2, 0.3,
-                                                            dv.kind == "out" and dv.done(now), vid))
+                                                            (dv.kind == "out" and dv.done(now)) or stuck_in, vid))
                 by_edge.setdefault(dv.road[2].rsplit("_", 1)[0], []).append((pos + dv.length / 2, dv.area))
         for aid_ in {dv.area for dv in self.drives.values() if not dv.done(now) and self.narrow(dv.area)}:
             # (9 Nov, 4th) a car park that takes one car at a time: a car coming to park there waits on the road
@@ -1878,6 +2096,9 @@ class ParkingMotion:
                 for e, fr, a in stand:
                     if a != aim:
                         continue
+                    if fr - 5.0 > float(self.areas[a]["end"]) + 1.0 and e == self.areas[a]["edge"]:
+                        continue    # (9 Nov, 6th: one standing past where SUMO stops it is not in its way: a car
+                                    # coming to the Square held 100 s for the cars going out at noon)
                     dist = c.vehicle.getDrivingDistance(oid, e, max(fr, 0.0))
                     if 0.3 <= dist <= 70.0:
                         keep.add(oid)

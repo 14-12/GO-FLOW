@@ -2363,3 +2363,50 @@ car parks, 16 out, 19 into kerb places and 19 out, 3 into Parking Central, 4 out
 space (0.0 m), its heading the space's (0.0 deg). Two cars in the Square (10:54): 5 to 24 m apart. Hand-overs to SUMO
 (30 drives out): car parks 0.0 to 0.65 m; kerbs mostly under 0.8 m, four of 1.2 to 2.9 m (Rue 4 and Rue 19: still to
 look at).
+
+## 9 Nov (6th, 14:25-15:50): the waits, the last brushes, the hand-over
+
+* **Kerb drive out started while SUMO still has the car parked** (`_kerb_start`): it pulls out up to KERB_EARLY_S
+  before its stay ends, the lane behind it kept clear, and SUMO's car is put where the drive ends when SUMO lets it
+  go (vehicle.moveToXY: a kerb's hand-over was 1.0 m off along the lane before, 1.2 to 2.9 m in CARLA). If SUMO lets
+  it go but cannot put it back on its lane (a car leaving a kerb place waits for room), it is put there too and the
+  cars behind go on (before: they were held 80 s for the car standing there, Rue 20). A drive out that would cut
+  across a car broken down on the next lane is not started.
+* **The 100 s ring at Rue 20**: SUMO stopped a car past its kerb place with a car close behind it; it went on and
+  backed into its place, where the car behind stood, held for it. Now such a car is shown at a free place ahead of
+  it and pulls in forwards (`_kerb_ahead`); a car held behind one backing into its place is asked to pass.
+* **Two cars on one kerb place** (Rue 51: SUMO had two cars 0.5 m apart on one of its spaces; both shown on one
+  place, the one pulling out went through the other): the second is shown at the nearest free place.
+* **The lamp post on Rue 20**: a 5.4 m car's rear touched it (the places were tested for a 5 m car):
+  `tools/town05_kerb_places.py` now tests a 5.5 m car too (the same 94 places; two on Rue 20 moved 0.75 m). Rue 51's
+  and Rue 4's places 7 m apart (before 6 m: a car pulling out had 1 m).
+* **The Marche's corner space**: backing out of it, a car's tail went 0.2 m into the fence behind it; ways out with
+  no straight bit after the turn are tried too. A car pulling out of a kerb has ways that back 1.6 m first.
+* In a one-at-a-time car park, two drives whose ways stay 3.5 m apart do not wait for each other; a car coming to
+  park is not held for a car standing on the road past its stop.
+* Tried and dropped: letting a car out of the Square close behind another (it ran into it at the road: 6 overlap
+  steps in the 8-car check), holding the cars waiting to go out while a car waits to go in (the 8-car check took
+  2.6 times as long).
+
+Same three runs, the commit before (239cb7b) -> now (steps):
+
+| run | overlaps with moving cars | inside CARLA's objects | inside parked cars | worst seam | longest wait of a drive | longest a road car is held (in all) |
+|---|---|---|---|---|---|---|
+| seed 101, 07:30 | 0 -> 0 | 9 -> 0 | 0 -> 0 | 0.75 -> 0.0 m | 101 s -> 20 s | 152 s -> 31 s |
+| seed 102, 12:00 | 0 -> 0 | 0 -> 0 | 6 -> 0 | 0.79 -> 0.0 m | 218 s -> 218 s | 104 s -> 104 s |
+| seed 103, 17:30 | 0 -> 0 | 0 -> 0 | 0 -> 0 | 0.25 -> 0.0 m | 133 s -> 47 s | 61 s -> 62 s |
+
+8 cars to the Marche and 8 to the Square, one every 4 s: 0 overlaps, seams 0.0 m.
+
+Left: seed 102 at noon, the Square's way out opens onto a queue standing at a red light (40 to 50 s each time); its
+cars going out wait in their spaces up to 3.6 min, one at a time, and a car coming to park there waits up to 104 s on
+the road before it. No glitch, a jam.
+
+**In CARLA** (`tools\freefly_parking_demo.bat`, from 08:30), two runs:
+* 15:13-15:27: all seven kinds seen; 21 hand-overs to SUMO, 19 at 0.0 m, one 0.78 m (a car that left the Marche
+  before it had parked), one 1.59 m (a kerb car SUMO had put back beside its lane: moved to where the drive ends now,
+  above).
+* 15:30-15:46, with that: 27 hand-overs, all 0.05 m or less (car parks 0.0 m). 10 drives into car parks, 12 out, 13
+  into kerb places, 15 out (12 started while SUMO still had the car parked). The building drives (Parking Central) did
+  not come up in this run by 15:54 (the first run's at 13:18 and 14:48, unchanged code).
+

@@ -100,11 +100,16 @@ def main(argv=None) -> int:
                 for name in po.hits(x_, y_, f_, dv.length, st["obst"], margin=0.15):
                     key = f"{dv.area} {dv.kind} x {name}"
                     st.setdefault("static_hits", {})[key] = st.setdefault("static_hits", {}).get(key, 0) + 1
+                    st.setdefault("static_when", {}).setdefault(key, []).append(
+                        (dv.vid, round(cur.time, 1), round(dv.progress(cur.time), 1), round(dv.duration, 1),
+                         round(x_, 1), round(y_, 1), round(f_)))
                 body = po.car_box(x_, y_, f_, dv.length, margin=0.1)
                 for pid, pb in standing:
                     if math.dist(pb[0], (x_, y_)) < 9.0 and po.boxes_touch(body, pb):
                         key = f"{dv.area} {dv.kind}"
                         st.setdefault("parked_hits", {})[key] = st.setdefault("parked_hits", {}).get(key, 0) + 1
+                        st.setdefault("parked_when", {}).setdefault(key, []).append(
+                            (dv.vid, pid, round(cur.time, 1), round(dv.progress(cur.time), 1)))
         # (9 Nov) how close the cars on drives come to each other and to the road's cars (bodies as circles)
         if m.drives:
             from check_parking_crowd import circles, clearance
@@ -167,7 +172,9 @@ def main(argv=None) -> int:
            "overlap_steps": len(st.get("overlaps", [])), "overlaps": st.get("overlaps", [])[:400],
            "overlaps_by": _count_by(st.get("overlaps", [])),
            "static_hit_steps": sum(st.get("static_hits", {}).values()), "static_hits": st.get("static_hits", {}),
+           "static_when": {k: v[:12] for k, v in st.get("static_when", {}).items()},
            "parked_hit_steps": sum(st.get("parked_hits", {}).values()), "parked_hits": st.get("parked_hits", {}),
+           "parked_when": {k: v[:12] for k, v in st.get("parked_when", {}).items()},
            "touches": m.touches if m else None,
            "seams": m.seams if m else None, "no_place": st.get("no_place", [])[:20],
            "trace": st.get("trace"), "wall_s": round(time.time() - t)}
