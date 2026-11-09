@@ -39,6 +39,14 @@ def test_arcs_turn_on_a_car_s_radius_where_there_is_room():
     assert pm.min_radius(short) < 3.0
 
 
+def test_an_s_out_of_a_kerb_place_turns_hard_first_and_ends_on_its_lane():
+    pts = pm.s_curve((0.0, 0.0), (1.0, 0.0), (8.0, 2.6), 4.5)
+    assert math.dist(pts[0], (0.0, 0.0)) < 1e-9 and math.dist(pts[-1], (8.0, 2.6)) < 0.03
+    assert pm.min_radius(pts) == pytest.approx(4.5, abs=0.05)
+    assert pts[-1][1] - pts[-3][1] == pytest.approx(0.0, abs=0.01)          # (along its lane again)
+    assert pm.s_curve((0.0, 0.0), (1.0, 0.0), (4.0, 2.6), 4.5) is None      # (no room for it)
+
+
 def test_a_leg_about_its_rear_axle_puts_the_middle_ahead_of_its_path():
     pts = pm.resample([(0.0, 0.0), (0.0, 10.0)])
     lg = pm.Leg(pts, 2.5, pivot=1.3)

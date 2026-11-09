@@ -9573,8 +9573,9 @@
      262.6
     ]
    ],
-   "way_why": "9 Nov: its own ways in and out, through its two gates (in at the south one, out at the north one) clear of the barriers inside them, keeping right in its 4.7 m aisle",
-   "spaces_why": "9 Nov: 3 of its painted bays dropped (a CARLA truck and two containers stand in them), 14 left; 2 of the Marché's moved 0.6 m back off a lamp post at their head"
+   "way_why": "9 Nov: its own ways in and out, through its two gates (in at the south one, out at the north one) clear of the barriers inside them, keeping right in its 4.7 m aisle; one car on its way at a time (two cannot pass in its aisle)",
+   "spaces_why": "9 Nov: 3 of its painted bays dropped (a CARLA truck and two containers stand in them), 14 left; 2 of the Marché's moved 0.6 m back off a lamp post at their head",
+   "one_at_a_time": true
   },
   {
    "id": "pa_silo",

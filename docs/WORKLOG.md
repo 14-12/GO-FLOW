@@ -2269,3 +2269,38 @@ drawn once inside). Kerb out (11:06): forwards onto its lane, met SUMO's car 0.1
 (12:46), by the south gate (open only while the car passes): on its space's point (0.0 m), its heading the space's
 (0.0 deg). Drives out joined SUMO's car within 0.02 to 0.19 m at the kerbs (5), 0.07 to 0.73 m at the car parks (7),
 1.21 m out of Parking Central.
+
+## 9 Nov (4th, 12:20-13:30): the three left from the morning
+
+* **The Parking du Square, one car at a time** (`places.json` "one_at_a_time", `ParkingMotion.narrow`,
+  `_aisle_busy`): its aisle (4.3 m between the rows' noses) cannot hold two cars. A drive there starts only when no
+  other drive there is on its way (the one made first goes first); the car waits in its space or on the road beside
+  the car park, the cars behind it on the road held. A car coming to park there on the road's other lane, changing
+  onto it at the last moment, is held too (SUMO had stopped it where the first car still waited).
+* **The shortest kerbs**: SUMO's car, held where the drive out ends, changed lanes towards its turn (two lanes over,
+  5.3 m from the drive's end). A held car now keeps its lane (`_lock`: lane change mode 0 while held, its own back
+  after).
+* **A car SUMO puts on the lane from a kerb place where it had no place before** (parked from before the drives
+  began): shown in its place as any and driven out from there (`kerb_untracked`), its way out clear of the cars on
+  drives too (`_kerb_blocker`).
+* Also: a drive waiting behind another that waits for the road (a queue out of the Marché) no longer gives up after
+  40 s and drives into it (only in a ring, where it waits for itself); a kerb car leaving waits for the lane stretch it
+  uses (the cars that could not stop before it), not for 10 s of traffic; out of a kerb place an S of two arcs about
+  the rear axle (a hard turn first, its nose out past the car in front), backing 0.8 m first if that is clear; it does
+  not back out through the car parked behind it to reach SUMO's car (it waits).
+
+Same three runs, this morning's commit -> now (steps):
+
+| run | overlaps with moving cars | inside CARLA's objects | inside parked cars | worst seam |
+|---|---|---|---|---|
+| seed 101, 07:30 | 42 -> 0 | 21 -> 22 | 7 -> 0 | 5.3 -> 1.5 m |
+| seed 102, 12:00 | 4 -> 2 | 18 -> 9 | 1 -> 0 | 1.6 -> 1.5 m |
+| seed 103, 17:30 | 85 -> 6 | 13 -> 33 | 1 -> 1 | 5.1 -> 0.6 m |
+
+(From the start of the day, 278a815: overlaps 107/89/63, CARLA objects 94/220/153, parked cars 69/23/45.) The seams
+of 1.5 m are at the Square: SUMO puts the car back already moving; the kerbs' are under 0.9 m. 8 cars to the Square
+one every 4 s: 0 overlaps (they queue: 1263 s of waiting in all); to the Marché: 0, as before.
+
+Left: the 2 to 6 overlap steps are cars SUMO drives passing a car waiting at the road (2 steps each); the 9 to 33 steps
+inside CARLA's objects are kerb drives brushing a pine's trunk or a lamp post on the pavement edge (which ones depends
+on which places are taken: TreePine_501 on Rue 19, Lamppost_tall99/56 on Rue 19 and 20).

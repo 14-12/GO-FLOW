@@ -181,6 +181,27 @@ def arcs(corners, r=TURN_R_M, keep_end=0.5):
     return resample(_dedupe(pts, 0.02))
 
 
+def s_curve(p0, h, p1, r):
+    """(9 Nov, 3rd) From p0 heading h to p1 (beside the line ahead of it, heading h again): an S of two arcs of radius
+    r at its start (a car pulling out of a kerb place turns hard first, its nose out past the car in front), then
+    straight on to p1. None when p1 is not far enough ahead."""
+    n = (-h[1], h[0])
+    dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+    D, lat = dx * h[0] + dy * h[1], dx * n[0] + dy * n[1]
+    if lat < 0:
+        n, lat = (-n[0], -n[1]), -lat
+    if lat < 0.2:
+        return None
+    th = math.acos(max(-1.0, 1.0 - lat / (2.0 * r))) if lat < 2.0 * r else math.pi / 2.0
+    T = r * math.tan(th / 2.0)
+    x2 = T + lat / max(math.tan(th), 1e-6)
+    if D < x2 + T + 0.3:
+        return None
+    c1 = (p0[0] + h[0] * T, p0[1] + h[1] * T)
+    c2 = (p0[0] + h[0] * x2 + n[0] * lat, p0[1] + h[1] * x2 + n[1] * lat)
+    return arcs([p0, c1, c2, p1], r, keep_end=0.3)
+
+
 def min_radius(pts):
     """The tightest turn along a path (m), from its points three apart."""
     best = float("inf")
@@ -380,6 +401,7 @@ class ParkingMotion:
         self._kerb_fronts: dict[str, list] = {}    # kerb -> its spaces' fronts as shown (lane positions)
         self.touches: list = []                    # the drives whose way still touches something (the last 50)
         self._outs: dict[str, tuple] = {}          # a drive out made before its time: (when, drive, area)
+        self._lc: dict[str, int] = {}              # held: its lane change mode before
         self._kerb_wait: dict[str, float] = {}     # put back at a kerb, waiting for its way out to be clear: since
 
     # ------------------------------------------------------------------ geometry
@@ -453,6 +475,20 @@ class ParkingMotion:
                 gap = along if gap is None else min(gap, along)
         return gap / 2.0 if gap is not None and gap < 2 * AISLE_BACK_M + 2.0 else AISLE_BACK_M
 
+    def narrow(self, aid):
+        """Whether a car park's aisle is too narrow for two cars to pass (places.json "one_at_a_time": the Parking du
+        Square's, 4.3 m between its rows' noses): its drives go one at a time."""
+        return bool((self.areas.get(aid) or {}).get("one_at_a_time"))
+
+    def _aisle_busy(self, vid, dv, now):
+        """Another drive in the same car park on its way (or waiting to start before this one)."""
+        for oid, od in self.drives.items():
+            if oid == vid or od.area != dv.area or od.done(now):
+                continue
+            if od.progress(now) >= 0.5 or (od.t0, oid) < (dv.t0, vid):
+                return True
+        return False
+
     def lot_corners(self, aid, road_c, dr, bay_c, h):
         """Corners of the way in (road -> space), middles of the car; and the aisle's way out (towards the road)."""
         spaces = self.areas[aid]["spaces"]
@@ -511,6 +547,8 @@ class ParkingMotion:
                         best = max(min(f + KERB_SHIFT_M, hi), 5.5)
                 out[i] = best
                 nxt = best
+            if "_lat" not in a:
+                return out, ln          # (its side offset not known yet: not kept)
             self._kerb_fronts[aid] = (out, ln)
         return self._kerb_fronts[aid]
 
@@ -538,7 +576,9 @@ class ParkingMotion:
         a = self.areas[aid]
         if v is not None and "_lat" not in a and abs(v.x) < 1e5:   # (SUMO's side offset, once per kerb)
             (cx, cy), u = self._road(aid, f)
-            a["_lat"] = (v.x - cx) * -u[1] + (v.y - cy) * u[0]
+            lat = (v.x - cx) * -u[1] + (v.y - cy) * u[0]
+            if abs(lat) > 1.2:                      # (a car parked there, not one on the lane)
+                a["_lat"] = lat
         fronts, ln = self.kerb_fronts(aid)
         i = round((f - a["start"]) / ln) - 1
         sf = fronts[i] if 0 <= i < len(fronts) else f
@@ -715,6 +755,13 @@ class ParkingMotion:
 
         def make(fwd, sc):
             legs, pauses = [], []
+            if fwd == "arc":                # forwards into it, an S of two arcs
+                pts = s_curve(road_c, dr, kerb_c, sc)
+                if pts is None:
+                    return None
+                legs.append(Leg(pts, 2.5, signals=side))
+                made[(fwd, sc)] = (legs, [0.0])
+                return legs
             if fwd is None:                 # forwards into it
                 legs.append(Leg(hermite(road_c, dr, kerb_c, hk, scale=sc), 2.5, signals=side))
                 pauses.append(0.0)
@@ -730,7 +777,8 @@ class ParkingMotion:
             made[(fwd, sc)] = (legs, pauses)
             return legs
         if ahead >= 4.0:
-            cands = [(None, 1.0), (None, 0.8), (None, 1.2), (None, 0.6), (None, 1.5), (6.0, 1.0), (6.0, 0.8)]
+            cands = [(None, 1.0), ("arc", 4.5), (None, 0.8), (None, 1.2), ("arc", 5.0), ("arc", 4.0), (None, 0.6),
+                     (None, 1.5), (6.0, 1.0), (6.0, 0.8)]
         else:
             cands = [(6.0, 1.0), (6.0, 0.8), (7.0, 1.0), (5.0, 1.0), (7.0, 0.8), (8.0, 1.0)]
         legs = self._pick("kerb in", vid, L, cands, make, (kerb_c[0], kerb_c[1], _angle(*hk)), road=True)
@@ -832,6 +880,21 @@ class ParkingMotion:
 
         def make(back_m, sc):
             legs, pauses = [], []
+            if back_m in ("arc", "arcb"):   # (an S of two arcs about its rear axle: a hard turn out first;
+                ra0 = (kerb_c[0] - hk[0] * off, kerb_c[1] - hk[1] * off)   # arcb: backing 0.8 m first)
+                ra1 = (road_c[0] - dr[0] * off, road_c[1] - dr[1] * off)
+                if back_m == "arcb":
+                    rb = (ra0[0] - hk[0] * 0.8, ra0[1] - hk[1] * 0.8)
+                    legs.append(Leg(resample([ra0, rb]), V_BACK, reverse=True, pivot=off))
+                    pauses.append(PAUSE_S)
+                    ra0 = rb
+                pts = s_curve(ra0, hk, ra1, sc)
+                if pts is None:
+                    return None
+                legs.append(Leg(pts, 2.5, signals=side, pivot=off))
+                pauses.append(0.0)
+                made[(back_m, sc)] = (legs, pauses)
+                return legs
             if ahead < 3.0:                 # (SUMO's car not ahead of it: it backs out to it)
                 ra0 = (kerb_c[0] - hk[0] * off, kerb_c[1] - hk[1] * off)
                 ra1 = (road_c[0] - dr[0] * off, road_c[1] - dr[1] * off)
@@ -853,7 +916,9 @@ class ParkingMotion:
             pauses.append(0.0)
             made[(back_m, sc)] = (legs, pauses)
             return legs
-        cands = [(0.0, 1.0), (0.0, 0.8), (0.0, 1.2), (0.8, 1.0), (0.8, 0.8), (0.0, 0.6), (0.8, 1.2), (0.0, 1.5)]
+        cands = [("arc", 4.5), ("arc", 4.0), ("arcb", 4.5), ("arc", 5.0), ("arcb", 4.0), ("arc", 3.5), ("arcb", 3.5),
+                 (0.0, 1.0), (0.0, 0.8), (0.0, 1.2),
+                 (0.8, 1.0), (0.8, 0.8), (0.0, 0.6), (0.8, 1.2), (0.0, 1.5)]
         legs = self._pick("kerb out", vid, L, cands, make, (kerb_c[0], kerb_c[1], _angle(*hk)))
         if legs is None:
             return None
@@ -864,7 +929,10 @@ class ParkingMotion:
 
     def _kerb_clear(self, vid, aid, lo, hi):
         """Whether no car SUMO drives is on the area's lane between lane positions lo and hi (bodies), nor coming up
-        behind it so fast it could not stop before lo."""
+        behind it so fast it could not stop before lo (_kerb_blocker: which)."""
+        return self._kerb_blocker(vid, aid, lo, hi) is None
+
+    def _kerb_blocker(self, vid, aid, lo, hi):
         c = self.c
         lane = self.areas[aid]["lane"]
         try:
@@ -875,10 +943,17 @@ class ParkingMotion:
                 r = f - c.vehicle.getLength(oid)
                 sp = c.vehicle.getSpeed(oid)
                 if f >= lo - 1.0 - sp * sp / 6.0 and r <= hi + 1.0:
-                    return False
+                    return oid
         except Exception:  # noqa: BLE001
-            return False
-        return True
+            return "?"
+        for oid, od in self.drives.items():         # (and the cars on drives there: SUMO does not see them)
+            if oid == vid or getattr(od, "road", None) is None or od.road[2] != lane:
+                continue
+            x, y, _f, _v, _g = od.at_s(min(max(od.progress(self._now), 0.0), od.duration))
+            pos = self.on_lane(od, x, y, within=4.0)
+            if pos is not None and pos - od.length / 2 <= hi + 1.0 and pos + od.length / 2 >= lo - 1.0:
+                return oid
+        return None
 
     def _kerb_way_clear(self, vid, aid):
         """Whether a kerb car's way out (its space as shown to KERB_OUT_M past it, on its lane) is clear now (or it
@@ -906,6 +981,23 @@ class ParkingMotion:
         past its space is clear SUMO's car is moved to its end (vehicle.moveTo) and the shown car pulls out to it;
         not clear within KERB_WAIT_S: it backs out to where SUMO's car is."""
         c, d = self.c, self.d
+        for vid in ending:
+            # (9 Nov, 3rd) a car leaving a kerb place this module had not shown parked (SUMO had it parked from
+            # before the viewer's drives began, with no place): from its place as shown, as any (it appeared on
+            # the lane where a car turning in still stood)
+            if vid in self._kerb or vid in self.drives or vid in d.parked:
+                continue
+            v = vehicles.get(vid)
+            try:
+                lane, f = c.vehicle.getLaneID(vid), c.vehicle.getLanePosition(vid)
+            except Exception:  # noqa: BLE001, S112
+                continue
+            aid = next((a for a in self._kerb_lanes().get(lane, ()) if self.areas[a]["start"] - 1.0 <= f
+                        <= self.areas[a]["end"] + 1.0), None)
+            if aid is None or v is None or not self.visible(aid):
+                continue
+            if self.kerb_pose(vid, aid, v) is not None:
+                self.stats["kerb_untracked"] = self.stats.get("kerb_untracked", 0) + 1
         for vid, k in list(self._kerb.items()):
             if vid in d.parked or vid in self.drives:
                 continue
@@ -932,7 +1024,7 @@ class ParkingMotion:
             if vid not in self.held:
                 try:
                     c.vehicle.setSpeed(vid, 0.0)
-                    self.held.add(vid)
+                    self._lock(vid)
                     self.stats["held_sumo"] += 1
                 except Exception:  # noqa: BLE001, S110
                     pass
@@ -947,13 +1039,20 @@ class ParkingMotion:
                 try:
                     c.vehicle.moveTo(vid, self.areas[aid]["lane"], target)
                     c.vehicle.setSpeed(vid, 0.0)    # (again: held there until the drive ends)
-                    self.held.add(vid)
+                    self._lock(vid)
                     dv = self.kerb_out(vid, aid, now, target)
                     self.stats["kerb_moved_on"] = self.stats.get("kerb_moved_on", 0) + 1
                 except Exception:  # noqa: BLE001
                     dv = None
             elif now - w >= KERB_WAIT_S or target - sf < 4.0:
+                n_touch = self.stats.get("ways_touching", 0)
                 dv = self.kerb_out(vid, aid, now, f)
+                if dv is not None and self.stats.get("ways_touching", 0) > n_touch and now - w < 6 * KERB_WAIT_S:
+                    # (9 Nov, 3rd) backing out to where SUMO put it would touch a car parked behind: it waits on
+                    self.stats["ways_touching"] = n_touch
+                    self.touches.pop()
+                    self._show_parked(vid, k, v)
+                    continue
                 self.stats["kerb_backed_out"] = self.stats.get("kerb_backed_out", 0) + 1
             else:
                 self._show_parked(vid, k, v)        # (still in its space as shown)
@@ -967,6 +1066,15 @@ class ParkingMotion:
             self.reserve(dv, now)
             self.drives[vid] = dv
             self.stats["kerb_out"] += 1
+
+    def _kerb_lanes(self):
+        """lane -> the kerbs (areas) on it."""
+        if not hasattr(self, "_klanes"):
+            self._klanes = {}
+            for aid, a in self.areas.items():
+                if a.get("roadside") and "spaces" not in a and not a.get("hidden"):
+                    self._klanes.setdefault(a["lane"], []).append(aid)
+        return self._klanes
 
     def _shown_front(self, vid, k):
         """The lane position of a kerb car's front as shown."""
@@ -1208,7 +1316,7 @@ class ParkingMotion:
                 dv.kerb_after = True
                 try:
                     c.vehicle.setSpeed(vid, 0.0)
-                    self.held.add(vid)
+                    self._lock(vid)
                 except Exception:  # noqa: BLE001, S110
                     pass
                 self.stats["turned_back"] = self.stats.get("turned_back", 0) + 1
@@ -1241,7 +1349,7 @@ class ParkingMotion:
                 self.stats["turned_back"] = self.stats.get("turned_back", 0) + 1
                 try:
                     c.vehicle.setSpeed(vid, 0.0)
-                    self.held.add(vid)
+                    self._lock(vid)
                 except Exception:  # noqa: BLE001, S110 - it left meanwhile
                     pass
             if dv.kind == "out" and vid not in d.parked and vid not in ending and getattr(dv, "end_fixed", None) \
@@ -1261,7 +1369,7 @@ class ParkingMotion:
             if dv.kind == "out" and vid in ending and not dv.done(now):
                 try:                                   # SUMO put it back first: its car waits for the drive
                     c.vehicle.setSpeed(vid, 0.0)
-                    self.held.add(vid)
+                    self._lock(vid)
                     self.stats["held_sumo"] += 1
                 except Exception:  # noqa: BLE001, S110 - it left meanwhile
                     pass
@@ -1297,7 +1405,7 @@ class ParkingMotion:
             if dv.kind == "out" and vid not in d.parked and vid not in self.held and not dv.done(now):
                 try:
                     c.vehicle.setSpeed(vid, 0.0)
-                    self.held.add(vid)
+                    self._lock(vid)
                     self.stats["held_sumo"] += 1
                 except Exception:  # noqa: BLE001, S110 - it left meanwhile
                     pass
@@ -1413,6 +1521,15 @@ class ParkingMotion:
         want = {}
         for vid, dv in self.drives.items():
             s = dv.progress(now)
+            if s < 0.5 and self.narrow(dv.area) and self._aisle_busy(vid, dv, now):
+                # (9 Nov, 3rd) an aisle too narrow for two (the Parking du Square's, 4.3 m): it waits, in its space
+                # or at the road, until the car on its drive there is through (they met in it, 62 steps, seed 103)
+                dv.lag += dt
+                dv.rate = 0.0
+                if dv.kind == "out":
+                    self._sumo_waits(vid, dv, now)
+                self.stats["aisle_wait_s"] = round(self.stats.get("aisle_wait_s", 0.0) + dt, 1)
+                continue
             if s >= dv.duration or s < 0.0:        # (done, or not started: waiting for its way to be clear)
                 continue
             if self.areas.get(dv.area, {}).get("hidden"):
@@ -1421,7 +1538,11 @@ class ParkingMotion:
             if dv.kind == "out" and s < 0.3 and "spaces" not in self.areas.get(dv.area, {}):
                 # (9 Nov, 3rd) at a kerb, before it pulls out: its lane clear beside it and behind it for the whole
                 # S (SUMO's cars do not see it: one stopped beside it to park, inside its way)
-                hit = self._merge_gap(dv, 1, horizon_s=dv.duration)
+                (rx, ry), (ux, uy), lane_, pos_ = dv.road
+                x0_, y0_, _f, _v, _g = dv.at_s(0.0)
+                lo = pos_ + (x0_ - rx) * ux + (y0_ - ry) * uy - dv.length / 2 - 2.0
+                b = self._kerb_blocker(vid, dv.area, lo, pos_ + dv.length / 2) if dv.area in self.areas else None
+                hit = (1, b, b in self.drives) if b is not None and b != "?" else None
             last = cur[vid][0][1]
             for k in range(1 if hit is None else LOOK_N + 1, LOOK_N + 1):
                 t_ = min(s + k * LOOK_DT, dv.duration)
@@ -1477,6 +1598,15 @@ class ParkingMotion:
             # (a car of the road it waits for goes on by itself: a queue, the traffic to merge into. Given up on
             # only a car that this module holds itself, behind another drive: that could be waiting in a ring)
             patient = vid in road
+            if hit is not None and hit[2] and not patient:
+                # (9 Nov, 3rd) a drive in front that waits for something else (a queue out of the Marché): wait on;
+                # given up on only in a ring (it waits, through others, for this one)
+                seen, o = set(), hit[1]
+                while o is not None and o not in seen and o != vid:
+                    seen.add(o)
+                    w_ = want.get(o)
+                    o = w_[1] if w_ is not None and w_[2] else None
+                patient = o != vid
             if hit is not None and not patient and dv.blocked_s > (GIVE_UP_DRIVE_S if hit[2] else GIVE_UP_S):
                 dv.ignored.add(hit[1])
                 self.stats["gave_up_waiting"] = self.stats.get("gave_up_waiting", 0) + 1
@@ -1519,6 +1649,7 @@ class ParkingMotion:
         the lane (SUMO's setSpeed, as for a car waiting to turn into a car park)."""
         c = self.c
         standing: dict[str, list] = {}
+        by_edge: dict[str, list] = {}       # (the other lanes: a car coming to park there, changing lanes onto it)
         for vid, dv in self.drives.items():
             if self.areas.get(dv.area, {}).get("hidden"):
                 continue
@@ -1537,6 +1668,7 @@ class ParkingMotion:
                 # road where a car turning in still stood, seen at a kerb), is let go on: the drive waits for it
                 standing.setdefault(dv.road[2], []).append((pos - dv.length / 2, HOLD_GAP_M if dv.kind == "out"
                                                             and dv.done(now) else 0.3))
+                by_edge.setdefault(dv.road[2].rsplit("_", 1)[0], []).append((pos - dv.length / 2, dv.area))
         keep = set()
         if standing:
             for oid, (_body, is_drive) in cur.items():
@@ -1544,11 +1676,21 @@ class ParkingMotion:
                     continue
                 try:
                     lane = c.vehicle.getLaneID(oid)
-                    if lane not in standing:
-                        continue
                     front = c.vehicle.getLanePosition(oid)
-                    if not any(gap <= rear - front <= HOLD_BEHIND_M for rear, gap in standing[lane]):
-                        continue
+                    if lane in standing:
+                        if not any(gap <= rear - front <= HOLD_BEHIND_M for rear, gap in standing[lane]):
+                            continue
+                    else:
+                        # (9 Nov, 3rd) on another lane of its road, coming to park in the same place: it changed
+                        # onto the lane at the last moment and SUMO stopped it where the first still waited (seed
+                        # 103, the Square)
+                        near = [a for rear, a in by_edge.get(lane.rsplit("_", 1)[0], ())
+                                if 0.3 <= rear - front <= HOLD_BEHIND_M]
+                        if not near:
+                            continue
+                        nxt = c.vehicle.getStops(oid, 1)
+                        if not nxt or nxt[0].stoppingPlaceID not in near:
+                            continue
                     if c.vehicle.getVehicleClass(oid) in ("emergency", "authority"):
                         continue
                     keep.add(oid)
@@ -1612,13 +1754,27 @@ class ParkingMotion:
         v.lane_angle = None
         v.speed = 0.0
 
+    def _lock(self, vid):
+        """SUMO's car held where it is for a drive: no lane changes either (9 Nov, 3rd: a held car at a short kerb
+        moved two lanes over towards its turn while the drive went to where it had been put: 5.3 m off)."""
+        if vid in self.held:
+            return
+        self.held.add(vid)
+        try:
+            self._lc[vid] = self.c.vehicle.getLaneChangeMode(vid)
+            self.c.vehicle.setLaneChangeMode(vid, 0)
+        except Exception:  # noqa: BLE001, S110 - it left meanwhile
+            pass
+
     def _release_hold(self, vid):
         if vid in self.held:
             self.held.discard(vid)
             try:
                 self.c.vehicle.setSpeed(vid, -1.0)
+                if vid in self._lc:
+                    self.c.vehicle.setLaneChangeMode(vid, self._lc.pop(vid))
             except Exception:  # noqa: BLE001, S110 - it left meanwhile
-                pass
+                self._lc.pop(vid, None)
 
 
 def _retrace(dv, s):
