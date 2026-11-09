@@ -86,6 +86,7 @@ KERB_ROOM_M = 6.0       # ... the spaces as shown this far apart at least (front
 KERB_OUT_M = 8.0
 KERB_WAIT_S = 15.0      # ... that stretch not clear this long: it backs out to where SUMO put it instead
 REAR_AXLE_M = 1.0       # at a kerb a car turns about its rear axle, this far in front of its back
+LC_TO_STOP = 0b001001000101    # SUMO lane change mode: strategic, cooperative, right; no speed gain, no sublane moves
 PARKED_PAUSE_S = 2.0    # a car taken out for a trip on its way in: it stands this long in its space first
 RIGHT, LEFT, BRAKE, BACK = 1, 2, 8, 128     # SUMO's signal bits (cosim/convert.py)
 OWN_BITS = RIGHT | LEFT | BRAKE | BACK
@@ -1670,6 +1671,9 @@ class ParkingMotion:
             # (9 Nov, 4th) a car SUMO drives in its way, held by this module for another drive: waited for too (given
             # up on after 20 s, the drive went through it at a kerb)
             patient = vid in road or (hit is not None and not hit[2])
+            if hit is not None and not hit[2] and vid in self.held and dv.blocked_s > 15.0 \
+                    and not getattr(dv, "moved_on", False):
+                self._unring(vid, dv, hit[1])
             if hit is not None and not patient and dv.blocked_s > (GIVE_UP_DRIVE_S if hit[2] else GIVE_UP_S):
                 dv.ignored.add(hit[1])
                 self.stats["gave_up_waiting"] = self.stats.get("gave_up_waiting", 0) + 1
@@ -1684,6 +1688,41 @@ class ParkingMotion:
                 self.stats["gave_way"] = self.stats.get("gave_way", 0) + 1
             dv.rate = rate
         self._hold_followers(now, cur)
+
+    def _unring(self, vid, dv, oid):
+        """(9 Nov, 4th) A drive out waits for a car SUMO drives standing in its way, which waits behind this drive's
+        own car held on the road (SUMO put it back early): each waits for the other (2 minutes at the Marche). SUMO's
+        car is moved on 8 m (vehicle.moveTo) and the drive's end with it (the end moved over its last metres)."""
+        c = self.c
+        try:
+            lead = c.vehicle.getLeader(oid, 30.0)
+            if not lead or lead[0] != vid:
+                return
+            lane, pos = c.vehicle.getLaneID(vid), c.vehicle.getLanePosition(vid)
+            to = min(pos + 8.0, c.lane.getLength(lane) - 1.0)
+            if to - pos < 3.0:
+                return
+            c.vehicle.moveTo(vid, lane, to)
+            c.vehicle.setSpeed(vid, 0.0)
+            (x0, y0), _u0 = self._road_lane(lane, pos)
+            (x1, y1), _u1 = self._road_lane(lane, to)
+            last = dv.legs[-1]
+            prev = last.end_offset or (0.0, 0.0)
+            last.end_offset = (prev[0] + x1 - x0, prev[1] + y1 - y0)
+            dv.end_fixed = (0.0, 0.0)
+            dv.moved_on = True
+            self.stats["moved_on"] = self.stats.get("moved_on", 0) + 1
+        except Exception:  # noqa: BLE001, S110 - as SUMO has it
+            pass
+
+    def _road_lane(self, lane, pos):
+        """(x, y on a lane at pos, heading unit)."""
+        L = self.c.lane.getLength(lane)
+        edge, idx = lane.rsplit("_", 1)
+        p = min(max(pos, 0.0), L)
+        x0, y0 = self.c.simulation.convert2D(edge, p, int(idx))
+        x1, y1 = self.c.simulation.convert2D(edge, min(p + 1.0, L), int(idx))
+        return (x0, y0), _unit(x1 - x0, y1 - y0)
 
     def _merge_gap(self, dv, k, horizon_s=None):
         """A drive out about to pull onto its lane: (k, car, False) for a car SUMO drives on the lane that would
@@ -1834,7 +1873,7 @@ class ParkingMotion:
                 aim = nxt[0].stoppingPlaceID if nxt else None
                 if aim not in lots:
                     continue
-                self._hold_lane(oid)
+                self._hold_lane(oid, LC_TO_STOP)
                 lc_near.add(oid)
                 for e, fr, a in stand:
                     if a != aim:
@@ -1868,14 +1907,19 @@ class ParkingMotion:
             except Exception:  # noqa: BLE001, S110 - it left meanwhile
                 pass
 
-    def _hold_lane(self, oid):
+    def _hold_lane(self, oid, mode=0):
         """(9 Nov, 4th) A car held behind or beside a drive keeps its lane while held (one held on the next lane
-        changed onto the drive's lane as it braked, into the car waiting there)."""
-        if oid in self._lc or oid in self._passing:
+        changed onto the drive's lane as it braked, into the car waiting there): lane change mode 0. mode
+        LC_TO_STOP: a car coming to a car park's stop changes lanes to reach it but does not squeeze past the car in
+        front within its lane (SUMO's sublanes) nor overtake."""
+        if oid in self._passing:
             return
         try:
-            self._lc[oid] = self.c.vehicle.getLaneChangeMode(oid)
-            self.c.vehicle.setLaneChangeMode(oid, 0)
+            if oid not in self._lc:
+                self._lc[oid] = self.c.vehicle.getLaneChangeMode(oid)
+            elif mode != 0:
+                return                  # (held already: stays 0)
+            self.c.vehicle.setLaneChangeMode(oid, mode)
         except Exception:  # noqa: BLE001, S110 - it left meanwhile
             pass
 

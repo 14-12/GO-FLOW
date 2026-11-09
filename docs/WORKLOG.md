@@ -2316,7 +2316,7 @@ s, not every step (5335 ways tried in that run).
 ## 9 Nov (5th, 12:50-15:30): pines, lamp posts, the hand-over, the 0.37 m
 
 * **Kerb places clear of the pavement edge** (`tools/town05_kerb_places.py`, places.json "shown_fronts"): Town05's
-  avenues have a pine or a lamp post on the pavement edge every 6 m or so, and 46 of the 160 kerb places as shown stood
+  avenues have a pine or a lamp post on the pavement edge every 6 m or so, and 46 of the 138 kerb places as shown stood
   on one. Along each kerb, every 0.25 m, a car's body (5 m, 0.1 m kept, and the metre before and after it) beside its
   lane is tested against CARLA's map; the clear places are packed 6 m apart. The kerbs take that many cars now (SUMO's
   roadsideCapacity: Rue 19 33 -> 20 and 30 -> 18, Rue 20 33 -> 19 and 30 -> 27, Rue 51 4 -> 3 each; Rue 4 2 as
@@ -2334,23 +2334,32 @@ s, not every step (5335 ways tried in that run).
   beside it in the lane); held cars keep their lane; every car coming to a car park's stop keeps to its lane's middle
   (two queued side by side in the Square's 3.5 m lane and stopped at the same point to park); a car coming to park in
   the Square waits before its stop while a car is on its way in it.
-* A drive waits for a car SUMO drives that stands in its way (it gave up after 20 s and went through it).
+* A drive waits for a car SUMO drives that stands in its way (it gave up after 20 s and went through it). And when that
+  car waits behind the drive's own car, which SUMO put back early and this module holds on the road (each waiting for
+  the other: 2 minutes at the Marché's way out), SUMO's car is moved on 8 m and the drive's end with it (`_unring`).
+* Cars coming to a car park's stop change lanes to reach it but no longer squeeze past the car in front within the
+  lane (lane change mode 581: no speed gain, no sublane moves). (Mode 0 for them, tried first, kept them from reaching
+  the stop's lane: in CARLA 1 drive into a car park in 9 town hours; with 581, 14.)
 
 Same three runs, the commit before (a082ee3, the same town but 30 % more kerb places) -> now (steps):
 
 | run | overlaps with moving cars | inside CARLA's objects | inside parked cars | worst seam |
 |---|---|---|---|---|
-| seed 101, 07:30 | 0 -> 5 | 22 -> 0 | 0 -> 0 | 1.5 -> 0.75 m |
+| seed 101, 07:30 | 0 -> 0 | 22 -> 9 | 0 -> 0 | 1.5 -> 0.75 m |
 | seed 102, 12:00 | 2 -> 0 | 9 -> 0 | 0 -> 6 | 1.5 -> 0.79 m |
 | seed 103, 17:30 | 6 -> 0 | 33 -> 0 | 1 -> 0 | 0.6 -> 0.25 m |
 
 8 cars to the Marché and 8 to the Square, one every 4 s: 0 overlaps, seams 0.0 m (3.5 m at the Marché before).
 
 Left:
-* Seed 101, the run's last 2 s: SUMO puts a car back from the Marché one step behind where its drive ended, and the
-  car following it out is 0.4 to 1.7 m into it for 5 steps.
-* Seed 102: a car pulling out of the shortest kerb (Rue 51, 3 places 6 m apart) brushes the car parked in front of it
-  (6 steps).
-* Long waits instead of glitches: in seed 101 a car turning into a kerb place on Rue 20 waits 140 s for a car standing
-  in its way, and the cars behind it on its lane wait with it (155 s); at noon the Square's cars going out wait in their
-  spaces up to 3.5 min for its aisle (one at a time).
+* Seed 101: a car turning into a kerb place on Rue 20 brushes a lamp post for 9 steps; seed 102: a car pulling out of
+  the shortest kerb (Rue 51, 3 places 6 m apart) brushes the car parked in front of it (6 steps).
+* Long waits instead of glitches: seed 101, a car turning into a kerb place on Rue 20 waits 99 s for a car standing in
+  its way and the cars behind it wait with it (up to 152 s); seed 103, a car pulling out of a place on Rue 19 waits
+  133 s; at noon the Square's cars going out wait in their spaces up to 3.5 min for its aisle (one at a time).
+
+**In CARLA** (`tools\freefly_parking_demo.bat`, 9 Nov 14:04-14:19, from 08:30): all seven kinds seen, 14 drives into
+car parks, 16 out, 19 into kerb places and 19 out, 3 into Parking Central, 4 out. Into a Square space (12:23): on its
+space (0.0 m), its heading the space's (0.0 deg). Two cars in the Square (10:54): 5 to 24 m apart. Hand-overs to SUMO
+(30 drives out): car parks 0.0 to 0.65 m; kerbs mostly under 0.8 m, four of 1.2 to 2.9 m (Rue 4 and Rue 19: still to
+look at).
