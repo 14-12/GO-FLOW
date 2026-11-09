@@ -11174,7 +11174,12 @@
    "edge": "4",
    "start": 3.0,
    "end": 20.4,
-   "roadside": 2
+   "roadside": 2,
+   "shown_fronts": [
+    8.0,
+    14.0
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)"
   },
   {
    "id": "pa_kerb_4_-4",
@@ -11182,7 +11187,12 @@
    "edge": "-4",
    "start": 3.0,
    "end": 20.4,
-   "roadside": 2
+   "roadside": 2,
+   "shown_fronts": [
+    8.0,
+    14.0
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)"
   },
   {
    "id": "pa_kerb_51_51",
@@ -11190,7 +11200,14 @@
    "edge": "51",
    "start": 3.0,
    "end": 29.1,
-   "roadside": 4
+   "roadside": 3,
+   "shown_fronts": [
+    8.0,
+    14.0,
+    20.0
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 4
   },
   {
    "id": "pa_kerb_51_-51",
@@ -11198,7 +11215,14 @@
    "edge": "-51",
    "start": 3.0,
    "end": 29.1,
-   "roadside": 4
+   "roadside": 3,
+   "shown_fronts": [
+    8.0,
+    14.0,
+    20.0
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 4
   },
   {
    "id": "pa_kerb_19_19",
@@ -11206,7 +11230,31 @@
    "edge": "19",
    "start": 3.0,
    "end": 221.1,
-   "roadside": 33
+   "roadside": 20,
+   "shown_fronts": [
+    8.0,
+    18.5,
+    30.0,
+    43.25,
+    54.25,
+    71.0,
+    83.25,
+    96.5,
+    106.25,
+    117.25,
+    130.0,
+    136.0,
+    144.25,
+    157.0,
+    170.5,
+    176.5,
+    182.5,
+    200.5,
+    206.5,
+    212.5
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 33
   },
   {
    "id": "pa_kerb_19_-19",
@@ -11214,7 +11262,29 @@
    "edge": "-19",
    "start": 3.0,
    "end": 203.2,
-   "roadside": 30
+   "roadside": 18,
+   "shown_fronts": [
+    14.5,
+    25.0,
+    35.5,
+    41.5,
+    47.5,
+    56.25,
+    62.25,
+    71.75,
+    93.0,
+    105.75,
+    124.0,
+    130.0,
+    138.75,
+    149.5,
+    161.25,
+    173.25,
+    188.25,
+    196.25
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 30
   },
   {
    "id": "pa_kerb_20_20",
@@ -11222,7 +11292,30 @@
    "edge": "20",
    "start": 3.0,
    "end": 220.4,
-   "roadside": 33
+   "roadside": 19,
+   "shown_fronts": [
+    13.75,
+    25.0,
+    33.75,
+    42.0,
+    55.25,
+    68.75,
+    74.75,
+    91.0,
+    99.75,
+    116.0,
+    122.0,
+    136.5,
+    154.0,
+    160.0,
+    175.25,
+    185.5,
+    191.5,
+    199.25,
+    210.75
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 33
   },
   {
    "id": "pa_kerb_20_-20",
@@ -11230,7 +11323,38 @@
    "edge": "-20",
    "start": 3.0,
    "end": 202.2,
-   "roadside": 30
+   "roadside": 27,
+   "shown_fronts": [
+    8.0,
+    14.0,
+    20.0,
+    26.0,
+    32.0,
+    41.5,
+    47.5,
+    53.5,
+    59.5,
+    65.75,
+    71.75,
+    85.25,
+    91.25,
+    102.0,
+    108.0,
+    119.25,
+    125.25,
+    131.25,
+    137.25,
+    146.25,
+    152.25,
+    158.25,
+    164.25,
+    176.5,
+    182.5,
+    188.5,
+    194.5
+   ],
+   "shown_why": "9 Nov: the places as the viewer shows them, clear of the pines and lamp posts on the pavement edge (tools/town05_kerb_places.py)",
+   "roadside_was": 30
   }
  ]
 }

@@ -2312,3 +2312,45 @@ Square space (staged, 11:34): it had waited 47 s at the road for the aisle, went
 0.0 deg off). Drives out joined SUMO's car within 0.0 to 1.07 m (27 drives; kerbs 0.0 to 1.07, car parks 0.0 to 0.65);
 355 s of waiting for the Square's aisle in the 6 town hours. A kerb car waiting for its way out now tries again every 2
 s, not every step (5335 ways tried in that run).
+
+## 9 Nov (5th, 12:50-15:30): pines, lamp posts, the hand-over, the 0.37 m
+
+* **Kerb places clear of the pavement edge** (`tools/town05_kerb_places.py`, places.json "shown_fronts"): Town05's
+  avenues have a pine or a lamp post on the pavement edge every 6 m or so, and 46 of the 160 kerb places as shown stood
+  on one. Along each kerb, every 0.25 m, a car's body (5 m, 0.1 m kept, and the metre before and after it) beside its
+  lane is tested against CARLA's map; the clear places are packed 6 m apart. The kerbs take that many cars now (SUMO's
+  roadsideCapacity: Rue 19 33 -> 20 and 30 -> 18, Rue 20 33 -> 19 and 30 -> 27, Rue 51 4 -> 3 each; Rue 4 2 as
+  before). Into a place close behind where SUMO stopped the car: on past it and back in on two arcs, or a tight S
+  straight in if a car stands ahead.
+* **The hand-over**: SUMO puts a car back from a car park 1.3 m beside its lane's line (SUMO's sublanes): the step out
+  of the Square. SUMO's car is now moved to where the drive ends (vehicle.moveToXY) the step it is put back, and
+  stands there that step.
+* **The 0.37 m**: SUMO gives a kerb place to a car arriving the moment the car in it leaves; both were shown in it. The
+  arriving car now waits on its lane until the other has pulled out (`_kerb_place_taken`). A kerb place kept from a
+  car's stay before is worked out afresh when it parks.
+* **Cars passing a car waiting at the road**: held behind it even when close (before: let through, it drove through
+  it), and asked to pass it on the next lane; a car coming fast held while it can still stop (17 m/s into a car waiting
+  at the Square's way out); a car still moving up beside a standing car's tail held too (SUMO's sublanes let it come up
+  beside it in the lane); held cars keep their lane; every car coming to a car park's stop keeps to its lane's middle
+  (two queued side by side in the Square's 3.5 m lane and stopped at the same point to park); a car coming to park in
+  the Square waits before its stop while a car is on its way in it.
+* A drive waits for a car SUMO drives that stands in its way (it gave up after 20 s and went through it).
+
+Same three runs, the commit before (a082ee3, the same town but 30 % more kerb places) -> now (steps):
+
+| run | overlaps with moving cars | inside CARLA's objects | inside parked cars | worst seam |
+|---|---|---|---|---|
+| seed 101, 07:30 | 0 -> 5 | 22 -> 0 | 0 -> 0 | 1.5 -> 0.75 m |
+| seed 102, 12:00 | 2 -> 0 | 9 -> 0 | 0 -> 6 | 1.5 -> 0.79 m |
+| seed 103, 17:30 | 6 -> 0 | 33 -> 0 | 1 -> 0 | 0.6 -> 0.25 m |
+
+8 cars to the Marché and 8 to the Square, one every 4 s: 0 overlaps, seams 0.0 m (3.5 m at the Marché before).
+
+Left:
+* Seed 101, the run's last 2 s: SUMO puts a car back from the Marché one step behind where its drive ended, and the
+  car following it out is 0.4 to 1.7 m into it for 5 steps.
+* Seed 102: a car pulling out of the shortest kerb (Rue 51, 3 places 6 m apart) brushes the car parked in front of it
+  (6 steps).
+* Long waits instead of glitches: in seed 101 a car turning into a kerb place on Rue 20 waits 140 s for a car standing
+  in its way, and the cars behind it on its lane wait with it (155 s); at noon the Square's cars going out wait in their
+  spaces up to 3.5 min for its aisle (one at a time).

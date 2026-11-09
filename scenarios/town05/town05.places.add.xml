@@ -383,10 +383,10 @@
     </parkingArea>
     <parkingArea id="pa_kerb_4_4" lane="4_2" startPos="3.0" endPos="20.4" roadsideCapacity="2" friendlyPos="true"/>
     <parkingArea id="pa_kerb_4_-4" lane="-4_2" startPos="3.0" endPos="20.4" roadsideCapacity="2" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_51_51" lane="51_2" startPos="3.0" endPos="29.1" roadsideCapacity="4" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_51_-51" lane="-51_2" startPos="3.0" endPos="29.1" roadsideCapacity="4" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_19_19" lane="19_3" startPos="3.0" endPos="221.1" roadsideCapacity="33" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_19_-19" lane="-19_3" startPos="3.0" endPos="203.2" roadsideCapacity="30" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_20_20" lane="20_3" startPos="3.0" endPos="220.4" roadsideCapacity="33" friendlyPos="true"/>
-    <parkingArea id="pa_kerb_20_-20" lane="-20_3" startPos="3.0" endPos="202.2" roadsideCapacity="30" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_51_51" lane="51_2" startPos="3.0" endPos="29.1" roadsideCapacity="3" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_51_-51" lane="-51_2" startPos="3.0" endPos="29.1" roadsideCapacity="3" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_19_19" lane="19_3" startPos="3.0" endPos="221.1" roadsideCapacity="20" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_19_-19" lane="-19_3" startPos="3.0" endPos="203.2" roadsideCapacity="18" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_20_20" lane="20_3" startPos="3.0" endPos="220.4" roadsideCapacity="19" friendlyPos="true"/>
+    <parkingArea id="pa_kerb_20_-20" lane="-20_3" startPos="3.0" endPos="202.2" roadsideCapacity="27" friendlyPos="true"/>
 </additional>
