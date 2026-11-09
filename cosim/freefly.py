@@ -67,6 +67,10 @@ def parse_args(argv=None):
     ap.add_argument("--agent-hud", action=argparse.BooleanOptionalAction, default=False,
                     help="with the agents: their decisions on the overlay, over each junction and top right "
                          "(cosim/agent_hud.py). Off by default since 24 Oct (too many notices); the accident markers stay")
+    ap.add_argument("--trips", choices=["purpose", "random"], default="purpose",
+                    help="(8 Nov) purpose: most cars go from one of the town's places to another for a reason of the "
+                         "hour and park there (cosim/purposes.py, scenarios/town05/places.json); random: the old random "
+                         "routes")
     ap.add_argument("--route-guide", action=argparse.BooleanOptionalAction, default=True,
                     help="(8 Nov) F near a car: follow it (V changes the view) with the route agent's mini-map; the "
                          "agent (agents/route_recommendation, cosim/route_guidance.py) gives the car its route and "
@@ -214,6 +218,18 @@ def parse_args(argv=None):
                     help="--demo: instead of the flight, this many rounds of the hospital, the police station and the "
                          "recovery yard (cosim/depots.py), a screenshot of each (out/freefly/<scenario>_depot_*.png, "
                          "out/<scenario>_freefly_depots.json)")
+    ap.add_argument("--demo-places", type=int, default=0,
+                    help="--demo: instead of the flight, this many rounds of the town's car parks with painted bays "
+                         "and parking streets (cosim/purposes.py), each from 38 m up, a screenshot of each and how far "
+                         "each parked car's CARLA body is from its space (out/freefly/<scenario>_places_*.png, "
+                         "out/<scenario>_freefly_places.json)")
+    ap.add_argument("--demo-parking", type=int, default=0,
+                    help="--demo: instead of the flight, this many cars driven into or out of their space "
+                         "(cosim/parking_motion.py), each watched from above its car park, three screenshots each "
+                         "(out/freefly/<scenario>_parking_*.png, out/<scenario>_freefly_parking.json)")
+    ap.add_argument("--demo-parking-what", default="",
+                    help="--demo-parking: the kinds of drives to watch, in order, ',' between (building_in, "
+                         "building_out, lot_crowd, kerb_in, kerb_out, turned_back, lot_in, lot_out); see demo_parking")
     ap.add_argument("--record-clips", type=float, default=0.0, metavar="SECONDS",
                     help="with --demo: record --record-cams to MP4 (cosim/clip_recorder.py) until there is a stretch "
                          "of normal traffic and a crash in a recorded picture, or this many seconds; then cut "
@@ -894,9 +910,12 @@ class FrameFeeder(threading.Thread):
             dmg = scene.damage_for(vid) if scene is not None else None
             if dmg or vid in at_depot:
                 empty.append(aid)
+            # (8 Nov) a car driven into or out of its space, or standing in it (cosim/parking_motion.py): its heading
+            # as given, not worked out from its path (it backs out; the lane's direction is not its)
+            fixed = (p.angle if p is not None else v.angle, v.angle) if getattr(v, "fixed", False) else None
             if p is None:
                 veh.append((aid, vid, None, None, (v.x, v.y), None, v.length, v.angle, z0, z1, pt0, pt1,
-                            None, getattr(v, "lane_angle", None), None, getattr(v, "speed", None), dmg))
+                            None, getattr(v, "lane_angle", None), None, getattr(v, "speed", None), dmg, fixed))
                 continue
             p1, p2 = (p.x, p.y), (v.x, v.y)
             q0, q3 = pre.get(vid), nxt.get(vid)
@@ -904,7 +923,7 @@ class FrameFeeder(threading.Thread):
             p3 = (q3.x, q3.y) if q3 is not None else (2 * p2[0] - p1[0], 2 * p2[1] - p1[1])
             veh.append((aid, vid, p0, p1, p2, p3, v.length, v.angle, z0, z1, pt0, pt1,
                         getattr(p, "lane_angle", None), getattr(v, "lane_angle", None), getattr(p, "speed", None),
-                        getattr(v, "speed", None), dmg))
+                        getattr(v, "speed", None), dmg, fixed))
 
         def xyzw(tf):
             return (tf.location.x, tf.location.y, tf.location.z, tf.rotation.yaw)
@@ -1037,6 +1056,8 @@ class FreeFly:
         self.incidents = self.scene = None
         self.forecast = None  # --goflow-prediction (cosim/goflow_prediction.py)
         self.route_guide = None  # --route-guide (cosim/route_guidance.py)
+        self.demand = None  # --trips purpose (cosim/purposes.py)
+        self.parking_motion = None  # the cars driven into and out of their spaces, once the town is filled
         self.models: dict = {}
 
     # ------------------------------------------------------------ loading (a thread)
@@ -1097,11 +1118,14 @@ class FreeFly:
         # deepest 0.58 m, briefly, in a junction; tools/check_overlaps.py --variant viewer). Collisions are reported,
         # not acted on by SUMO (cosim/incidents.py makes accidents of them).
         from cosim.lanegeo import LaneGeometry
+        from cosim.purposes import ADD as PLACES_ADD
 
+        purpose = getattr(a, "trips", "random") == "purpose" and a.scenario == "town05" and PLACES_ADD.is_file()
         self.sumo = SumoSide(scen.folder, a.controller, seed=a.seed, port=a.sumo_port, label="freefly",
                              extras=a.emergency_every > 0 or a.pedestrians_per_km > 0,
                              emergency_every=a.emergency_every or 1e9,
-                             additional=BusLines.additional(scen.folder, a.scenario) if a.bus_lines else [],
+                             additional=(BusLines.additional(scen.folder, a.scenario) if a.bus_lines else [])
+                             + ([str(PLACES_ADD)] if purpose else []),
                              extra_args=["--route-files", str(pool_file), "--end", "100000000",
                                          "--lateral-resolution", "0.8", "--collision.action", "warn",
                                          "--collision.check-junctions", "true", "--collision.mingap-factor", "0"],
@@ -1115,7 +1139,16 @@ class FreeFly:
             self.sumo.extras.config.near_share = 0.75  # most start within 260 m of you (out of sight)
             self.sumo.extras.spawn_ok = lambda edge, pos: not self.in_view(
                 *self.scen.frame.to_carla_xy(*self.sumo.conn.simulation.convert2D(edge, pos)))
-        self.pop = population_class()(self.sumo.conn, pool, route_ids, curve, seed=a.seed)
+        self.demand = None
+        if purpose:  # (8 Nov) trips between the town's places (cosim/purposes.py)
+            from cosim.purposes import PurposeDemand, purpose_population
+
+            self.pop = purpose_population(population_class())(self.sumo.conn, pool, route_ids, curve, seed=a.seed)
+            self.demand = self.pop.demand = PurposeDemand(self.sumo.conn, self.clock.speed, seed=a.seed)
+            self.pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
+            self.pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
+        else:
+            self.pop = population_class()(self.sumo.conn, pool, route_ids, curve, seed=a.seed)
         base = {t: (re.search(r'vClass="([^"]+)"', vt) or [None, "passenger"])[1] for t, vt in pool.vtypes.items()}
         base.update(vmodels.EMERGENCY_TYPES)
         self.typer = vmodels.Typer(self.sumo.conn, self.cands, self.models, base)
@@ -1164,6 +1197,8 @@ class FreeFly:
                                              **({} if a.max_incidents is None else {"max_active": a.max_incidents}),
                                              **({} if a.careless_share is None else {"share": a.careless_share}))
             self.pop.type_for = self.incidents.type_for
+            if self.demand is not None:
+                self.incidents.parked = self.demand.parked  # a car parked at a place is not a knot to undo
         self.pop.start_ok = lambda edge: not self.in_view(*self.edge_start.get(edge, (1e9, 1e9)))
         # (31 Oct) drivers who go on through the end of the amber (cosim/red_runners.py), and a red-light camera
         self.red_runners = None
@@ -1197,6 +1232,7 @@ class FreeFly:
 
                 self.route_guide = RouteGuide(explain=getattr(a, "route_explain", False),
                                               typical_routing=getattr(a, "route_costs", "typical") == "typical")
+                self.route_guide.demand = self.demand   # a car on a trip with a purpose: routed to its car park
                 log.info("route guide: %d roads", len(self.route_guide.router.roads))
             except Exception:  # noqa: BLE001
                 self.route_guide = None
@@ -1205,9 +1241,13 @@ class FreeFly:
         target = self.pop.target(sod)
         self.stage = f"Filling the town for {self.clock.hhmm()}: {target:.0f} vehicles"
         self.pop.add(int(target), anywhere=True)
+        if self.demand is not None:  # the car parks and homes as a measured day has them now (cosim/purposes.py)
+            log.info("parked at the town's places: %d cars", self.pop.prefill(sod / 3600.0))
         n_fill = int(a.fill_s / self.sumo.step_length)
         for k in range(n_fill):
             cur = self.sumo.step()
+            if self.demand is not None:
+                self.demand.step(cur.arrived)
             self.pop.step(self._town(cur.vehicles), sod, lambda vid, v: True)
             if self.highway is not None and k % 4 == 0:
                 self.highway.step(cur.vehicles, sod, set(self.sumo.conn.simulation.getPendingVehicles()))
@@ -1215,6 +1255,30 @@ class FreeFly:
             self.progress = (k + 1) / n_fill
         self.progress = -1.0
         log.info("town filled: %d vehicles for %s (target %.0f)", len(cur.vehicles), self.clock.hhmm(), target)
+        if self.demand is not None:
+            from cosim.parking_motion import ParkingMotion
+
+            self.parking_motion = ParkingMotion(self.demand, self.sumo.conn)
+            self._door_ids = {}         # (9 Nov) the buildings' doors on the ways in (CARLA environment objects)
+            doors = set(self.parking_motion.gates)
+            removed = set(self.parking_motion.removed)
+            if doors or removed:
+                try:
+                    import carla
+
+                    gone = []
+                    for o in self.world.get_environment_objects(carla.CityObjectLabel.Any):
+                        if o.name in doors:
+                            self._door_ids[o.name] = int(o.id)
+                        if o.name in removed:
+                            gone.append(int(o.id))
+                    if gone:            # (taken away for good: in a way in, entrances.json "removed")
+                        self.world.enable_environment_objects(set(gone), False)
+                except Exception as e:  # noqa: BLE001 - the doors stay shut: the cars drive in as through them
+                    log.warning("doors not found: %s", e)
+                log.info("buildings' ways in: %s, doors %s, taken away %s", sorted(self.parking_motion.entrances),
+                         self._door_ids, sorted(removed))
+            self._doors_open: dict[str, bool] = {}
 
         self.stage = "Handing the traffic to CARLA"
         if getattr(a, "profile", False):  # count the calls to the server (cosim/sampler.py)
@@ -1805,6 +1869,21 @@ class FreeFly:
             if self.scene.carrying(tv) and (v is None or not self.in_view(*frame.to_carla_xy(v.x, v.y))):
                 self.scene.unload(tv)
 
+    def _doors(self) -> None:
+        """(9 Nov) A building's door or a car park's barrier arm on a car's way in or out (cosim/parking_motion.py):
+        open (its mesh hidden) while the car passes, shut again after."""
+        ids = getattr(self, "_door_ids", None)
+        if not ids:
+            return
+        for name, is_open in self.parking_motion.door_states().items():
+            if name not in ids or self._doors_open.get(name, False) == is_open:
+                continue
+            try:
+                self.world.enable_environment_objects({ids[name]}, not is_open)
+                self._doors_open[name] = is_open
+            except Exception as e:  # noqa: BLE001
+                log.debug("door %s: %s", name, e)
+
     def _town(self, vehicles: dict) -> dict:
         """The town's vehicles: all but the ring road's own (the day's curve is the town's)."""
         hw = getattr(self, "highway", None)
@@ -1813,6 +1892,48 @@ class FreeFly:
             return vehicles
         return {v: x for v, x in vehicles.items()
                 if not (hw is not None and hw.is_ring_car(v)) and not (dep is not None and dep.owns(v))}
+
+    def standing_why(self, vehicles: dict) -> dict:
+        """The cars standing (under 1 m/s, as the mini-map counts them; parked ones left out), by why: the ring
+        road's, the depots', an accident's, buses, at a stop, before a red or amber signal, queued behind a standing
+        car, other (with the roads they stand on)."""
+        c = self.sumo.conn
+        hw, dep, im = getattr(self, "highway", None), getattr(self, "depots", None), self.incidents
+        parked = self.demand.parked if self.demand is not None else {}
+        why: dict = {}
+        roads: dict = {}
+        for vid, v in vehicles.items():
+            if v.speed >= 1.0 or vid in parked:
+                continue
+            try:
+                if hw is not None and hw.is_ring_car(vid):
+                    k = "ring"
+                elif dep is not None and dep.owns(vid):
+                    k = "depot"
+                elif im is not None and (im.protected(vid) or vid in im.role):
+                    k = "accident"
+                elif vid.startswith("pt_"):
+                    k = "bus"
+                elif c.vehicle.getStopState(vid) & 1:
+                    k = "at_a_stop"
+                else:
+                    tls = c.vehicle.getNextTLS(vid)
+                    lead = c.vehicle.getLeader(vid, 15.0)
+                    if tls and tls[0][2] < 25.0 and tls[0][3] in "rRyYu":
+                        k = "red_signal"
+                    elif lead and lead[0] in vehicles and vehicles[lead[0]].speed < 1.0:
+                        k = "queue"
+                    else:
+                        k = "other"
+                        e = c.vehicle.getRoadID(vid)
+                        roads[e] = roads.get(e, 0) + 1
+            except Exception:  # noqa: BLE001, S112 - left meanwhile
+                continue
+            why[k] = why.get(k, 0) + 1
+        why["total"] = sum(why.values())
+        why["of"] = len(vehicles) - len(parked)
+        why["other_roads"] = dict(sorted(roads.items(), key=lambda kv: -kv[1])[:6])
+        return why
 
     def not_guided(self, vid: str) -> str:
         """Why the route agent leaves this vehicle's route alone ("" when it may route it)."""
@@ -1886,7 +2007,8 @@ class FreeFly:
         SUMO ends a trip at the end of an edge, often a stop line, and the car vanished there.
         Emergency vehicles finish their run once out of sight."""
         c = self.sumo.conn
-        over = len(vehicles) > self.target + 2
+        parked = len(self.demand.parked) if self.demand is not None else 0   # (not on the roads)
+        over = len(vehicles) - parked > self.target + 2
         ems = self.sumo.extras.emergency if self.sumo.extras is not None else {}
         alive = set(c.vehicle.getIDList())  # after this step's removals
         subs = self.sumo.vehicle_subs
@@ -1901,6 +2023,8 @@ class FreeFly:
             if vid not in alive or (im is not None and im.protected(vid)):  # an accident's vehicles keep their routes
                 continue
             if self.route_guide is not None and self.route_guide.holds(vid):  # the route agent's until it arrives
+                continue
+            if self.demand is not None and self.demand.holds(vid):  # on its way to a place: its route is its trip's
                 continue
             try:
                 idx = subs[vid][tc.VAR_ROUTE_INDEX]
@@ -1968,6 +2092,29 @@ class FreeFly:
                     and (im_ is None or not im_.protected(vid)))
 
         lap("idlist")
+        if self.demand is not None:
+            self.demand.step(cur.arrived)
+            # SUMO puts a parked car's FRONT on its space's point; the spaces are the middles of CARLA's painted
+            # bays: the body is moved forward half its length, so it stands on its bay (8 Nov: 2.3 m off before)
+            lots = self.demand.places.areas
+            for vid, aid in self.demand.parked.items():
+                v = cur.vehicles.get(vid)
+                if v is not None and "spaces" in lots.get(aid, {}):
+                    a = math.radians(v.angle)
+                    v.x += math.sin(a) * v.length / 2.0
+                    v.y += math.cos(a) * v.length / 2.0
+            if self.parking_motion is not None:   # driven into their space and out of it (cosim/parking_motion.py)
+                self.parking_motion.step(cur.time, cur.vehicles)
+                self._doors()
+            if self._k % 4 == 0:    # (8 Nov) every 2 s: why the cars stand (the mini-map's AT RED / QUEUED)
+                self._why = self.standing_why(cur.vehicles)
+                if cur.time - getattr(self, "_why_logged", -1e9) >= 60.0:     # (logged every SUMO minute)
+                    self._why_logged = cur.time
+                    log.info("standing: %s", self._why)
+                    if self.parking_motion is not None:
+                        log.info("parking drives: %s", self.parking_motion.stats)
+            self.places_live = self.demand.live(self.clock.seconds_of_day / 3600.0)
+            self.places_live["why"] = getattr(self, "_why", None)
         self.target = self.pop.step(self._town(cur.vehicles), self.clock.seconds_of_day, may_remove)
         if self.highway is not None and self._k % 4 == 0:  # every 2 s: the ring road's own cars
             self.highway.step(cur.vehicles, self.clock.seconds_of_day,
@@ -2027,6 +2174,11 @@ class FreeFly:
         lap("arrived")
         full = cur
         cur = within(cur, frame, fx, fy, R, drawn)
+        pmo = self.parking_motion
+        if pmo is not None:     # (9 Nov) parked inside a building: out of sight, not drawn (they were drawn inside the
+            hid = [vid for vid in cur.vehicles if pmo.inside(vid)]      # walls, one on another, some under a roof)
+            if hid:
+                cur = dataclasses.replace(cur, vehicles={k: v for k, v in cur.vehicles.items() if k not in hid})
         if im is not None and im.role:  # an accident's cars are drawn wherever you are: it never vanishes
             keep = {vid: v for vid, v in full.vehicles.items() if im.protected(vid)}
             if keep:
@@ -2996,6 +3148,313 @@ def demo_depots(ff, shooter, scenario: str, st: dict, t_el: float, rounds: int, 
     return False
 
 
+# --demo-places, in this order: the car parks with painted bays and the parking streets (the other car parks' spaces
+# are inside their buildings: nothing to see)
+PLACES_SHOWN = ("lot_marche", "lot_square", "kerb_19", "kerb_20", "kerb_4", "kerb_51")
+
+
+def place_view(ff, d, pid: str, up: float, pitch: float, centre=None):
+    """A camera looking down at place pid's spaces (cosim/purposes.py): `up` metres above them, `pitch` degrees down,
+    from its road's side, outside the buildings and with nothing solid in the way (CARLA's ray casting: from beside a
+    tower the camera was inside it; one was on the roof of the building next to the Parking du Square)."""
+    import carla
+
+    from cosim.run import ground_z
+
+    frame = ff.scen.frame
+    pts = [(x, y) for a in d.places.park_of[pid] for x, y, _ang in d.places.areas[a].get("spaces", ())]
+    pts = pts or [d.places.xy[a] for a in d.places.park_of[pid]]      # (a parking street: its road's middle)
+    sx, sy = sum(q[0] for q in pts) / len(pts), sum(q[1] for q in pts) / len(pts)
+    if centre is not None:                      # (SUMO x, y: looking at this point of it instead)
+        sx, sy = centre
+    cx, cy = frame.to_carla_xy(sx, sy)
+    rx, ry = frame.to_carla_xy(*d.places.xy[d.places.park_of[pid][0]])
+    walls = [poly for q in d.places.places.values() if q["kind"] not in ("parking", "kerb", "park")
+             for poly in (q.get("blocks") or [q.get("outline") or []]) if len(poly) > 2]
+
+    def in_a_building(x, y):    # (SUMO x, y) inside one of the places' buildings
+        def inside(poly):
+            c = False
+            for (x1, y1), (x2, y2) in zip(poly, poly[-1:] + poly[:-1]):
+                if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+                    c = not c
+            return c
+        return any(inside(poly) for poly in walls)
+    z = ground_z(ff.cmap, cx, cy)
+    target = carla.Location(cx, cy, z + 0.5)
+    solid = {getattr(carla.CityObjectLabel, n, None) for n in ("Buildings", "Walls", "Fences", "Vegetation",
+                                                               "Static", "Poles", "Bridge")} - {None}
+
+    def clear(eye):             # CARLA's own geometry: nothing solid between the camera and the spaces, nor over it
+        try:
+            for hit in ff.world.cast_ray(eye, target):
+                if hit.label in solid and hit.location.distance(target) > 3.0:
+                    return False
+            sky = carla.Location(eye.x, eye.y, eye.z + 60.0)
+            return not any(h.label in solid for h in ff.world.cast_ray(sky, eye))
+        except Exception:  # noqa: BLE001 - no ray casting: the places' outlines only
+            return True
+    a0 = math.atan2(cy - ry, cx - rx)
+    best = None
+    for lift in (0.0, 10.0, 20.0):              # from its road's side, else turned 45 deg at a time, else higher
+        h_ = up + lift
+        back = h_ / math.tan(math.radians(pitch))
+        for k in (0, 1, -1, 2, -2, 3, -3, 4):
+            a = a0 + k * math.pi / 4
+            vx, vy = math.cos(a), math.sin(a)
+            ex, ey = cx - vx * back, cy - vy * back
+            if in_a_building(*frame.to_sumo_xy(ex, ey)):
+                continue
+            eye = carla.Location(ex, ey, z + h_)
+            tf = carla.Transform(eye, carla.Rotation(-pitch, math.degrees(math.atan2(vy, vx)), 0.0))
+            best = best or tf
+            if clear(eye):
+                return tf
+    return best or carla.Transform(carla.Location(cx, cy, z + up + 20.0), carla.Rotation(-89.0, 0.0, 0.0))
+
+
+def demo_places(ff, shooter, scenario: str, st: dict, t_el: float, rounds: int, redraw=None) -> bool:
+    """--demo-places, once per pass of the main loop: each car park with painted bays and parking street of
+    PLACES_SHOWN seen from 38 m up, from its road's side, looking down at 72 deg (place_view), a screenshot 6 s after
+    the camera got there; for every car SUMO has parked in it, whether CARLA has a body for it and how far that body's middle is from the middle of the
+    nearest space (out/<scenario>_freefly_places.json). True when done."""
+    out_json = ROOT / "out" / f"{scenario}_freefly_places.json"
+    d = getattr(ff, "demand", None)
+    if d is None:
+        out_json.write_text(json.dumps({"result": "no trips with a purpose (--trips purpose)"}), encoding="utf-8")
+        return True
+    if t_el < DEMO_WARMUP_S + 20.0:
+        return False
+    out = ROOT / "out" / "freefly"
+    shots = st.setdefault("shots", [])
+    names = [n for n in PLACES_SHOWN if n in d.places.places]
+    frame = ff.scen.frame
+    pend = st.get("pending")
+    if pend is not None:
+        if time.time() - pend["at"] < 6.0:
+            return False
+        if redraw is not None:
+            for _ in range(3):
+                redraw()
+                time.sleep(0.12)
+        name = f"{scenario}_places_{len(shots) + 1:02d}_{pend['place']}.png"
+        ok = shooter.grab_window(out / name)
+        cars = []
+        for aid_ in d.places.park_of[pend["place"]]:
+            area = d.places.areas[aid_]
+            spaces = [frame.to_carla_xy(x, y) for x, y, _a in area.get("spaces", ())]
+            for vid, a in list(d.parked.items()):
+                if a != aid_:
+                    continue
+                act = ff.cs.actors.get(vid)
+                row = {"vid": vid, "area": aid_, "carla_body": act is not None}
+                if act is not None and spaces:
+                    try:
+                        loc = ff.world.get_actor(act).get_transform().location
+                        row["off_m"] = round(min(math.hypot(loc.x - x, loc.y - y) for x, y in spaces), 2)
+                    except Exception:  # noqa: BLE001 - gone meanwhile
+                        pass
+                cars.append(row)
+        offs = [c["off_m"] for c in cars if "off_m" in c]
+        shots.append({"file": name if ok else None, "place": pend["place"], "clock": ff.clock.hhmm(),
+                      "parked": len(cars), "with_body": sum(c["carla_body"] for c in cars),
+                      "off_m_max": max(offs) if offs else None, "cars": cars})
+        st["pending"] = None
+    if len(shots) >= rounds * len(names):
+        allo = [c["off_m"] for sh in shots for c in sh["cars"] if "off_m" in c]
+        res = {"shots": shots, "parked_seen": len(allo), "off_m_median": sorted(allo)[len(allo) // 2] if allo else None,
+               "off_m_max": max(allo) if allo else None, "stats": d.stats}
+        out_json.write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
+        return True
+    pid = names[len(shots) % len(names)]
+    ff.spectator.set_transform(place_view(ff, d, pid, 38.0, 72.0))
+    st["pending"] = {"at": time.time(), "place": pid}
+    return False
+
+
+PARKING_KINDS = ("building_in", "building_out", "lot_crowd", "kerb_in", "kerb_out", "turned_back", "lot_in",
+                 "lot_out")
+PARKING_WAIT_S = 240.0  # --demo-parking: a kind not seen within this many real seconds is left out
+
+
+def _drive_kind(pm_, dv) -> str:
+    """'building_in', 'lot_out', 'kerb_in'... for a drive of cosim/parking_motion.py."""
+    a = pm_.areas.get(dv.area, {})
+    base = "building" if a.get("hidden") else "lot" if "spaces" in a else "kerb"
+    return f"{base}_{dv.kind}"
+
+
+def demo_parking(ff, shooter, scenario: str, st: dict, t_el: float, n: int, redraw=None, what: str = "") -> bool:
+    """--demo-parking, once per pass of the main loop: cars driven into and out of their spaces (cosim/parking_motion
+    .py), each watched from above its car park (place_view), screenshots on its way (out/freefly/<scenario>_parking_
+    *.png); then out/<scenario>_freefly_parking.json. True when done.
+
+    what (--demo-parking-what, ',' between): the kinds to watch, in order: building_in / building_out (a car park
+    inside a building, by its way in; its door's state at each picture, and whether the car is still drawn once
+    inside), lot_crowd (a drive in a car park with painted bays while another is on its way there: how close their
+    CARLA bodies come), kerb_in / kerb_out, turned_back (staged: SUMO takes a car out again half way into its space,
+    vehicle.resume), lot_in (its heading once in its space against the space's), lot_out. Empty: n drives in or out
+    of the car parks with painted bays, as before. A kind not seen within PARKING_WAIT_S is left out (listed)."""
+    from cosim.mapping import sumo_angle_to_carla_yaw
+
+    out_json = ROOT / "out" / f"{scenario}_freefly_parking.json"
+    d, pm_ = getattr(ff, "demand", None), getattr(ff, "parking_motion", None)
+    if d is None or pm_ is None:
+        if t_el > DEMO_WARMUP_S + 60.0:
+            out_json.write_text(json.dumps({"result": "no drives (--trips purpose)"}), encoding="utf-8")
+            return True
+        return False
+    if "want" not in st:
+        kinds = [k.strip() for k in what.split(",") if k.strip() in PARKING_KINDS]
+        st["want"] = kinds or [("lot_in", "lot_out")[i % 2] for i in range(n)]
+        st["since"] = time.time()
+        st["not_seen"] = []
+    seen = st.setdefault("seen", [])
+    cur = st.get("cur")
+    now = ff.sim_now
+
+    def body_of(vid):
+        aid = ff.cs.actors.get(vid)
+        if aid is None:
+            return None
+        try:
+            tf = ff.world.get_actor(aid).get_transform()
+            return tf
+        except Exception:  # noqa: BLE001
+            return None
+
+    if cur is not None:
+        vid = cur["vid"]
+        dv = pm_.drives.get(vid)
+        if dv is not None and dv is not cur["dv"]:
+            cur["dv"] = dv                          # (turned back: its new drive)
+            cur.setdefault("events", []).append(f"new drive: {dv.why}")
+        dv = cur["dv"]
+        el = now - cur["t_pick"]
+        k = dv.progress(now) / max(dv.duration, 1e-6)
+        if cur["kind"] == "turned_back" and not cur.get("resumed") and k >= 0.4 and cur["shots"][:1] != [0.3]:
+            try:                                    # SUMO takes it out of its space again, 40 % of the way in
+                ff.sumo.conn.vehicle.resume(vid)
+                cur["resumed"] = round(dv.progress(now), 1)
+            except Exception as e:  # noqa: BLE001
+                cur["resumed"] = f"failed: {e}"
+            cur["shots"], cur["by_time"], cur["t_pick"] = [1.5, 4.0, 7.0], True, now     # (then by the clock)
+            el = 0.0
+        due = cur["shots"] and (el >= cur["shots"][0] if cur["by_time"] else
+                                (k >= cur["shots"][0] if cur["shots"][0] <= 1.0
+                                 else dv.done(now) and now - cur.setdefault("done_at", now) >= cur["shots"][0] - 1.0))
+        if due:
+            cur["shots"].pop(0)
+            if redraw is not None:
+                for _ in range(2):
+                    redraw()
+                    time.sleep(0.1)
+            name = f"{scenario}_parking_{len(seen) + 1:02d}_{cur['kind']}_{len(cur['files']) + 1}.png"
+            cur["files"].append(name if shooter.grab_window(ROOT / "out" / "freefly" / name) else None)
+            x, y, face, _v, _s = dv.at(now)
+            tf = body_of(vid)
+            row = {"progress": round(dv.progress(now), 1), "of": round(dv.duration, 1),
+                   "drive": [round(c_, 2) for c_ in ff.scen.frame.to_carla_xy(x, y)],
+                   "carla_body": [round(tf.location.x, 2), round(tf.location.y, 2)] if tf is not None else None,
+                   "drawn": tf is not None}
+            if tf is not None:      # the body's heading against the drive's (CARLA yaw), degrees
+                row["yaw_off"] = round((tf.rotation.yaw - sumo_angle_to_carla_yaw(face) + 180.0) % 360.0 - 180.0, 1)
+            if cur["kind"] == "lot_in" and dv.done(now):     # in its space: its heading against the space's
+                v_ = ff.sumo.conn.vehicle
+                try:
+                    row["space_yaw_off"] = round((tf.rotation.yaw - sumo_angle_to_carla_yaw(v_.getAngle(vid))
+                                                  + 180.0) % 360.0 - 180.0, 1) if tf is not None else None
+                except Exception:  # noqa: BLE001, S110
+                    pass
+            gates = getattr(dv, "gates", None)
+            if gates:               # the doors and barrier arms on its way: open?
+                states = pm_.door_states()
+                row["gates"] = {g[0]: states.get(g[0]) for g in gates}
+            others = [o for o, od in pm_.drives.items() if o != vid and od.area == dv.area]
+            if others:              # the other drives there: how far their CARLA bodies are from this one's
+                gaps = []
+                for o in others:
+                    to = body_of(o)
+                    if to is not None and tf is not None:
+                        gaps.append([o, round(to.location.distance(tf.location), 2)])
+                row["others"] = gaps
+            cur.setdefault("where", []).append(row)
+        if cur["kind"] == "turned_back" and not cur.get("resumed") and vid in pm_.drives and el < 150.0:
+            return False                            # (not taken out yet)
+        if cur["shots"] and (vid in pm_.drives or cur["by_time"] or (not cur["by_time"] and cur["shots"][0] > 1.0
+                                                                       and el < 90.0)) and el < 150.0:
+            return False
+        seen.append({"vid": vid, "kind": cur["kind"], "area": dv.area, "why": dv.why, "drive_s": round(dv.duration, 1),
+                     "files": cur["files"], "clock": ff.clock.hhmm(), "where": cur.get("where"),
+                     "events": cur.get("events"), "resumed_at_s": cur.get("resumed"),
+                     "started_later_s": round(cur["lag0"], 1)})
+        st["cur"] = None
+        st["since"] = time.time()
+    if not st["want"] or t_el > DEMO_WARMUP_S + PARKING_WAIT_S * (n + 2):
+        if "choose0" in st:
+            d.places.choose = st.pop("choose0")
+        res = {"drives_seen": seen, "not_seen": st["not_seen"] + st["want"], "stats": pm_.stats,
+               "staged": st.get("staged"),
+               "seams": pm_.seams[-30:], "entrances": sorted(pm_.entrances)}
+        out_json.write_text(json.dumps(res, indent=2, default=str), encoding="utf-8")
+        return True
+    if t_el < DEMO_WARMUP_S + 15.0:
+        return False
+    if time.time() - st["since"] > PARKING_WAIT_S:          # none of the next kind came: left out
+        st["not_seen"].append(st["want"].pop(0))
+        st["since"] = time.time()
+        return False
+    # (staged) a car park inside a building is rarely chosen (when the others nearby are full): after 30 s waiting
+    # for a drive into one, half the new trips go to one that has a way in, until one is seen
+    bld = [p_ for p_, areas in d.places.park_of.items() if any(a_ in pm_.entrances for a_ in areas)]
+    want_b = bool(bld) and st["want"] and st["want"][0].startswith("building")
+    if want_b and time.time() - st["since"] > 30.0 and "choose0" not in st:
+        st["choose0"] = d.places.choose
+        st["staged"] = st.get("staged", []) + [f"trips sent to {bld} from {ff.clock.hhmm()}"]
+
+        def choose(rng, what, hour, exclude=None, _orig=st["choose0"]):
+            return rng.choice(bld) if rng.random() < 0.5 else _orig(rng, what, hour, exclude=exclude)
+        d.places.choose = choose
+    if not want_b and "choose0" in st:
+        d.places.choose = st.pop("choose0")
+    best = None
+    for vid, dv in pm_.drives.items():      # a drive that has just started (or is waiting for its way to be clear)
+        if dv.area is None or dv.progress(now) > 2.0:
+            continue
+        kind = _drive_kind(pm_, dv)
+        crowd = kind.startswith("lot") and any(o != vid and od.area == dv.area and not od.done(now)
+                                               for o, od in pm_.drives.items())
+        for rank, w in enumerate(st["want"]):
+            ok = (w == kind or (w == "lot_crowd" and crowd)
+                  or (w == "turned_back" and dv.kind == "in" and not kind.startswith("building")))
+            if ok:
+                if best is None or rank < best[0]:
+                    best = (rank, vid, dv, w)
+                break
+    if best is None:
+        return False
+    rank, vid, dv, w = best
+    st["want"].pop(rank)
+    pid = next((p for p, areas in d.places.park_of.items() if areas and areas[0] == dv.area), None) or \
+        next((p for p, areas in d.places.park_of.items() if dv.area in areas), None)
+    if pid is None:
+        return False
+    pts = [p_ for lg in dv.legs for p_ in lg.pts]           # looking at the middle of its way (SUMO x, y)
+    mid = (sum(p_[0] for p_ in pts) / len(pts), sum(p_[1] for p_ in pts) / len(pts))
+    span = max(math.dist(mid, p_) for p_ in pts)
+    if w.startswith("building"):                # the door, from the street
+        e = pm_.entrances.get(dv.area, {})
+        mid = tuple(e.get("front", mid))
+        ff.spectator.set_transform(place_view(ff, d, pid, 14.0, 35.0, centre=mid))
+    else:
+        ff.spectator.set_transform(place_view(ff, d, pid, max(22.0, span * 0.9), 55.0, centre=mid))
+    by_time = False
+    shots = [0.3] if w == "turned_back" else [0.2, 0.5, 0.85] + ([2.5] if w in ("lot_in", "building_in") else [])
+    st["cur"] = {"vid": vid, "dv": dv, "kind": w, "shots": shots, "by_time": by_time, "files": [],
+                 "t_pick": now, "lag0": max(dv.lag, 0.0)}
+    return False
+
+
 RECORD_PRE_S = 60.0     # --record-clips: the crash clip starts this long before the crash
 RECORD_POST_S = 180.0   # ... and runs this long after it
 RECORD_NORMAL_S = 240.0  # the normal-traffic clip
@@ -3722,6 +4181,7 @@ def main(argv=None) -> int:
 
     keys_pill = pill("F5 pause    F6 / F7  -1 h / +1 h    F8 next junction    F9 hide clock    H inspect a camera    "
                      + ("F follow a car    M mini-map    " if args.route_guide else "")
+                     + ("L places    " if getattr(args, "trips", "") == "purpose" else "")
                      + ("F10 forecast    " if args.goflow_prediction else "") + "Esc quit")
     lat, lon = INGOLSTADT
     ticker = pygame.time.Clock()
@@ -3754,6 +4214,16 @@ def main(argv=None) -> int:
     fol = {"vid": None, "view": "chase", "cand": None, "cand_t": 0.0, "show_until": 0.0, "t0": 0.0, "map": None,
            "done": False, "cam0": None}
     ui["minimap"] = True   # M: the town's live mini-map while flying (the followed car's always shows)
+    ui["places"] = True    # L: the places' labels over the town (cosim/place_hud.py), with --trips purpose
+    place_hud = {"hud": None}
+
+    def place_cards() -> list:
+        from cosim.purposes import PLACES
+
+        try:
+            return json.loads(PLACES.read_text(encoding="utf-8"))["places"]
+        except (OSError, ValueError, KeyError):
+            return []
 
     def free_view() -> dict:
         """What the free-fly mini-map shows: the camera (SUMO x, y, heading), the car F would follow, every car's
@@ -3771,9 +4241,11 @@ def main(argv=None) -> int:
         if fol["vid"] is not None and fol["vid"] in vs:
             v = vs[fol["vid"]]
             pend = (fol["vid"], v.x, v.y, v.angle)
+        live = getattr(ff, "places_live", None)
+        parked = live["parked"] if live else ()
         return {"cam": (x, y, tf.rotation.yaw + 90.0), "cand": cand, "cam0": fol["cam0"], "pending": pend,
-                "cars": [(vid, v.x, v.y, v.speed) for vid, v in vs.items()],
-                "alerts": list(getattr(ff.route_guide, "live_alerts", []))}
+                "cars": [(vid, v.x, v.y, v.speed) for vid, v in list(vs.items()) if vid not in parked],
+                "alerts": list(getattr(ff.route_guide, "live_alerts", [])), "places": live}
 
     def follow_snap():
         rg = getattr(ff, "route_guide", None)
@@ -3803,8 +4275,14 @@ def main(argv=None) -> int:
         if mini and fol["map"] is None:
             from cosim.route_minimap import MiniMap
 
-            fol["map"] = MiniMap(rg.router)
-        if not ms and not evs and fc is None and not mini:
+            fol["map"] = MiniMap(rg.router, places=place_cards())
+        live = getattr(ff, "places_live", None)
+        labels = live is not None and ui["places"]
+        if labels and place_hud["hud"] is None:
+            from cosim.place_hud import PlaceHud
+
+            place_hud["hud"] = PlaceHud(place_cards(), ff.scen.frame)
+        if not ms and not evs and fc is None and not mini and not labels:
             return None
         free = free_view() if mini else None
         tf = ff.view_transform()
@@ -3813,16 +4291,25 @@ def main(argv=None) -> int:
         now = ff.sim_now
 
         def paint(scr):
-            rects = agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
-            if ms:
-                rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
-            mm_h = 0
+            mm, mm_xy = None, None
             if mini:  # the mini-map, bottom right: the town live while flying, the followed trip (cosim/route_minimap)
                 from cosim.route_minimap import INTRO_S
 
                 intro = min(1.0, (time.time() - fol["t0"]) / INTRO_S) if fol["vid"] is not None else 1.0
                 mm = fol["map"].render(fsnap, time.time(), fol["view"], free=free, intro=intro)
-                rects.append(scr.blit(mm, (size[0] - mm.get_width() - 16, size[1] - mm.get_height() - 16)))
+                mm_xy = (size[0] - mm.get_width() - 16, size[1] - mm.get_height() - 16)
+            rects = []
+            if labels:  # the places' labels, kept off the clock and the mini-map
+                avoid = [pygame.Rect(0, 0, hud.W + 40, hud.H + 70)] if ui["show"] else []
+                if mm is not None:
+                    avoid.append(pygame.Rect(mm_xy, mm.get_size()).inflate(16, 16))
+                rects += place_hud["hud"].draw(scr, tuple(size), tf, live["hour"], live, avoid=avoid)
+            rects += agent_hud.draw(scr, tuple(size), tf, centres, ff.agents_xy, evs, now) if evs else []
+            if ms:
+                rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
+            mm_h = 0
+            if mm is not None:
+                rects.append(scr.blit(mm, mm_xy))
                 mm_h = mm.get_height() + 10
             if fc is not None:  # chips and pills only with --goflow-hud; the panel above the mini-map, unless following
                 rects += forecast_hud.draw(scr, tuple(size), tf, centres, getattr(ff, "forecast_anchors", {}), fc,
@@ -4048,7 +4535,11 @@ def main(argv=None) -> int:
             if time.time() - fol["cand_t"] > 0.25:
                 fol["cand_t"] = time.time()
                 prev = getattr(ff, "prev", None)
-                c = nearest_car(prev.vehicles, ff.scen.frame, ff.view_transform()) if prev is not None else None
+                live = getattr(ff, "places_live", None)
+                vs = prev.vehicles if prev is not None else None
+                if vs is not None and live:     # (a parked car is not a car to follow)
+                    vs = {k: v for k, v in vs.items() if k not in live["parked"]}
+                c = nearest_car(vs, ff.scen.frame, ff.view_transform()) if vs is not None else None
                 fol["cand"] = c[0] if c else None
             return None
         if ov.moving():  # flying again: the camera is yours
@@ -4062,6 +4553,9 @@ def main(argv=None) -> int:
                 follow_stop("lost")
                 return "the car left the road"
             return None
+        pmo = getattr(ff, "parking_motion", None)
+        if snap["status"] == "arrived" and pmo is not None and snap["vid"] in pmo.drives:
+            return None           # (8 Nov) still followed while it drives into its space (cosim/parking_motion.py)
         if snap["status"] == "arrived" and not fol["done"]:
             fol["done"] = True
             follow_stop("arrived", keep_map=15.0)
@@ -4106,10 +4600,19 @@ def main(argv=None) -> int:
             prev = ff.prev
             cands = [vid for vid, v in (prev.vehicles.items() if prev else []) if vid.startswith("live")
                      and v.vclass == "passenger" and v.speed > 4.0 and vid in ff.cs.actors and vid not in st["tried"]
-                     and not ff.not_guided(vid)]
+                     and not ff.not_guided(vid) and not (ff.demand is not None and vid in ff.demand.parked)]
             if not cands:
                 return t_el > DEMO_WARMUP_S + 15.0 + args.demo_follow
-            vid = min(cands)
+            plans = ff.demand.plans if ff.demand is not None else {}
+            pmo = getattr(ff, "parking_motion", None)
+
+            def to_a_space(v_):   # going to a car park you can see it drive into (cosim/parking_motion.py)
+                p_ = plans.get(v_)
+                return bool(p_ and p_.areas and pmo is not None and pmo.visible(p_.areas[0])
+                            and "spaces" in pmo.areas[p_.areas[0]])
+            if plans and not any(to_a_space(v_) for v_ in cands) and t_el < DEMO_WARMUP_S + 120.0:
+                return False      # a car going to a car park with painted bays: wait a little for one near you
+            vid = min(cands, key=lambda v_: (not to_a_space(v_), v_ not in plans, v_))
             st["tried"].add(vid)
             if not st["shots"]:     # the free-fly mini-map, the car about to be followed ringed
                 fol["cand"] = vid
@@ -4169,6 +4672,15 @@ def main(argv=None) -> int:
             if st.get("shot_at") and now >= st["shot_at"][0]:
                 shot(st["shot_at"][1])
                 st["shot_at"] = None
+            pmo = getattr(ff, "parking_motion", None)
+            dv = pmo.drives.get(st.get("vid")) if pmo is not None else None
+            if dv is not None and dv.kind == "in" and "parking_shots" not in st:   # driving into its space
+                st["parking_shots"] = [ff.sim_now + dv.duration * 0.35, ff.sim_now + dv.duration * 0.75]
+            if st.get("parking_shots") and ff.sim_now >= st["parking_shots"][0]:
+                st["parking_shots"].pop(0)
+                shot("parking")
+                if not st["parking_shots"]:
+                    st["parking_shots"] = None
             evs = (snap or {}).get("events") or []
             if any(e["kind"] == "reroute" for e in evs) and "reroute_shot" not in st:
                 st["reroute_shot"] = now + 2.0
@@ -4210,6 +4722,8 @@ def main(argv=None) -> int:
     agents_demo: dict = {}
     hw_demo: dict = {}
     dep_demo: dict = {}
+    places_demo: dict = {}
+    parking_demo: dict = {}
     sig_demo: dict = {}
     ff.demo_close = args.demo_signals_close  # --demo-signals-close: one junction's poles close up
     drv_demo: dict = {}
@@ -4283,6 +4797,8 @@ def main(argv=None) -> int:
                     ui["show"] = not ui["show"]
                 elif k == "M":
                     ui["minimap"] = not ui["minimap"]
+                elif k == "L":
+                    ui["places"] = not ui["places"]
                 elif k == "F10" and getattr(ff, "forecast", None) is not None:
                     follow_stop()
                     # the approach of the last alert (if under 2 minutes old), else the one most at risk
@@ -4380,6 +4896,29 @@ def main(argv=None) -> int:
                 if done_f:
                     demo = None
                     quit_ = True
+            if demo is not None and args.demo_parking > 0:
+                demo_seg_ref[0] = None
+                try:
+                    done_k = demo_parking(ff, shooter, args.scenario, parking_demo, time.time() - t0,
+                                          args.demo_parking, redraw=lambda: draw(state(fps=fps_shown)),
+                                          what=args.demo_parking_what)
+                except Exception:  # noqa: BLE001 - a recording's failure is reported, it never stops the viewer
+                    log.exception("parking demo failed")
+                    done_k = True
+                if done_k:
+                    demo = None
+                    quit_ = True
+            if demo is not None and args.demo_places > 0:
+                demo_seg_ref[0] = None
+                try:
+                    done_p = demo_places(ff, shooter, args.scenario, places_demo, time.time() - t0, args.demo_places,
+                                         redraw=lambda: draw(state(fps=fps_shown)))
+                except Exception:  # noqa: BLE001 - a recording's failure is reported, it never stops the viewer
+                    log.exception("places demo failed")
+                    done_p = True
+                if done_p:
+                    demo = None
+                    quit_ = True
             if demo is not None and args.demo_depots > 0:
                 demo_seg_ref[0] = None
                 try:
@@ -4456,7 +4995,8 @@ def main(argv=None) -> int:
                 continue
             if demo is not None and args.demo_incident <= 0 and args.demo_agents <= 0 and args.demo_highway <= 0 \
                     and args.demo_depots <= 0 and args.demo_signals <= 0 and args.demo_drivers <= 0 \
-                    and args.record_clips <= 0 and args.demo_follow <= 0:
+                    and args.record_clips <= 0 and args.demo_follow <= 0 and args.demo_places <= 0 \
+                    and args.demo_parking <= 0:
                 el_s = time.time() - t0
                 seg, tf = demo_pose(ff, el_s, args.demo)
                 demo_seg_ref[0] = seg

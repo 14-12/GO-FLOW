@@ -102,6 +102,15 @@ class Trails:
         self.heading: dict[str, float] = {}
         self.last: dict[str, tuple[float, float]] = {}
 
+    def fixed(self, vid: str, x: float, y: float, length: float, heading: float) -> float:
+        """(8 Nov) A heading given, not worked out (a car backing out of its space, cosim/parking_motion.py): kept,
+        with a straight path behind the car along it, so that update() goes on from there without a swing."""
+        r = math.radians(heading)
+        self.paths[vid] = [(x - math.sin(r) * 2 * length, y - math.cos(r) * 2 * length), (x, y)]
+        self.heading[vid] = heading % 360.0
+        self.last[vid] = (x, y)
+        return self.heading[vid]
+
     def update(self, vid: str, x: float, y: float, length: float, sumo_angle: float,
                lane_angle: float | None = None, speed: float | None = None) -> float:
         """Front at (x, y) (SUMO coordinates) -> heading (SUMO convention, degrees). lane_angle: the direction of

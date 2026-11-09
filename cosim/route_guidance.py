@@ -147,6 +147,13 @@ class Trip:
         self.speed = 0.0
         self.signals: list[tuple] = []          # (tls, metres ahead, state char) of the signals ahead
         self.explain: str | None = None
+        # (8 Nov) a trip with a purpose (cosim/purposes.py): where it comes from and goes, the car park it stops at,
+        # and the rest of its route after that stop (the way back), kept as it is
+        self.purpose: str | None = None
+        self.from_place: dict | None = None
+        self.to_place: dict | None = None
+        self.stop_area: str | None = None
+        self.rest: list[str] = []
 
 
 class RouteGuide:
@@ -240,8 +247,16 @@ class RouteGuide:
             t.signals = [(tl, d, st) for tl, _i, d, st in conn.vehicle.getNextTLS(t.vid)][:4]
         except Exception:  # noqa: BLE001 - gone in this step
             return
+        if t.guided and t.stop_area is not None:          # a trip with a purpose: arrived once parked there
+            try:
+                if conn.vehicle.isStoppedParking(t.vid):
+                    self._finish(cur.time, "arrived")
+                    return
+            except Exception:  # noqa: BLE001, S110
+                pass
         if t.guided:
-            if road == t.dest and conn.vehicle.getLanePosition(t.vid) >= self.router.roads[t.dest].length - ARRIVE_M:
+            if t.stop_area is None and road == t.dest and \
+                    conn.vehicle.getLanePosition(t.vid) >= self.router.roads[t.dest].length - ARRIVE_M:
                 self._finish(cur.time, "arrived")
                 return
             if not road.startswith(":"):
@@ -294,6 +309,7 @@ class RouteGuide:
         if not why and (not route or route[-1] not in self.router.roads):
             why = "no destination it can route to"
         t = Trip(vid, cur.time, route or [road], max(idx, 0), guided=not why, why_not=why)
+        self._purpose(t, route, max(idx, 0))
         v = cur.vehicles.get(vid)
         if v is not None:
             t.xy, t.angle = (v.x, v.y), v.angle
@@ -302,7 +318,8 @@ class RouteGuide:
         if t.guided:
             self.stats["guided"] += 1
             here = road if not road.startswith(":") else route[idx]
-            own = route[route.index(here):] if here in route else route[idx:]
+            leg = t.own if t.stop_area is not None else route      # (a trip with a purpose: up to its car park)
+            own = leg[leg.index(here):] if here in leg else leg[idx:]
             try:
                 if not road.startswith(":"):
                     t.left_frac = max(0.0, 1.0 - conn.vehicle.getLanePosition(vid) / max(self.router.roads[here].length,
@@ -313,6 +330,36 @@ class RouteGuide:
             alerts = self.alerts(cur.time, forecast_msg, im)
             self._plan(t, cur.time, conn, here, alerts, alerts_key(alerts), first=True)
         self._publish(cur.time)
+
+    def _purpose(self, t: Trip, route: list[str], idx: int) -> None:
+        """A car on a trip with a purpose: the agent routes it to the car park it is going to; the rest of its route
+        (the way back after its time there) stays."""
+        d = getattr(self, "demand", None)
+        plan = d.plans.get(t.vid) if d is not None else None
+        if plan is None or not plan.areas:
+            return
+        area = plan.areas[0]
+        edge = d.places.areas[area]["edge"]
+        if edge not in route[idx:]:
+            return
+        j = route.index(edge, idx)
+        places = d.places.places
+
+        def card(pid):
+            if pid is None:
+                return {"name": "Out of town", "kind": "out"}
+            p = places[pid]
+            return {"id": pid, "name": p["name"], "kind": p["kind"]}
+        going_home = area != (d.places.park_of.get(plan.dest) or [None])[0] and plan.home is not None \
+            and area in d.places.park_of.get(plan.home, [])
+        t.purpose = "home" if going_home else plan.purpose
+        t.from_place = card(plan.dest if going_home else plan.origin)
+        t.to_place = card(plan.home if going_home else plan.dest)
+        t.stop_area = area
+        t.own = list(route[:j + 1])
+        t.route = list(route[:j + 1])
+        t.rest = list(route[j + 1:])
+        t.dest = edge
 
     def _plan(self, t: Trip, now: float, conn, road: str, alerts: list[dict], key: tuple, first: bool = False) -> None:
         r = self.router
@@ -346,7 +393,7 @@ class RouteGuide:
                 self._ask_explain(t, t.events[-1])
             return
         try:
-            conn.vehicle.setRoute(t.vid, best)
+            conn.vehicle.setRoute(t.vid, list(best) + t.rest)
         except Exception as e:  # noqa: BLE001 - on a junction's inner lane: next step
             log.debug("setRoute %s: %s", t.vid, e)
             t.last_key = None
@@ -432,6 +479,7 @@ class RouteGuide:
             "options": [dict(o) for o in t.options], "alerts": [dict(a) for a in t.alerts],
             "events": [dict(e) for e in t.events[-4:]], "xy": t.xy, "angle": t.angle, "speed": t.speed,
             "trail": list(t.trail), "signals": list(t.signals), "explain": t.explain, "inputs": dict(self.inputs),
+            "purpose": t.purpose, "from_place": t.from_place, "to_place": t.to_place, "stop_area": t.stop_area,
         }
 
 

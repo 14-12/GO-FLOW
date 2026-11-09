@@ -24,7 +24,8 @@ from ctypes import wintypes
 KEY_COLOUR = (1, 0, 1)  # drawn nowhere in the clock: these pixels are see-through
 
 VK = {"F5": 0x74, "F6": 0x75, "F7": 0x76, "F8": 0x77, "F9": 0x78, "F10": 0x79, "ESC": 0x1B, "H": 0x48,
-      "F": 0x46, "V": 0x56, "M": 0x4D}  # F follow a car, V its camera, M the mini-map (8 Nov, route_guidance.py)
+      "F": 0x46, "V": 0x56, "M": 0x4D,  # F follow a car, V its camera, M the mini-map (8 Nov, route_guidance.py)
+      "L": 0x4C}  # L the places' labels (8 Nov, cosim/place_hud.py)
 
 _GWL_EXSTYLE = -20
 _WS_EX = 0x00080000 | 0x00000020 | 0x00000080 | 0x08000000 | 0x00000008  # LAYERED TRANSPARENT TOOLWINDOW NOACTIVATE TOPMOST

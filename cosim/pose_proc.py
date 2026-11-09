@@ -298,7 +298,11 @@ class FramePoser:
             if la1 is not None:
                 la = la1 if la0 is None else la0 + ((la1 - la0 + 180.0) % 360.0 - 180.0) * s
             sp = None if sp1 is None else (sp1 if sp0 is None else sp0 + (sp1 - sp0) * s)
-            ang = self.trails.update(vid, x, y, length, angle, la, sp)
+            fixed = e[17] if len(e) >= 18 else None
+            if fixed is not None:     # (8 Nov) driven into or out of a space: the heading given (cosim/parking_motion)
+                ang = self.trails.fixed(vid, x, y, length, fixed[0] + ((fixed[1] - fixed[0] + 180.0) % 360.0 - 180.0) * s)
+            else:
+                ang = self.trails.update(vid, x, y, length, angle, la, sp)
             if dmg and (hit is None or s >= hit):
                 # a wreck lies along its lane as SUMO has it (cosim/incidents.py centres it), then as the crash left it;
                 # (3 Nov) on its way to the hit, as it drove

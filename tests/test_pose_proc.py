@@ -100,7 +100,7 @@ def test_feeder_packs_a_step_into_a_segment():
     a, b = seg["veh"]
     assert a[:6] == (11, "a", (-5.0, 0.0), (0.0, 0.0), (5.0, 0.0), (10.0, 0.0))  # p3 extrapolated: no step after
     assert a[8:12] == (0.0, 0.5, 0.0, 1.0)
-    assert a[12:] == (None, None, None, None, None)  # no lane angle, speed or damage known in this fake
+    assert a[12:] == (None, None, None, None, None, None)  # no lane angle, speed, damage or given heading
     assert b[:6] == (12, "b", None, None, (30.0, 0.0), None)  # new this step
     assert seg["walk"] == [(21, (0.0, 1.0, 0.2, 10.0), (0.6, 1.0, 0.2, 10.0), 1.3)]
     assert seg["park_v"] == [13] and seg["park_w"] == [22]

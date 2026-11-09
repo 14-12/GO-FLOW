@@ -537,7 +537,9 @@ class IncidentManager:
                 del nudged[vid]
         for vid, v in vehicles.items():
             depot_car = self.depots is not None and self.depots.owns(vid) and vid not in self.role
-            if v.speed > 0.3 or vid in self.role or vid.startswith("pt_") or (self.protected(vid) and not depot_car):
+            parked = getattr(self, "parked", None)    # (8 Nov) cars parked at a place (cosim/purposes.py): not a knot
+            if v.speed > 0.3 or vid in self.role or vid.startswith("pt_") or (self.protected(vid) and not depot_car) \
+                    or (parked is not None and vid in parked):
                 self.jammed.pop(vid, None)
                 getattr(self, "green_wait", {}).pop(vid, None)
                 getattr(self, "line_seen", {}).pop(vid, None)

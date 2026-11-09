@@ -28,6 +28,8 @@ import math
 import pygame
 
 from cosim.hud import FONTS
+from cosim.place_icons import Painter, occupancy_colour
+from cosim.place_icons import colour as kind_colour
 
 W, MAP_H, MAP_H_FREE, PAD = 430, 300, 250, 14
 SS = 2   # supersampling
@@ -49,6 +51,12 @@ GREY = (150, 162, 184)
 ORANGE = (249, 140, 34)
 RED = (244, 63, 70)
 AMBER = (250, 204, 21)
+PURPLE = (192, 132, 252)
+# (8 Nov) a trip with a purpose (cosim/purposes.py): what it is called on the header, its colour
+PURPOSE = {"work": ("TO WORK", BLUE), "shopping": ("SHOPPING", PURPLE), "eating": ("EATING OUT", (248, 113, 113)),
+           "park": ("TO THE PARK", (74, 222, 128)), "care": ("HOSPITAL VISIT", (239, 68, 68)),
+           "errand": ("ERRAND", AMBER), "visitor": ("VISITOR", (148, 163, 184)), "deliver": ("DELIVERY", ORANGE),
+           "home": ("GOING HOME", (255, 183, 77))}
 SIGNAL = {"G": GREEN, "g": GREEN, "y": AMBER, "Y": AMBER, "r": RED, "R": RED, "u": AMBER, "s": RED}
 
 
@@ -83,8 +91,17 @@ def wrap(font, text: str, width: int, max_lines: int = 3) -> list[str]:
 
 
 class MiniMap:
-    def __init__(self, router):
+    def __init__(self, router, places: list | None = None):
         self.r = router
+        # (8 Nov) the town's places (scenarios/town05/places.json): their buildings on the map, an icon each, a car
+        # park's ring coloured by its free spaces, names when the map is close; the trip's A and B are places
+        self.places = [p for p in places or () if "label" in p]
+        self.place = {p["id"]: p for p in self.places}
+        self.area_name = {}
+        for p in self.places:
+            for a in [p.get("parking")] + [k["id"] for k in p.get("kerbs") or ()]:
+                if a:
+                    self.area_name[a] = p["name"]
         xs = [x for rd in router.roads.values() for x, _ in rd.shape]
         ys = [y for rd in router.roads.values() for _, y in rd.shape]
         self.town = self.fit((min(xs) - 15, min(ys) - 15, max(xs) + 15, max(ys) + 15), MAP_H_FREE)
@@ -175,6 +192,14 @@ class MiniMap:
             pygame.draw.line(s, (17, 22, 33), (step, 0), (step, h * SS), SS)
         for step in range(0, h * SS, 40 * SS):
             pygame.draw.line(s, (17, 22, 33), (0, step), (W * SS, step), SS)
+        for p in self.places:                          # the places' buildings, faint in their kind's colour
+            col = kind_colour(p["kind"])
+            polys = p.get("blocks") or ([p["outline"]] if len(p.get("outline") or ()) > 2 else [])
+            for poly in polys:
+                pts = [self.px(*q) for q in poly]
+                if len(pts) > 2:
+                    pygame.draw.polygon(s, mix(BG, col, 0.17), pts)
+                    pygame.draw.polygon(s, mix(BG, col, 0.42), pts, SS)
         wide, thin = int(9 * SS * max(1.0, zoom ** 0.5)), int(2 * SS * max(1.0, zoom ** 0.5))
         for width, col in ((wide, ROAD_CASE), (thin, ROAD)):
             for rd in self.r.roads.values():
@@ -308,10 +333,69 @@ class MiniMap:
             tt = self.f_map.render(lab, True, col)
             s.blit(tt, (mx + 9 * SS, my - tt.get_height() - 2 * SS))
 
+    def _places(self, s, live: dict | None, snap: dict | None) -> None:
+        """An icon per place (a car park's ring: green, amber, red as it fills); their names when the map is close.
+        The trip's own places are drawn as its A and B (_place_pin)."""
+        if not self.places:
+            return
+        x0, y0, x1, y1 = self.box
+        zoom = (self.town[2] - self.town[0]) / (x1 - x0)
+        size = (13 + 3 * min(zoom - 1.0, 1.0)) * SS
+        paint = Painter(s, "pygame")
+        live = live or {}
+        occ, cap, park_of = live.get("occ", {}), live.get("cap", {}), live.get("park_of", {})
+        mine = {(snap.get("from_place") or {}).get("id"), (snap.get("to_place") or {}).get("id")} if snap else set()
+        taken: list = []
+        named: list = []
+        for p in sorted(self.places, key=lambda q: q["kind"] == "kerb"):
+            if p["id"] in mine:
+                continue
+            lx, ly = p["label"]
+            if not (x0 - 20 <= lx <= x1 + 20 and y0 - 20 <= ly <= y1 + 20):
+                continue
+            if p["kind"] == "kerb" and zoom < 1.6:
+                continue
+            cx, cy = self.px(lx, ly)
+            ring = None
+            if p["kind"] in ("parking", "kerb") and park_of.get(p["id"]):
+                room = sum(cap.get(a, 0) for a in park_of[p["id"]])
+                used = sum(occ.get(a, 0) for a in park_of[p["id"]])
+                ring = occupancy_colour((room - used) / room if room else 0.0)
+            paint.icon(p["kind"], cx, cy, size * (0.8 if p["kind"] == "kerb" else 1.0), ring=ring)
+            icon = pygame.Rect(0, 0, size, size)
+            icon.center = (int(cx), int(cy))
+            taken.append(icon)
+            if zoom >= 1.5 and p["kind"] != "kerb":
+                named.append((p, cx, cy, icon))
+        for p, cx, cy, icon in named:          # names after every icon: none written over another's icon
+            tt = self.f_map.render(p["name"], True, mix(BG, TEXT, 0.8))
+            r = tt.get_rect(midleft=(cx + size * 0.7, cy))
+            if not any(r.colliderect(q) for q in taken if q is not icon):
+                taken.append(r.inflate(6 * SS, 2 * SS))
+                s.blit(tt, r)
+
+    def _place_pin(self, s, place: dict, letter: str, colour, live: dict | None) -> None:
+        """The trip's A or B at its place: a pin in the place's colour with its icon, and a tag with its name."""
+        p = self.place.get(place.get("id"))
+        if p is None:
+            return
+        x, y = self.px(*p["label"])
+        col = kind_colour(p["kind"])
+        top = y - 17 * SS
+        pygame.draw.polygon(s, col, [(x - 7 * SS, top + 7 * SS), (x + 7 * SS, top + 7 * SS), (x, y)])
+        Painter(s, "pygame").icon(p["kind"], x, top, 22 * SS, ring=(255, 255, 255))
+        tag = self.f_map.render(f"{letter}  {p['name']}", True, BG)
+        r = tag.get_rect(midleft=(x + 15 * SS, top))
+        if r.right + 6 * SS > s.get_width():       # near the map's right edge: the tag on the pin's left
+            r = tag.get_rect(midright=(x - 15 * SS, top))
+        pygame.draw.rect(s, colour, r.inflate(10 * SS, 5 * SS), border_radius=8 * SS)
+        s.blit(tag, r)
+
     def _map(self, snap: dict | None, free: dict, t: float, intro: float) -> pygame.Surface:
         h = round(self.map_h)
         s = self._base_map(h)
         pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.3)
+        self._places(s, free.get("places"), snap)
         self._traffic(s, free.get("cars") or (), skip=snap["vid"] if snap else None)
         self._alerts(s, (snap or {}).get("alerts") or free.get("alerts"), pulse)
         if snap is None:            # flying: the camera, the car F would follow
@@ -345,10 +429,16 @@ class MiniMap:
                     self._flow(s, pts, t)
             if reveal > 0.0:
                 st_rd, de_rd = self.r.roads.get(snap["start"]), self.r.roads.get(snap["dest"])
-                if st_rd is not None:
+                fp, tp = snap.get("from_place") or {}, snap.get("to_place") or {}
+                if fp.get("id") in self.place:
+                    self._place_pin(s, fp, "A", BLUE, free.get("places"))
+                elif st_rd is not None:
                     self._pin(s, self.px(*st_rd.shape[0]), BLUE, "A")
-                if de_rd is not None and reveal >= 1.0:
-                    self._pin(s, self.px(*de_rd.shape[-1]), GREEN, "B")
+                if reveal >= 1.0:
+                    if tp.get("id") in self.place:
+                        self._place_pin(s, tp, "B", GREEN, free.get("places"))
+                    elif de_rd is not None:
+                        self._pin(s, self.px(*de_rd.shape[-1]), GREEN, "B")
         for tl, _d, state in snap.get("signals", ())[:3]:   # the next signals, in this car's colour
             xy = self.r.junctions.get(tl)
             if xy is not None:
@@ -379,10 +469,26 @@ class MiniMap:
         s.blit(self.f_big.render(value, True, colour), (10, 17))
         return s
 
-    def _info_block(self, snap: dict, view: str) -> pygame.Surface:
+    def _park_row(self, snap: dict, park: tuple, iw: int) -> pygame.Surface:
+        """(8 Nov) where it will park (or has): the car park's name and its free spaces now."""
+        name, free, room = park
+        row = pygame.Surface((iw, 22))
+        row.fill(BG)
+        row.blit(self.f_lab.render("PARKED AT" if snap["status"] == "arrived" else "PARKS AT", True, MUTED), (0, 4))
+        Painter(row, "pygame").icon("parking", 127, 11, 18,
+                                    ring=occupancy_colour(free / room if room else 0.0))
+        t = self.f_bold.render(name, True, TEXT)
+        row.blit(t, (142, 2))
+        f = self.f_txt.render(f"{free} free of {room}", True, occupancy_colour(free / room if room else 0.0))
+        row.blit(f, (152 + t.get_width(), 2))
+        return row
+
+    def _info_block(self, snap: dict, view: str, park: tuple | None = None) -> pygame.Surface:
         rows: list[tuple[pygame.Surface, int]] = []
         iw = W - 2 * PAD
         arrived = snap["status"] == "arrived"
+        if park is not None:
+            rows.append((self._park_row(snap, park, iw), 6))
         if snap.get("guided"):
             tw = (iw - 16) // 3
             row = pygame.Surface((iw, 54))
@@ -482,7 +588,8 @@ class MiniMap:
         return s
 
     def _header(self, snap: dict, view: str) -> pygame.Surface:
-        s = pygame.Surface((W, 36))
+        purpose = PURPOSE.get(snap.get("purpose") or "")
+        s = pygame.Surface((W, 36 + (30 if purpose else 0)))
         s.fill(BG)
         badge = self.f_head.render("ROUTE AGENT", True, BG)
         pygame.draw.rect(s, GREEN, (PAD, 7, badge.get_width() + 16, 23), border_radius=11)
@@ -491,6 +598,26 @@ class MiniMap:
         s.blit(t, (PAD + badge.get_width() + 26, 8))
         chip = self.f_lab.render(f"{view.upper()} VIEW  ·  V", True, MUTED)
         s.blit(chip, (W - PAD - chip.get_width(), 12))
+        if purpose:     # (8 Nov) why it drives: its purpose, from which place to which
+            name, col = purpose
+            tag = self.f_lab.render(name, True, BG)
+            pygame.draw.rect(s, col, (PAD, 38, tag.get_width() + 14, 20), border_radius=10)
+            s.blit(tag, (PAD + 7, 40))
+            x = PAD + tag.get_width() + 24
+            paint = Painter(s, "pygame")
+            for i, pl in enumerate((snap.get("from_place") or {}, snap.get("to_place") or {})):
+                if i:           # an arrow, drawn (the font has none)
+                    pygame.draw.line(s, MUTED, (x, 48), (x + 12, 48), 2)
+                    pygame.draw.polygon(s, MUTED, [(x + 16, 48), (x + 10, 43), (x + 10, 53)])
+                    x += 24
+                if pl.get("kind") in ("out", None):
+                    nm = self.f_txt.render(pl.get("name") or "?", True, MUTED)
+                else:
+                    paint.icon(pl["kind"], x + 9, 48, 18)
+                    x += 23
+                    nm = self.f_bold.render(pl["name"], True, TEXT)
+                s.blit(nm, (x, 39))
+                x += nm.get_width() + 10
         return s
 
     def _free_header(self, free: dict) -> pygame.Surface:
@@ -501,7 +628,22 @@ class MiniMap:
         s.blit(badge, (PAD + 8, 6))
         n = len(free.get("cars") or ())
         jam = sum(1 for c in free.get("cars") or () if c[3] < 1.0)
-        tt = self.f_lab.render(f"{n} CARS   \u00b7   {jam} STANDING   \u00b7   M HIDE", True, MUTED)
+        live = free.get("places") or {}
+        if live:     # (the cars list leaves the parked ones out: cosim/freefly.py free_view)
+            hr = live.get("hour", 0.0) % 24
+            why = live.get("why") or {}
+            parked = sum(live.get("occ", {}).values()) + why.get("depot", 0)   # (the depots' cars wait at home)
+            if why:  # standing: before a red signal, or queued (behind a standing car, the ring road, a crash...)
+                red = why.get("red_signal", 0)
+                queued = why.get("total", 0) - red - why.get("depot", 0)
+                moving = n - why.get("total", 0)
+                txt = f"{moving} MOVING  \u00b7  {red} AT RED  \u00b7  {queued} QUEUED  \u00b7  {parked} PARKED"
+            else:
+                txt = (f"{n} DRIVING   \u00b7   {jam} STANDING   \u00b7   {parked} PARKED   \u00b7   "
+                       f"{int(hr):02d}:{int(hr % 1 * 60):02d}")
+            tt = self.f_lab.render(txt, True, MUTED)
+        else:
+            tt = self.f_lab.render(f"{n} CARS   \u00b7   {jam} STANDING   \u00b7   M HIDE", True, MUTED)
         s.blit(tt, (W - PAD - tt.get_width(), 10))
         return s
 
@@ -545,14 +687,20 @@ class MiniMap:
             self._info_key = None
             return out
         self.ease_to(self.trip_box(snap, MAP_H), MAP_H, t)
-        key = (snap["vid"], snap.get("pending"), snap["status"], int(snap.get("elapsed_s") or 0), snap.get("est_free_s"),
+        park = None
+        live = free.get("places") or {}
+        area = snap.get("stop_area")
+        if area and live and area in live.get("cap", {}):
+            room = live["cap"][area]
+            park = (self.area_name.get(area, area), max(0, room - live.get("occ", {}).get(area, 0)), room)
+        key = (park, snap.get("purpose"), snap["vid"], snap.get("pending"), snap["status"], int(snap.get("elapsed_s") or 0), snap.get("est_free_s"),
                snap.get("left_m"), tuple((e["t"], e["text"]) for e in snap.get("events") or ()),
                tuple((o["cost"],) for o in snap.get("options") or ()), tuple(snap.get("signals") or ()),
                snap.get("explain"), snap.get("real_s"), snap.get("est_typical_s"),
                tuple(sorted((snap.get("inputs") or {}).items())), view)
         if key != self._info_key:
             self._info_key = key
-            self._info = (self._header(snap, view), self._info_block(snap, view))
+            self._info = (self._header(snap, view), self._info_block(snap, view, park))
         head, info = self._info
         m = self._map(snap, free, t, intro)
         shown = round((info.get_height() + PAD) * ChaseEase.ease(intro))   # the text unfolds under the map

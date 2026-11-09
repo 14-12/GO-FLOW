@@ -73,11 +73,23 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     extra = ["--route-files", str(pf), "--end", "100000000"] + VIEWER_SUMO_ARGS + list(a.get("sumo_extra", []))
     if a["junction_blocker"]:
         extra += ["--ignore-junction-blocker", str(a["junction_blocker"])]
+    purpose = a.get("trips", "random") == "purpose"   # (8 Nov) trips between the town's places (cosim/purposes.py)
+    from cosim.purposes import ADD as PLACES_ADD
+
     sumo = SumoSide(scen.folder, a["controller"], seed=seed, port=port, label=f"gfp{port}", extras=True,
-                    additional=BusLines.additional(scen.folder, "town05") if a["buses"] else [],
+                    additional=(BusLines.additional(scen.folder, "town05") if a["buses"] else [])
+                    + ([str(PLACES_ADD)] if purpose else []),
                     emergency_every=45, extras_types=et, lane_geometry=LaneGeometry(scen.net_file), extra_args=extra)
     c = sumo.conn
-    pop = Population(c, pool, rids, curve, seed=seed)
+    if purpose:
+        from cosim.purposes import PurposeDemand, purpose_population
+
+        pop = purpose_population(Population)(c, pool, rids, curve, seed=seed)
+        pop.demand = PurposeDemand(c, a["clock_speed"], seed=seed)
+        pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
+        pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
+    else:
+        pop = Population(c, pool, rids, curve, seed=seed)
     cands = [Candidate(m, i["base_type"].lower(), i["special_type"].lower(), int(i["generation"] or 1), ("0",),
                        i["has_lights"]) for m, i in models.items()]
     base = {t: (re.search(r'vClass="([^"]+)"', vt) or [None, "passenger"])[1] for t, vt in pool.vtypes.items()}
@@ -95,6 +107,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         kw = {"share": a["careless_share"]}
     im = IncidentManager(c, scen.net_file, typer, seed=seed, walk=sumo.walk, sinks=sinks, **kw)
     pop.type_for = im.type_for
+    if purpose:
+        im.parked = pop.demand.parked       # (8 Nov) a car parked at a place is not a knot to undo
     # the junction agents connected as the viewer connects them: the cameras' reports and the emergency requests
     # (cosim/agents_actuated.wire; before 8 Nov agents_observed ran here on no counts and no requests)
     from cosim.agents_actuated import wire
@@ -138,6 +152,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         return (sod0 + (t - t_start) * a["clock_speed"]) % 86400.0
 
     pop.add(int(pop.target(sod_at(t_start))), anywhere=True)
+    if purpose and a.get("prefill", True):   # the car parks and homes as a measured day has them at this hour
+        pop.prefill(sod_at(t_start) / 3600.0)
     end = t_start + 60.0 * (a["minutes"] + a["warmup"])
     keep_from = t_start + 60.0 * a["warmup"]
     rows = {k: [] for k in ("t", "tod", "dem", "dem_at", "halt", "veh", "speed", "occ", "green")}
@@ -147,6 +163,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         cur = sumo.step()
         k += 1
         sod = sod_at(cur.time)
+        if purpose:
+            pop.demand.step(cur.arrived)
         pop.step(cur.vehicles, sod, lambda vid, v: not im.protected(vid) and not vid.startswith("pt_"))
         if ring is not None and k % 4 == 0:
             ring.step(cur.vehicles, sod, set(c.simulation.getPendingVehicles()))
@@ -203,7 +221,9 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     return {"seed": seed, "steps": T, "wall_s": round(time.time() - t_wall), "vehicles_end": vehicles_end,
                 "stuck_over_300s": stuck, "stuck_lanes": dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
                 "gridlock": stuck > 50, "incidents": len(im.done) + len(im.incidents), "agents_wired": wired,
-                **({"agent_stats": dict(sumo.policy.stats)} if wired else {})}
+                **({"agent_stats": dict(sumo.policy.stats)} if wired else {}),
+                **({"purposes": dict(pop.demand.stats, parked_end=len(pop.demand.parked),
+                                     occupancy_end=pop.demand.occupancy())} if purpose else {})}
 
 
 def git_commit() -> str:

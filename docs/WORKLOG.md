@@ -1984,3 +1984,205 @@ sixth of the trip, and the ambulances lose on 6 of 10 seeds). With the typical t
 its own cars and for the whole town (waiting -10 %, throughput +7 %), and its estimate is two to three times closer.
 Dev seeds only: the test (seeds 61-70, x2 and x3, opened once) waits for the bar to be agreed; proposed: marked delay
 lower on at least 7 of 10 seeds, all-car waiting not worse, ambulance time loss not worse on the mean.
+
+## Trips with real destinations: the town's places (8 Nov, evening)
+
+Until now every car drove a random benchmark route from a town edge to another. Step 1 and 2 of giving trips a
+meaning, and the start of step 3 (show it).
+
+**Step 1, the places** (`tools/town05_places_probe.py` in CARLA, `tools/town05_places_build.py`,
+`scenarios/town05/places.json`, `town05.places.add.xml`). From CARLA's own buildings and a top-down picture: 24 places
+(a market, a mall, 2 office towers, a café, 2 restaurants, a park, 4 apartment blocks, 2 streets of houses, a hospital,
+police, a garage, 3 car parks, 4 streets with kerb parking). 16 SUMO parking areas: 366 spaces on CARLA's painted bays
+(cars park exactly on them: within 0.1 m, `tests/test_places.py`) and 138 kerb spaces. `check()`: lanes exist,
+spaces off the driving lanes (3 m+), inside their outline, no overlap, none on a bus stop, every door reachable: 0
+problems. There is no free ground for a restaurant's own car park: the Brasserie du Nord parks at the Parking du
+Square across its street. The atlas: `docs/img/town05_places.jpg` (`tools/town05_places_atlas.py`).
+
+**Step 2, trips with a purpose** (`cosim/purposes.py`). Most new trips go from a home to a place for a reason that
+follows the hour (work, shopping, eating out, the park, the hospital, errands; visitors and deliveries from out of
+town), park in a space there, stay (work about 8 town hours, shopping about 1) and drive home, where the car stays
+until a trip from that home takes it out again. Closed places are not chosen (the market 7-14 h...). A full car park:
+the nearest one with room. 20 % of new trips stay through traffic on the old routes. At a run's start the car parks
+and homes are filled as a measured day has them at that hour (`scenarios/town05/parked_by_hour.json`, from seed 101,
+a training seed: `tools/check_purpose_day.py --table`). Used by the viewer (`--trips purpose`, the default) and the
+datasets (`one_run(trips="purpose")`).
+
+Measured, SUMO alone, 24 town hours from 05:00, seed 101, same load (53.7 against 53.1 cars on the roads on
+average), `tools/check_purpose_day.py`:
+
+| | purpose | random |
+| --- | --- | --- |
+| trips ended | 672 (in a parking space) | 647 |
+| km per trip | 0.44 | 0.56 |
+| waiting, s per km driven | 131 | 108 |
+| time lost, s per km | 179 | 148 |
+| cars stuck over 5 min, gridlock | 0, no | 0, no |
+
+Shorter trips between places in the centre: more of each km is spent at signals and pulling in and out of spaces.
+The day: `docs/img/town05_day.png` (`tools/purpose_day_chart.py`): the morning to work, lunch, the afternoon's shops,
+offices full at midday and empty at night, the homes full at night.
+
+Fixed on the way: a car's home stop set at the start merged with its first passage (it parked at home for ever: the
+home stop is now set once it has parked at its destination); `IncidentManager.unjam` took parked cars for knots (it
+skips them now); the incidents' `type_for` marked cars that were never put in (11 184 "not known" errors a day, now
+a handful, the old ones from the ring road); a car put in at home could be taken for a trip before SUMO had it in
+its space (SUMO quit: it now waits for its space).
+
+**Step 3, started: show it.** The route agent's mini-map draws the places (their buildings, an icon each, a car
+park's ring green / amber / red by its free spaces, names when close), the trip's A and B as places, a header with
+the purpose ("SHOPPING  Résidence du Lac -> Marché Central") and "PARKS AT Parking du Marché, 31 free of 43"; flying,
+"N DRIVING · N STANDING · N PARKED · hh:mm" (parked cars are no longer red dots). Over the CARLA picture
+(`cosim/place_hud.py`, key L): a label on a stem over each place near you, its icon and name, and closer what is
+happening there (a car park's free spaces, OPEN until 14:00 · 9 here, CLOSED, cars home). Tests:
+`tests/test_purposes.py` (6). Not yet checked in CARLA.
+
+**Checked in CARLA (8 Nov, night).**
+* The follow demo (`tools\freefly_follow_demo.bat`) followed live116 "TO WORK, Résidence Les Oliviers -> Tour
+  Horizon": rerouted (45 s shorter), parked, arrived in 2:48 against 2:40 estimated; "PARKED AT Tour Horizon, 34 free
+  of 40". The labels over the town are kept off the clock and the mini-map. 33-40 fps.
+* Cars on the painted bays (`tools\freefly_places_demo.bat`, `--demo-places`: each car park seen from above at 12:30,
+  and how far each parked car's CARLA body is from the middle of the nearest space). Before: 2.09 to 2.79 m off on
+  the Parking du Marché and the Parking du Square (median 2.36 m, 13 cars): SUMO puts a parked car's front on the
+  space's point, and the viewer drew the body half a length behind it. The viewer now moves a parked car forward by
+  half its length: 0.0 m off for all 15 parked cars seen, and they stand in their bays in the screenshots.
+* "78 standing out of 106" on the mini-map was not a jam. Counted by why every minute
+  (`FreeFly.standing_why`, logged): at 12:40, 65 standing of 107: 44 before a red or amber signal, 9 police /
+  ambulance / recovery vehicles waiting at their stations, 9 on the ring road, 2 buses, 1 queued: 41 % of the cars at
+  a red signal. SUMO alone (`check_purpose_day.py`, seed 101, 12:10) has 28 of 66 cars standing (42 %, for any reason). The
+  mini-map now says it: "MOVING · AT RED · QUEUED · PARKED" (the stations' vehicles counted as parked).
+
+## Cars that drive into their space and out of it (8 Nov, night)
+
+SUMO keeps a parked car in its space without driving it there. Traced on the Parking du Marché: the car stops on the
+road beside the car park and is in its space at the next half-second step, 42 m away; when it leaves, it is back on
+the road in one step. The viewer copied SUMO: cars vanished from the road and appeared in their bays.
+
+`cosim/parking_motion.py` now drives them, in the viewer only (SUMO still decides when a car parks and leaves):
+
+* **in**: from where SUMO stopped it, 9 m on along the road, a turn into the car park (blinker), along the strip
+  inside its road side, down the aisle of its space, a turn into the space, brake lights as it stops. The aisle is
+  found from the space itself (half a space and half an aisle behind it, running across it). About 25 s for the far
+  spaces of the Parking du Marché;
+* **out**: reversing lights, backing out into the aisle, a stop, then along the aisle and the strip to the road,
+  where SUMO puts it back. When its stay ends the drive starts that much earlier; a car taken out of its home space
+  for a trip waits in its space for its drive (`PurposeDemand.exit_delay`, `resume_at`). If SUMO cannot put it back
+  yet it waits at the road; if SUMO puts it back first, SUMO's car waits (`setSpeed(0)`) and the drive's end moves to
+  where SUMO's car is;
+* **at a kerb**: past its place, then backing into it; out: a little back, then out onto the road;
+* a stay shorter than the drive in and out: SUMO's stop is made that much longer (3 in the hour below); a car taken
+  out again before its drive in was over turns back to SUMO's car (2);
+* the heading is given, not worked out from the path (`interp.Trails.fixed`, `pose_proc`, `run.Poser`): a car backing
+  out faces the right way, and a parked car keeps SUMO's heading;
+* the spaces inside buildings are not driven to (the car would go through a wall): those cars still vanish at the
+  door.
+
+Measured, SUMO alone, as the viewer does it (`tools/check_parking_motion.py`, seed 101, 07:30, 1.5 town hours):
+4 drives in and 7 out of the car parks with painted bays, 18 in and 11 out at kerbs; the largest move between two
+half-second steps on a drive 2.84 m (none of SUMO's 42 m jumps); a drive out joins SUMO's car within 0.07 to 1.9 m
+(median 0.57 m, 17 drives). `tests/test_parking_motion.py`: in and out of the Parking du Marché, no step over 2 m on
+the drives, ending in its space (within 5 cm), back on the road where SUMO has it. The way in and out, from above:
+`docs/img/town05_parking.png` (`tools/parking_motion_figure.py`).
+
+In CARLA (`tools\freefly_parking_demo.bat`, `--demo-parking`: the camera over the car park of a drive that has just
+started, three screenshots): cars backing out of the Parking du Square and the Parking du Marché and leaving; the
+CARLA body follows the drive (its position read back from CARLA at each screenshot); drives out ended within 0.62 m
+of SUMO's car. The camera's view is chosen with CARLA's ray casting (`place_view`): from 55 deg it had been inside the
+building beside the Parking du Square.
+
+
+## Cars on drives that see each other, barrier arms, and the car parks inside buildings (9 Nov, night)
+
+What was left after the drives into the spaces: the cars on drives did not see each other, the car parks inside
+buildings were not driven to, and the kerb drives, the turn-back and the heading at the end of a drive had not been
+seen in CARLA.
+
+**The cars see each other** (`cosim/parking_motion.py`: `reserve`, `give_way`, `_hold_followers`, `_merge_gap`):
+* a new drive in a car park starts when its whole way is clear of the drives already on theirs (each as it will be at
+  the same moment, half-second steps): a car going out waits in its space, one coming in on the road where SUMO
+  stopped it (`started_later`);
+* on its way a car looks 3 s ahead: a car in front of it (another drive held up, a car of the road) makes it slow,
+  and stand if it is within a second; two drives each in the other's way: the first one goes. It gives up waiting
+  (40 s) only on another drive that is not itself waiting on the road's traffic;
+* along the strip and down the aisles cars keep 1.3 m to the right, so two meeting pass; a car backing out ends on
+  the right half of the aisle for the way it will drive off;
+* SUMO's cars on the lane behind a car turning in, or about to join the road, are stopped (`setSpeed(0)`), as behind
+  a car waiting to turn into a car park; a car going out pulls onto the road in a gap (none within 10 m or 4 s
+  behind, no queue standing where it joins);
+* found on the way: the stop's duration SUMO gives for a car in its space is what is LEFT of it; `arrival + duration`
+  put the end too early, the drive out reached the road before SUMO put the car back and waited there (14 of 18 in
+  the first check). Now `now + duration`; a drive out held up makes SUMO's stop that much longer.
+* the kerbs keep the drives as they were (a slow parking lane: holding its cars made it worse).
+
+`tools/check_parking_crowd.py`: cars sent to one car park one after another, SUMO alone, how many half-second steps
+two bodies (three circles each, 1.9 m wide) overlap by more than 0.2 m:
+
+| Car park, cars, every | before | now |
+| --- | --- | --- |
+| Marché, 8, 4 s | 720 | 0 |
+| Square, 6, 5 s | – | 0 |
+| Square, 8, 4 s | – | 14 |
+| Marché, 12, 2 s (more than the car park takes) | – | 8 |
+| Square, 12, 2 s | – | 45 |
+
+`tools/check_parking_motion.py` (the town, purpose trips) now also counts them, by kind:
+
+| Run | before: car parks / kerbs | now: car parks / kerbs |
+| --- | --- | --- |
+| seed 101, 07:30, 1.5 h | 160 / 82 | 0 / 109 |
+| seed 102, 12:00, 1.5 h | 748 / 8 | 85 / 4 |
+
+What is left at noon: the Parking du Square's exit joins its road 13 m before a signal; cars leaving wait there
+for the queue (up to 2 minutes), and a few drives that started while another was waiting cross it. Drive steps:
+largest move between two steps 2.84 m; drives out join SUMO's car within 0 to 1.5 m (median 0.4 to 0.6 m).
+`docs/img/town05_parking_crowd.png` (`tools/parking_crowd_figure.py`): 8 cars at the Marché, three moments.
+
+**The Parking du Square's gate.** Its cars drove in over the hedge at its north-west corner. CARLA has a gate there
+(two barrier arms, `SM_ParkingBarrier`, and the guard huts), on the road beside it: its SUMO stop moved before the
+gate (lane 49_3, 27-39 m) and the car put back after it (`departPos` 61.5, a parkingArea attribute SUMO has: checked,
+the car came back at 38.6 for 38.0 asked). In by the south arm, out by the north arm. The viewer opens a barrier arm
+(and a building's door) while a car passes: the arm's mesh hidden (`world.enable_environment_objects`), shown again
+after (`ParkingMotion.gates`, `door_states`, `FreeFly._doors`).
+
+**The car parks inside buildings** (`tools/town05_entrance_probe.py`, `tools/town05_pillars_probe.py`,
+`tools/town05_entrances_build.py`, `scenarios/town05/entrances.json`). Looked at in CARLA: around each building, rays
+every 0.6 m, straight down (the ground, what covers it) and sideways at 0.5 m and 1.2 m over the ground (what stands
+in a car's way: a vertical ray misses a wall under a roof), and photographs from the street. Found:
+* **Parking Central** is a real multi-storey car park: an open ground floor between 25 square pillars, low walls on
+  the south, east and west, open on the north to the Parking du Square's ground, whose gates are the way in. CARLA's
+  ray casting does not meet its pillars (no collision): a depth camera under the first floor, 25 pictures, found them
+  (`silo_pillars.json`, 5 x 5, about 12 m apart). Two jeeps CARLA keeps parked for good stood across the only gap
+  between the guard hut and the pillars: the viewer takes them away (`entrances.json` "removed").
+  The way in (26 m): from the road on its east (lane -47_3, the car park's SUMO stop moved there: 0-8.3 m, back on the
+  road at 26.3 m), through the east gate's barrier arm, along the Square's ground, between the corner pillar and the
+  next, 7 m under the first floor; there the car is out of sight and no longer drawn.
+* **Galerie Atlas**: its metal shutters, hidden, show a blind behind them, no room (the rays meet it 0.8 m in): no way
+  in. The towers (Horizon, Jumelles) and the apartment blocks (Oliviers, Lac): no opening at all. Their cars appear and
+  vanish at the road beside them, as before; they are no longer drawn inside the walls.
+The builder: a car's way (1.1 m from anything standing) from the rightmost lane of a road beside it, on the road for
+10 m at most, to a covered place 7 m from open sky; doors with room behind them and barrier arms count as open.
+Tests: `tests/test_entrances.py` (a made-up building: round to its open side; through a door; none).
+
+**In CARLA** (`tools\freefly_parking_demo.bat`, 9 Nov 01:42-01:52, from 08:30; `out\town05_freefly_parking.json`,
+screenshots `out\freefly\town05_parking_0*_*.png`): one drive of each kind seen.
+* Into Parking Central (11:16, staged: half the new trips sent there until one came): the barrier arm hidden as the
+  car passes, shown again after; the car turns in from the road, crosses the Square's ground where the jeeps were and
+  drives in between the pillars; once inside it is not drawn (`drawn: false`). Out (12:53): a van appears between the
+  pillars, drives out through the gate (open while it passes) onto the road.
+* Two cars in the Parking du Square at once (10:04): out through the north barrier arm (open), the other car 6 to 28 m
+  away all along.
+* Into a space at the Marché (11:57): once in, its CARLA body is on the drive's last point (0.0 m) and its heading is
+  the space's (0.0 deg off): the sharper heading at the end, seen.
+* Kerb in (08:49) and out (10:21): pulls past, backs in; out a little back, then onto the road.
+* The turn-back (09:17, staged: SUMO takes the car out again 40 % of the way into its kerb space): it went to SUMO's car
+  in a straight curve, through the car parked behind (screenshot 02_turned_back_2). Changed: it drives back the way
+  it came (`_retrace`), then to SUMO's car. Seen again (`tools\freefly_turnback_demo.bat`, 01:55): at a kerb (08:51)
+  it backs out of its place along the way it came and joins SUMO's car; at the Marché (09:12) it backs along the strip
+  it came by, clear of the parked cars (screenshots kept in `Claude outputs\run1` for the first run).
+CARLA's body was 0 to 4 m from the drive's point while moving (the drive's point is SUMO's next step; the picture
+shows the step before), 0.0 m when standing. Drives out joined SUMO's car within 0.2 to 0.65 m, one 4.3 m.
+
+Left: two drives out at a kerb (of 20 in the two CARLA runs) ended 4.3 and 5.3 m from SUMO's car: SUMO had put the car
+back before the drive's end and it rolled on while held (`setSpeed(0)`), after the drive's end had been fixed. The
+kerbs keep their drives as before for the cars of the road (see above); the turn-back at a car park backs a long way
+(it retraces its way in).

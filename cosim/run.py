@@ -288,7 +288,11 @@ class Poser:
                     p3 = (q3.x, q3.y) if q3 is not None else (2 * p2[0] - p1[0], 2 * p2[1] - p1[1])
                     seg = self._timed[vid] = Timed(p0, p1, p2, p3)
                 x, y = seg.at(s)
-                ang = trails.update(vid, x, y, v.length, v.angle)
+                if getattr(v, "fixed", False):   # (8 Nov) a heading given (cosim/parking_motion.py)
+                    ang = trails.fixed(vid, x, y, v.length,
+                                       p.angle + ((v.angle - p.angle + 180.0) % 360.0 - 180.0) * min(max(s, 0.0), 1.0))
+                else:
+                    ang = trails.update(vid, x, y, v.length, v.angle)
             else:
                 x, y, ang = hermite(State(p.x, p.y, p.angle, p.speed), State(v.x, v.y, v.angle, v.speed), s, dt)
                 if self.heading == "turn":

@@ -1,0 +1,90 @@
+{
+ "what": "The ways into the car parks inside buildings (9 Nov), from what CARLA has there (tools/town05_entrance_probe.py ->\nout/town05_places/entrances_probe.json): scenarios/town05/entrances.json, read by the viewer (cosim/parking_motion.py),\nand a picture of each way from above (docs/img/town05_entrances.png).",
+ "entrances": {
+  "pa_silo": {
+   "place": "silo",
+   "found": true,
+   "lane": "-47_3",
+   "edge": "-47",
+   "front": [
+    205.09,
+    254.89
+   ],
+   "way": [
+    [
+     205.09,
+     250.09
+    ],
+    [
+     203.29,
+     243.49
+    ]
+   ],
+   "approach": [
+    [
+     208.09,
+     259.69
+    ],
+    [
+     205.09,
+     256.69
+    ]
+   ],
+   "door": null,
+   "gates": [
+    "SM_ParkingBarrier3_SM_0"
+   ],
+   "lane_pos": 15.0,
+   "stop_end": 8.3,
+   "depart_pos": 26.3,
+   "length_m": 26.0,
+   "cover_depth_m": 7.2
+  }
+ },
+ "gates": {
+  "SM_ParkingBarrier2_SM_0": {
+   "box": [
+    158.8,
+    263.11,
+    0.06,
+    1.74
+   ]
+  },
+  "SM_ParkingBarrier3_SM_0": {
+   "box": [
+    209.4,
+    258.75,
+    0.06,
+    1.74
+   ]
+  },
+  "SM_ParkingBarrier4_SM_0": {
+   "box": [
+    209.3,
+    263.11,
+    0.06,
+    1.74
+   ]
+  },
+  "SM_ParkingBarrier5_611_SM_0": {
+   "box": [
+    127.45,
+    247.9,
+    0.06,
+    3.04
+   ]
+  },
+  "SM_ParkingBarrier_593_SM_0": {
+   "box": [
+    158.62,
+    258.75,
+    0.06,
+    1.74
+   ]
+  }
+ },
+ "removed": [
+  "Vh_Car_JeepWranglerRubicon_NOrig2_SM_0",
+  "Vh_Car_JeepWranglerRubicon_NOrig_560_SM_0"
+ ]
+}
