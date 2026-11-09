@@ -2186,3 +2186,22 @@ Left: two drives out at a kerb (of 20 in the two CARLA runs) ended 4.3 and 5.3 m
 back before the drive's end and it rolled on while held (`setSpeed(0)`), after the drive's end had been fixed. The
 kerbs keep their drives as before for the cars of the road (see above); the turn-back at a car park backs a long way
 (it retraces its way in).
+
+Found at 02:20 (seed 102, 12:00, which drive, which leg, against what; for the next session):
+* **The back-out turn is too sharp.** `_out`'s back leg is `fillet([bay_c, P, back_end], r_max=3.5)`, and the fillet
+  takes at most 45 % of the 3.5 m after P: a 1.6 m radius. The car's middle turns 90 deg round P almost on the spot,
+  its corners sweep about 2.5 m round it: into the noses across a narrow aisle and into the neighbours (the Square's
+  static jeep at 169.6, 264.8 and Seat Leon at 172.4, 264.4; its trucks at 186.9 and 191.2, 266.0). To do: drive the
+  back-out and the turns as a car does (its rear axle on a path of at least about 4.5 m radius, the body following),
+  backing straight until the nose clears the neighbours; in an aisle too narrow for that (the Square's, 4.3 m) a
+  second move (forward a little, back again) instead of turning on the spot; test every drive's swept body against
+  the parked cars and `parking_obstacles` before it is used, and pick another manoeuvre when it touches.
+* **Poles.** A highway light's box (`BP_HighwayLight_simple2_SM_2`, 7.9 m long) is its post and its arm; the post is
+  the end away from its lamp head (`..._SM_0` at 10.9 m): (172.5, 252.6) and (195.5, 252.6), in the barrier line,
+  not in the aisle. `parking_obstacles.load` should put a post there (radius 0.25), not the arm's box; the kerbs'
+  tall lamp posts the same (their boxes are 2 m wide).
+* **The Square's gate**: a board on wheels (`SM_TrafficCones_03_611`, 162.0, 257.7) stands just inside the south
+  arm, where the cars come in: in their way.
+* **Kerbs**: drives pass pines (`TreePine_*`, trunk at the box's middle) and lamp posts on the pavement edge (Allée
+  des Pins, Allée des Cyprès, Rue du Sud); check which kerb places have one beside them and keep the drive's swing
+  off it (or leave that place empty).
