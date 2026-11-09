@@ -2259,4 +2259,13 @@ Left:
 * The two shortest kerbs (Rue 4, 23 m; Rue 51, 32 m): SUMO puts the car back at the lane's end, moveTo can't take it
   on; seams of 5.1 and 5.3 m there (2 of 26 kerb drives out).
 * At a kerb, SUMO inserts a car leaving its place on the lane where a car turning in still stands (20 steps, seed 101).
-* Not yet seen in CARLA (the computer was not reachable for it this run).
+
+**In CARLA** (`tools\freefly_parking_demo.bat`, 9 Nov 11:45-11:55, from 08:30; `out\town05_freefly_parking.json`,
+`out\freefly\town05_parking_0*_*.png`): all seven kinds seen. Kerb in (08:51): the car stops behind its place and
+pulls into it forwards. Taken out again 3 s into its kerb drive (staged, 09:16): it went on into its place, then out
+forwards to SUMO's car (0.16 m). Two cars in the Parking du Square (10:03): out by the north gate (open as it passed),
+the other 7 to 30 m away. Into Parking Central (10:21) and out (12:33) as before (barrier arm open while it passes, not
+drawn once inside). Kerb out (11:06): forwards onto its lane, met SUMO's car 0.19 m off. Into a space at the Square
+(12:46), by the south gate (open only while the car passes): on its space's point (0.0 m), its heading the space's
+(0.0 deg). Drives out joined SUMO's car within 0.02 to 0.19 m at the kerbs (5), 0.07 to 0.73 m at the car parks (7),
+1.21 m out of Parking Central.
