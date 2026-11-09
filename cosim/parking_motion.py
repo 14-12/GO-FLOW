@@ -1044,7 +1044,7 @@ class ParkingMotion:
                     self.stats["kerb_moved_on"] = self.stats.get("kerb_moved_on", 0) + 1
                 except Exception:  # noqa: BLE001
                     dv = None
-            elif now - w >= KERB_WAIT_S or target - sf < 4.0:
+            elif (now - w >= KERB_WAIT_S or target - sf < 4.0) and (self._k % 4 == 0 or now - w < KERB_WAIT_S):
                 n_touch = self.stats.get("ways_touching", 0)
                 dv = self.kerb_out(vid, aid, now, f)
                 if dv is not None and self.stats.get("ways_touching", 0) > n_touch and now - w < 6 * KERB_WAIT_S:

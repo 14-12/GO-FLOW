@@ -2304,3 +2304,11 @@ one every 4 s: 0 overlaps (they queue: 1263 s of waiting in all); to the Marché
 Left: the 2 to 6 overlap steps are cars SUMO drives passing a car waiting at the road (2 steps each); the 9 to 33 steps
 inside CARLA's objects are kerb drives brushing a pine's trunk or a lamp post on the pavement edge (which ones depends
 on which places are taken: TreePine_501 on Rue 19, Lamppost_tall99/56 on Rue 19 and 20).
+
+**In CARLA** (`tools\freefly_parking_demo.bat`, 9 Nov 12:32-12:45, from 08:30): all seven kinds seen. Two cars in
+the Square (10:33): the second waited 8.5 s for the first and stayed 5 to 11 m from it. A car taken out half way into a
+Square space (staged, 11:34): it had waited 47 s at the road for the aisle, went on into its space, then out. Kerb in
+(08:43) and out (09:19), Parking Central in (13:13) and out (14:13), into a Square space (12:07: on its space, heading
+0.0 deg off). Drives out joined SUMO's car within 0.0 to 1.07 m (27 drives; kerbs 0.0 to 1.07, car parks 0.0 to 0.65);
+355 s of waiting for the Square's aisle in the 6 town hours. A kerb car waiting for its way out now tries again every 2
+s, not every step (5335 ways tried in that run).
