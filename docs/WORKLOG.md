@@ -2840,3 +2840,17 @@ taken off 14.4 -> 22.0 a run (fewer on 5 of 10 seeds), waiting +25 s/km (lower o
 +15 s. The runs are chaotic at this traffic level (one knot at the rush decides a seed: per seed 0 to 69 cars), so ten
 seeds tell little about a change this small; a fix of the knots themselves (junction 2086 and road -19 on seeds 14,
 15, 18) is the next step.
+
+
+## Forecasters v7: the bar, written before the test (10 Nov, 04:35)
+
+Written before any v7 number is seen. The test opens once, on seeds 81-90 (T7_ao_x1, T7_ao_x1.15, T7_ao_x1.3, T7_c_x1),
+`tools/goflow_prediction_test_score.py --seeds 81-90`, v7 and v6 scored on the same runs. v7 ships if all three hold:
+
+1. DSO4's queue fill: MAE below "it stays as now" at +60, +120 and +300 s on each of the three junction-agent
+   datasets (9 rows of 9);
+2. DSO4's queue fill: MAE below v6's on at least 7 of the 12 rows (4 datasets x 3 horizons);
+3. the long-queue alerts at the shipped threshold (0.7): at least 40 % of alerts right and at least half of the long
+   queues caught, on T7_ao_x1.15 and T7_ao_x1.3.
+
+GO-FLOW's occupancy at +120 s is reported against "it stays as now" and v6, not part of the bar.
