@@ -51,6 +51,9 @@ GREY = (150, 162, 184)
 ORANGE = (249, 140, 34)
 RED = (244, 63, 70)
 AMBER = (250, 204, 21)
+DARK_RED = (150, 22, 36)
+TRAFFIC = {1: ORANGE, 2: RED, 3: DARK_RED}      # (10 Nov) a road ahead by its live time against its usual one
+DELAY = {0: GREEN, 1: ORANGE, 2: RED}           # the time left by its delay against usual traffic
 PURPLE = (192, 132, 252)
 # (8 Nov) a trip with a purpose (cosim/purposes.py): what it is called on the header, its colour
 PURPOSE = {"work": ("TO WORK", BLUE), "shopping": ("SHOPPING", PURPLE), "eating": ("EATING OUT", (248, 113, 113)),
@@ -425,6 +428,12 @@ class MiniMap:
                 pygame.draw.lines(s, GREEN_DIM, False, pts, 11 * SS)
                 pygame.draw.lines(s, mix(GREEN_DIM, GREEN, 0.5), False, pts, 7 * SS)
                 pygame.draw.lines(s, GREEN, False, pts, 3 * SS)
+                live = (snap.get("trip") or {}).get("live") or {}
+                for road, lev in live.get("roads") or ():      # (10 Nov) live traffic on the roads ahead
+                    if lev and road in left:
+                        rp = self._cut(self.poly([road]), reveal)
+                        if len(rp) > 1:
+                            pygame.draw.lines(s, TRAFFIC[min(lev, 3)], False, rp, 5 * SS)
                 if snap.get("status") == "following" and reveal >= 1.0:
                     self._flow(s, pts, t)
             if reveal > 0.0:
@@ -596,8 +605,10 @@ class MiniMap:
     def _trip_key(trip: dict | None):
         if trip is None:
             return None
+        lv = trip.get("live") or {}
         return (int(trip.get("elapsed_s") or 0), trip.get("est_s"), trip.get("ended"), len(trip.get("changes") or ()),
-                trip.get("start"), trip.get("dest"))
+                trip.get("start"), trip.get("dest"), int(lv.get("left_s") or 0), lv.get("delay_level"),
+                int(lv.get("usual_s") or 0), int((lv.get("left_m") or 0) // 10))
 
     def _trip_rows(self, trip: dict, iw: int, left_m: float | None = None) -> list:
         """(10 Nov) The car's own trip, from where it set off: driving for, the estimate made then (cosim/
@@ -610,10 +621,27 @@ class MiniMap:
         ended = trip.get("ended")
         done = ended in ("parked", "arrived", "stopped")
         el, est = trip.get("elapsed_s"), trip.get("est_s")
-        row.blit(self._tile("ITS TRIP: DONE IN" if done else "ITS TRIP: DRIVING", mmss(el), GREEN if done else TEXT,
-                            tw), (0, 0))
-        row.blit(self._tile("ESTIMATED AT START", mmss(est), BLUE, tw), (tw + 8, 0))
-        if el is not None and est:
+        live = None if done else trip.get("live")
+        if live is not None:   # (10 Nov) as a navigation app: the time left now, live traffic in, its distance
+            lvl = live.get("delay_level") or 0
+            row.blit(self._tile("TIME LEFT", mmss(live["left_s"]), DELAY.get(lvl, GREEN), tw), (0, 0))
+            m = live.get("left_m") or 0
+            row.blit(self._tile("DISTANCE LEFT", f"{m / 1000:.1f} km" if m >= 1000 else f"{m:.0f} m", TEXT, tw),
+                     (tw + 8, 0))
+            row.blit(self._tile("ESTIMATED AT START", mmss(est), BLUE, tw), (2 * tw + 16, 0))
+            rows.append((row, 4))
+            d = live["left_s"] - live["usual_s"]
+            usual = (f"+{mmss(d)} vs usual traffic" if d >= 5 else
+                     f"-{mmss(-d)} vs usual traffic" if d <= -5 else "usual traffic")
+            known = round(100 * (live.get("known") or 0.0))
+            rows.append((self.f_lab.render(f"driving {mmss(el)}  ·  {usual}  ·  live traffic in {known} % of it",
+                                           True, DELAY.get(lvl, TEXT) if lvl else MUTED), 2))
+            row = None
+        if row is not None:
+            row.blit(self._tile("ITS TRIP: DONE IN" if done else "ITS TRIP: DRIVING", mmss(el),
+                                GREEN if done else TEXT, tw), (0, 0))
+            row.blit(self._tile("ESTIMATED AT START", mmss(est), BLUE, tw), (tw + 8, 0))
+        if row is not None and el is not None and est:
             off = el - est
             if done:
                 col = GREEN if abs(off) <= 0.2 * max(el, 1.0) else AMBER
@@ -622,10 +650,11 @@ class MiniMap:
                 row.blit(self._tile("OVER ESTIMATE", "+" + mmss(off), AMBER, tw), (2 * tw + 16, 0))
             else:
                 row.blit(self._tile("EST. TIME LEFT", mmss(-off), GREEN, tw), (2 * tw + 16, 0))
-        rows.append((row, 4))
+        if row is not None:
+            rows.append((row, 4))
         frm = trip.get("start") or "the road it set off on"
         to = trip.get("dest") or "the end of its route"
-        left = f"  ·  {left_m:.0f} m left" if left_m is not None and not done else ""
+        left = f"  ·  {left_m:.0f} m left" if left_m is not None and not done and live is None else ""
         rows.append((self.f_lab.render(f"from {frm} to {to}{left}", True, TEXT), 2))
         share = trip.get("table_share") or 0.0
         how = ("typical times of past trips, waits at signals in" if share >= 0.5 else

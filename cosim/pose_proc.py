@@ -980,11 +980,12 @@ class SceneOps:
                 pass
 
 
-def run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: bool = False) -> None:
+def run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: bool = False, shown=None) -> None:
     """The process: CARLA's tick callback poses the actors of the latest segment for the next picture. A failure
-    goes to the viewer's log (as {"fatal": traceback}) instead of ending the process unseen."""
+    goes to the viewer's log (as {"fatal": traceback}) instead of ending the process unseen. shown: a shared array
+    (time, x, y, yaw in CARLA) where the followed car is put for the next picture (the mini-map draws it there)."""
     try:
-        _run(host, port, q_in, q_out, cx, cy, measure_only)
+        _run(host, port, q_in, q_out, cx, cy, measure_only, shown)
     except Exception:  # noqa: BLE001 - reported, then the process ends
         import traceback
 
@@ -992,7 +993,7 @@ def run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: b
         raise
 
 
-def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: bool = False) -> None:
+def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: bool = False, shown=None) -> None:
     import ctypes
     import multiprocessing as mp
     import queue
@@ -1073,6 +1074,10 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
                 cam = chase.update(drv.follow_tf, st["frame_dt"], drv.follow_view,
                                    extents.get(drv.vid_aid.get(drv.follow)))
                 batch.append(carla.command.ApplyTransform(spectator_id, cam))
+                if shown is not None:   # (10 Nov) where the picture shows it, for the mini-map (it drew SUMO's newest)
+                    ftf = drv.follow_tf
+                    shown[1], shown[2], shown[3] = ftf.location.x, ftf.location.y, ftf.rotation.yaw
+                    shown[0] = time.time()
             elif drv.follow is None:
                 chase.reset()
             if batch:

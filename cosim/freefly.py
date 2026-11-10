@@ -1265,7 +1265,8 @@ class FreeFly:
             ring = {e: self.highway.speed for lp in self.highway.loops for e in lp} if self.highway is not None else {}
             self.estimates = TripEstimates(net, speeds=ring,
                                            area_names=area_names(self.demand.places) if self.demand is not None else {},
-                                           place_name=plan_names(self.demand) if self.demand is not None else None)
+                                           place_name=plan_names(self.demand) if self.demand is not None else None,
+                                           end_of=self.highway.end_of if self.highway is not None else None)
             self.estimates.setup(self.sumo.conn, self.sumo)
             if self.route_guide is not None:
                 self.route_guide.estimates = self.estimates
@@ -2042,6 +2043,26 @@ class FreeFly:
             except Exception as e:  # noqa: BLE001 - gone meanwhile
                 log.debug("keep walking %s: %s", pid, e)
 
+    def live_eta_step(self, cur) -> None:
+        """(10 Nov) The navigation app's live view (cosim/live_eta.py: its users' phones), and the followed car's time
+        left from where it is, once a second, for the panel."""
+        from cosim.live_eta import ProbeTraffic, for_car
+
+        if getattr(self, "probes", None) is None:
+            self.probes = ProbeTraffic()
+        c, subs = self.sumo.conn, self.sumo.vehicle_subs
+        self.probes.step(c, cur.time, cur.arrived, subs)
+        t = self.route_guide.trip if self.route_guide is not None else None
+        live = self.estimates.live
+        if t is None:
+            live.clear()
+            return
+        if int(cur.time * 2) % 2 == 0:   # once a second
+            info = for_car(self.estimates, self.probes, c, t.vid, cur.time, subs)
+            if info is not None:
+                live.clear()
+                live[t.vid] = info
+
     def keep_driving(self, vehicles: dict) -> None:
         """Every second: a vehicle on the last three edges of its trip gets a new destination if it is in
         view, so trips don't end in front of the camera; SUMO ends a trip at the end of an edge, often a stop
@@ -2065,6 +2086,8 @@ class FreeFly:
             if self.route_guide is not None and self.route_guide.holds(vid):  # the route agent's until it arrives
                 continue
             if self.demand is not None and self.demand.holds(vid):  # on its way to a place: its route is its trip's
+                continue
+            if self.highway is not None and self.highway.is_ring_car(vid):  # (10 Nov) its planned trip: cosim/highway.py
                 continue
             try:
                 idx = subs[vid][tc.VAR_ROUTE_INDEX]
@@ -2118,6 +2141,7 @@ class FreeFly:
         if self.estimates is not None:
             try:
                 self.estimates.step(self.sumo.conn, cur.time, cur.arrived)
+                self.live_eta_step(cur)
             except Exception:  # noqa: BLE001 - never the town's
                 log.exception("trip estimates")
                 self.estimates = None
@@ -4351,7 +4375,13 @@ def main(argv=None) -> int:
                 from cosim.route_minimap import INTRO_S
 
                 intro = min(1.0, (time.time() - fol["t0"]) / INTRO_S) if fol["vid"] is not None else 1.0
-                mm = fol["map"].render(fsnap, time.time(), fol["view"], free=free, intro=intro)
+                sh = getattr(ff, "shown_follow", None)
+                msnap = fsnap
+                if msnap is not None and sh is not None and time.time() - sh[0] < 0.5 and msnap.get("xy"):
+                    # (10 Nov) the car where the picture shows it, not SUMO's newest step (the SUMO thread runs a
+                    # step or two ahead of the picture: the mini-map's car was ahead of the town's)
+                    msnap = dict(msnap, xy=ff.scen.frame.to_sumo_xy(sh[1], sh[2]), angle=sh[3] + 90.0)
+                mm = fol["map"].render(msnap, time.time(), fol["view"], free=free, intro=intro)
                 mm_xy = (size[0] - mm.get_width() - 16, size[1] - mm.get_height() - 16)
             rects = []
             if labels:  # the places' labels, kept off the clock and the mini-map
@@ -4512,8 +4542,9 @@ def main(argv=None) -> int:
 
         ctx = mp.get_context("spawn")
         pose_q, stats_q = ctx.Queue(), ctx.Queue()
+        ff.shown_follow = ctx.Array("d", 4, lock=False)   # (10 Nov) the followed car where the picture shows it
         pose_proc = ctx.Process(target=_pp.run, args=(args.host, args.port, pose_q, stats_q, ff.scen.frame.cx,
-                                                      ff.scen.frame.cy, not frame_mode), daemon=True)
+                                                      ff.scen.frame.cy, not frame_mode, ff.shown_follow), daemon=True)
         pose_proc.start()
         ff.pose_q, ff.stats_q = pose_q, stats_q
     plate_proc, plate_in = ff.plate_proc, ff.plate_in

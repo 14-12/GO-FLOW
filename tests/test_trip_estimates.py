@@ -135,3 +135,22 @@ def test_a_new_destination_ends_the_trip_and_starts_another_with_its_own_estimat
     assert te.done[0].how == "extended" and te.done[0].dest_changed
     nxt = te.active["car"]
     assert nxt.t0 == 20.0 and nxt.dest_edge == "a" and nxt.changes == [(0.0, "new destination given on the way")]
+
+
+def test_a_ring_car_ends_at_its_planned_spot_and_one_more_lap_is_a_new_destination():
+    """(10 Nov) Ring-road cars (cosim/highway.py) have planned trips: the estimate runs to the spot on the last road
+    where they leave; when that end moves (one more lap: it was in sight) the trip ends "extended" and another starts."""
+    ends = {"car": (20.0, 0)}
+    te = _te(end_of=lambda v: ends.get(v))
+    c = _Conn()
+    c.routes["car"] = (["a", "b", "c"], 0, 10.0, "r1", [])
+    c.sim = {0x74: ("car",)}
+    te.step(c, 0.0)
+    leg = te.active["car"]
+    assert leg.dest_edge == "c" and leg.dest_pos == 20.0 and leg.est_s == 9.0 + 15.0 + 20.0 + 2.0
+    c.sim = {}
+    c.routes["car"] = (["b", "c", "a", "c"], 0, 5.0, "r2", [])   # one more lap: the same last road, further on
+    ends["car"] = (20.0, 1)
+    c.veh = {"car": {0x50: "b", 0x53: "r2"}}
+    te.step(c, 30.0)
+    assert te.done[0].how == "extended" and te.active["car"].t0 == 30.0

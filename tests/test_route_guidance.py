@@ -230,6 +230,14 @@ def test_the_mini_map_draws_an_opaque_panel(guide):
     assert with_trip.get_height() >= s.get_height()
     if with_trip.get_size() == s.get_size():   # (the panel at its tallest: the map gives the rows room)
         assert (pygame.surfarray.array3d(with_trip) != pygame.surfarray.array3d(s)).any()
+    # (10 Nov) as a navigation app: the time left now, live traffic in, coloured by its delay; the roads ahead by theirs
+    snap["trip"]["live"] = {"left_s": 95.0, "usual_s": 62.0, "delay_level": 2, "known": 0.4, "left_m": 640,
+                            "roads": [(route[0], 0), (route[1], 2), (route[2], 3)], "at": 100.0}
+    with_live = mm.render(snap, 3.6, free=free, intro=1.0)
+    assert with_live.get_size() != with_trip.get_size() or \
+        (pygame.surfarray.array3d(with_live) != pygame.surfarray.array3d(with_trip)).any()
+    if os.environ.get("MINIMAP_PNG"):
+        pygame.image.save(with_live, os.environ["MINIMAP_PNG"])
     w, h = s.get_size()
     assert w > 400 and h > 400
     for surf in (flying, first, s):

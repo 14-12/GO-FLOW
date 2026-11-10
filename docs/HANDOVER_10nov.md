@@ -157,3 +157,19 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
   way. Offered: a second, live "time left" beside the start estimate (the user's decision).
 * Job runner: a job's `set` stays for the next jobs (the runner calls them in one window): start each job with
   `setlocal`.
+
+## 10. Night of 10 Nov
+
+* The time left as a navigation app gives it (the user's request, after research on Google Maps: road times summed,
+  live from users' phones over the last 2 minutes, historical for the same hour): `cosim/live_eta.py`, 25 % of cars
+  run the app, a road's live time shrunk toward its usual one, blended in by how soon the car gets there. Dev seeds:
+  time left from where the car is halves the error against the start estimate minus the time driven (87 -> 44 s);
+  live traffic adds a little (44.7 -> 44.3 s, better in 25 of 30 runs; 27 of 30 at other hours).
+* The panel: TIME LEFT (coloured by delay against usual traffic), DISTANCE LEFT, ESTIMATED AT START, the roads ahead
+  coloured by live traffic; the start estimate is never changed. Seen in CARLA.
+* The mini-map's car now sits where the picture shows it (it was ahead: SUMO's newest step).
+* Ring-road cars drive planned trips (1-3 laps, end out of sight, else one more lap), estimated like the town's
+  (ring road times from ring cars, train seeds): median error 24 s, 69-71 % within 20 %. The town on 60 paired dev
+  runs: slightly worse on the means (standing 0.625 -> 0.642, trips parked 374 -> 365, taken off 16.9 -> 21.5), about
+  half the runs either way. Kept (the user's request); next to try: longer ring trips (fewer cars appearing).
+* Job runner: CARLA jobs run with `< nul` (the viewer's .bat pauses on an error and held the queue).

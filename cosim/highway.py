@@ -29,6 +29,9 @@ PEAK_PER_LOOP = 20     # cars on each loop at the evening peak (about 14 per km 
                        # viewer draws them all: on the PC 30 a loop cost 4-6 FPS (18-26 against 26-29 with 16)
 MIN_PER_LOOP = 3       # at night
 LAPS = 200             # a ring car's route: round and round (taken off out of sight when there are too many)
+TRIP_ROADS = (2, 6)    # (10 Nov) a ring car's planned trip: this many of the ring's roads after the one it starts on
+                       # (each 590-859 m: 1-3 laps), so it has a start, an end and a trip-time estimate like the town's
+END_POS = (150.0, 440.0)   # where on its last road it leaves (within every ring road); out of sight, or one more lap
 PREFIX = "hw"
 RING_GREEN_MAX_S = 10.0  # a green for the ring alone at its junctions ends after this at most (below)
 MIN_LEN_M = 400.0      # a ring edge: this long at least ...
@@ -86,7 +89,7 @@ class HighwayTraffic:
 
     def __init__(self, conn, loops, share, free=None, types=(("passenger", 1.0),), type_for=None, seed: int = 5,
                  peak: int = PEAK_PER_LOOP, speed: float = HIGHWAY_SPEED, lengths: dict | None = None,
-                 green_max: float | None = RING_GREEN_MAX_S, policy=None):
+                 green_max: float | None = RING_GREEN_MAX_S, policy=None, planned: bool = True):
         self.conn = conn
         self.loops = [list(lp) for lp in loops]
         self.share = share
@@ -107,6 +110,10 @@ class HighwayTraffic:
         self.rerouted = 0
         self.added = self.removed = 0
         self.routes: dict[tuple, str] = {}
+        # (10 Nov) planned trips: vid -> {"k", "edges" (its route), "end" (m along its last road)}; False: 200 laps
+        self.planned = planned
+        self.plan: dict[str, dict] = {}
+        self.extended = 0      # one more lap: its trip's end was in sight
         self.protected = None  # vid -> True: never taken off (an accident's: cosim/incidents.IncidentManager.protected)
 
     def setup(self) -> None:
@@ -211,15 +218,77 @@ class HighwayTraffic:
         vid = f"{PREFIX}{self.n}"
         self.n += 1
         t = self.rng.choices(self.types, self.weights)[0]
+        tid = self.type_for(vid, t) if self.type_for else t
         try:
-            self.conn.vehicle.add(vid, self._route(k, i), typeID=self.type_for(vid, t) if self.type_for else t,
-                                  depart="now", departLane="free", departPos=f"{pos:.1f}", departSpeed="max")
+            if self.planned:
+                edges = [lp[(i + j) % len(lp)] for j in range(1 + self.rng.randint(*TRIP_ROADS))]
+                end = round(self.rng.uniform(*END_POS), 1)
+                rid = f"{vid}_trip"
+                self.conn.route.add(rid, edges)
+                self.conn.vehicle.add(vid, rid, typeID=tid, depart="now", departLane="free", departPos=f"{pos:.1f}",
+                                      departSpeed="max", arrivalPos=f"{end:.1f}")
+                self.plan[vid] = {"k": k, "edges": edges, "end": end, "v": 0}
+            else:
+                self.conn.vehicle.add(vid, self._route(k, i), typeID=tid, depart="now", departLane="free",
+                                      departPos=f"{pos:.1f}", departSpeed="max")
         except Exception as e_:  # noqa: BLE001
             log.debug("ring car %s: %s", vid, e_)
             return False
         self.cars[k].add(vid)
         self.added += 1
         return True
+
+    def end_of(self, vid: str) -> tuple[float, int] | None:
+        """A ring car's planned trip end: (m along its last road, how many times it moved: one more lap, round again);
+        None for others (cosim/trip_estimates.py: a moved end is a new destination)."""
+        p = self.plan.get(vid)
+        return None if p is None else (p["end"], p["v"])
+
+    def _trips(self, k: int, mine: set) -> None:
+        """(10 Nov) Planned trips: a car on the last two roads of its trip whose end is in sight drives one more lap
+        (it would vanish there); a car whose route someone else changed (an accident's detour, a knot undone: they
+        route to the last road of its route) goes on round the ring to its trip's end."""
+        c = self.conn
+        lp = self.loops[k]
+        for vid in list(mine):
+            p = self.plan.get(vid)
+            if p is None:
+                continue
+            try:
+                idx = c.vehicle.getRouteIndex(vid)
+                route = list(c.vehicle.getRoute(vid))
+            except Exception:  # noqa: BLE001 - gone
+                continue
+            if route != p["edges"]:   # changed by others: round the ring again, from where it is, to a trip's end
+                try:
+                    road = c.vehicle.getRoadID(vid)
+                except Exception:  # noqa: BLE001
+                    continue
+                if road not in lp:
+                    continue   # in a junction (again in a moment), or sent off the ring: its own way
+                i = lp.index(road)
+                new = [lp[(i + j) % len(lp)] for j in range(3)]
+                try:
+                    c.vehicle.setRoute(vid, new)
+                    p["edges"] = list(c.vehicle.getRoute(vid))
+                    p["v"] += 1
+                    self.rerouted += 1
+                except Exception as e:  # noqa: BLE001
+                    log.debug("ring car %s round again: %s", vid, e)
+                continue
+            if idx < len(route) - 2 or self.free(route[-1], p["end"]):
+                continue
+            last = lp.index(route[-1]) if route[-1] in lp else None
+            if last is None:
+                continue
+            new = route[idx:] + [lp[(last + j) % len(lp)] for j in range(1, len(lp) + 1)]   # one more lap
+            try:
+                c.vehicle.setRoute(vid, new)
+                p["edges"] = list(c.vehicle.getRoute(vid))
+                p["v"] += 1
+                self.extended += 1
+            except Exception as e:  # noqa: BLE001
+                log.debug("ring car %s one more lap: %s", vid, e)
 
     def _keep_round(self, k: int, mine: set) -> None:
         """A ring car given a new way (an accident's detour, a knot undone in sight: cosim/incidents.py routes to the
@@ -261,7 +330,10 @@ class HighwayTraffic:
                     except Exception:  # noqa: BLE001
                         pass
                 mine.discard(vid)
-            if self._k % 5 == 0:
+                self.plan.pop(vid, None)
+            if self.planned:
+                self._trips(k, mine)
+            elif self._k % 5 == 0:
                 self._keep_round(k, mine)
             n = len(mine)
             if n < want:

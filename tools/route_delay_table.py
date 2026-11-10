@@ -109,7 +109,7 @@ def run_one(scale: float, seed: int, args: dict, port: int, start: float = 6.0) 
     def hook(sumo, im) -> None:
         state["t0"] = sumo.time
         if live:
-            state["rec"] = LiveRoadTimes(sumo.time + 60.0 * args["warmup"])
+            state["rec"] = LiveRoadTimes(sumo.time + 60.0 * args["warmup"], prefix=args.get("prefix", "live"))
 
     def probe(cur, c, sod) -> None:
         state["rec"].step(c, cur.time, cur.arrived)
@@ -165,6 +165,8 @@ def main(argv=None) -> int:
     ap.add_argument("--junction-blocker", type=float, default=60.0, help="0: as the viewer (SUMO's own rule)")
     ap.add_argument("--road-times", default="vehroutes", choices=["vehroutes", "live"],
                     help="live: read from each step, every car (10 Nov); vehroutes: SUMO's route output, finished cars")
+    ap.add_argument("--prefix", default="live", help="--road-times live: whose times (live: the town's cars; hw: the "
+                                                     "ring road's, cosim/trip_estimates.RING_TIMES)")
     ap.add_argument("--work", default=str(ROOT / "out" / "route_guidance" / "train"))
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args(argv)
@@ -175,7 +177,7 @@ def main(argv=None) -> int:
         return 2
     args = {"work": a.work, "minutes": a.minutes, "warmup": a.warmup, "controller": a.controller, "trips": a.trips,
             "ring_trips": a.ring_trips, "junction_blocker": a.junction_blocker,
-            "road_times": a.road_times}
+            "road_times": a.road_times, "prefix": a.prefix}
     hours = [float(h) for h in a.start_hours.split(",")]
     jobs = [(float(sc), s, h) for sc in a.scales.split(",") for s in seeds for h in hours]
     pooled: dict[str, list] = defaultdict(list)
@@ -193,7 +195,7 @@ def main(argv=None) -> int:
                     "left out", "seeds": seeds, "scales": a.scales, "controller": a.controller,
             "recipe": {"minutes": a.minutes, "warmup": a.warmup, "start_hours": hours, "clock_speed": 30,
                        "trips": a.trips, "ring_trips": a.ring_trips, "junction_blocker": a.junction_blocker,
-                       "road_times": a.road_times},
+                       "road_times": a.road_times, "prefix": a.prefix},
             "made": time.strftime("%Y-%m-%d %H:%M"), "movements": table}
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(card, indent=1), encoding="utf-8")

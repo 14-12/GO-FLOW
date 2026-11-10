@@ -3182,3 +3182,88 @@ test_town05_agents, test_pose_proc).
 
 Job runner: a job's `set` stays for the jobs after it (one window calls them all): the follow demo first ran at 17:30
 with the peak demo's FREEFLY_ARGS. Jobs now start with `setlocal`.
+
+## 10 Nov (night): the time left as a navigation app gives it, ring-road cars with planned trips, the panel's lag
+
+**Research (the user asked for Google Maps' way).** Google sums road-by-road times; live times come from its users'
+phones (the paper's real-time input: speeds of the last 2 minutes), historical ones from the same hour of past weeks,
+a learned model combines them; in Derrow-Pinion et al., "ETA Prediction with Graph Neural Networks in Google Maps"
+(CIKM 2021), the real-time sum beats the historical one near the start of a trip and loses to it an hour ahead, and
+combining beats both. Uber (DeepETA) adds a learned correction to a routing-engine sum. In the app the arrival time
+keeps updating on the way, its colour says the delay against usual traffic (green, orange, red), the route line is
+coloured by traffic (green, orange, red, dark red). Google does not publish its thresholds: ours are in
+cosim/live_eta.py.
+
+**What a real system has here.** `cosim/live_eta.py`: a share of the town's and the ring's cars run the app (a hash of
+the id, the same cars at any share); `ProbeTraffic` keeps, for each road, the times of app cars that left it in the
+last 2 minutes (from the step's subscriptions; a road where the car parked or stopped is left out). A road's live time:
+their median shrunk toward its usual time by how few they are, (n * median + k * usual) / (n + k). The time left
+(`time_left`): from where the car is, each road ahead blends live and usual, weight exp(-tau / blend) for the live
+one, tau the time until the car gets there; the last road to its stop at its limit, as the start estimate. SUMO's
+truth only grades it. The start estimate stays as it was.
+
+**Measured on dev seeds 11-20** (from 07:00, 12:00, 17:00; every 30 s of every trip, the time left by each method
+against the real time left; tools/eval_trip_estimates.py, `time_left` in its report; 58 022 checkpoints):
+
+| Time left | Mean error | Median error | Within 20 % | Within 30 s |
+|---|---|---|---|---|
+| the start estimate minus the time driven | 87.1 s | 30.7 s | 0.19 | 0.49 |
+| usual times from where the car is | 44.7 s | 20.0 s | 0.295 | 0.637 |
+| + live: 25 % of cars, blend 120 s, shrink 10 (kept) | 44.3 s | 19.9 s | 0.299 | 0.640 |
+| + live, no shrink | 47.0 s | 21.7 s | 0.28 | 0.61 |
+| + live, 10 % / 50 % of cars | 44.5 / 44.1 s | | | |
+
+Estimating again from where the car is halves the error; live traffic adds a little (better than usual times in 25 of
+30 runs on the mean error, 22 of 30 within 30 s), most with 3-10 min left (mean error 158.8 -> 156.3 s). Tried, not
+kept: raising a road's live time to how long app cars standing on it have been there (even only past twice the usual
+time and a minute more): on a dev run the mean error went from 54.3 to 63.7 s (the queues clear, or the cars behind
+are sent around them). The large errors left are trips held behind accidents: nobody knows how long a crash stays.
+Checked again at hours not used to choose (the same dev seeds from 09:00, 14:00, 19:00, 55 480 checkpoints): usual
+times 68.8 s mean error, with live traffic 67.8 s, better in 27 of 30 runs (24 of 30 within 30 s); the start estimate
+minus the time driven 121.6 s.
+
+**The panel** (cosim/route_minimap.py), as a navigation app: TIME LEFT (from where the car is, live traffic in, every
+second; green, orange or red by its delay against usual traffic: over 15 % and 20 s orange, over 40 % and 45 s red),
+DISTANCE LEFT, ESTIMATED AT START (made when it set off, never changed); a line "driving 0:52 · usual traffic · live
+traffic in 16 % of it" (or "+1:20 vs usual traffic"); the roads ahead on the map coloured by their live time against
+their usual one (orange from 1.25 times, red from 2, dark red from 3.5). At the end: DONE IN, ESTIMATED AT START, OFF
+BY, as before. The viewer steps the app's view with the town (FreeFly.live_eta_step) and works out the followed car's
+time left once a second (cosim/live_eta.for_car). Seen in CARLA (tools/freefly_follow_demo.bat, 08:00): "TIME LEFT 2:49
+· DISTANCE LEFT 286 m · ESTIMATED AT START 2:51".
+
+**The mini-map's car ahead of the town's (the user saw it).** The mini-map drew the followed car at SUMO's newest
+step; the picture shows the poses a step or two later (the SUMO thread runs ahead, the poses are smoothed between
+steps). The pose process now puts the followed car's pose for the next picture in a shared array (pose_proc.run
+`shown`), and the mini-map draws the car there (SUMO's position only when none came in the last 0.5 s). A first
+version made `fsnap` local in the overlay's paint function and the viewer stopped at once (fixed before any run).
+
+**Ring-road cars with planned trips (the user's request).** Each ring car (cosim/highway.py) now drives a planned
+trip: from where it appears (out of sight, as before) 2-6 of the ring's roads (590-859 m each: 1-3 laps), leaving part
+way along its last road (150-440 m, SUMO's arrivalPos), so it has a start, an end and an estimate like the town's. If
+that end is in sight when the car is on its last two roads, it drives one more lap (the trip ends "extended" in the
+estimates and another starts); a car given another way by an accident's detour goes round to a trip's end. The
+viewer's keep_driving leaves ring cars alone. `HighwayTraffic(planned=False)` and `eval_trip_estimates.py
+--ring-laps`: the old 200 laps. The ring's road times from its own cars (tools/route_delay_table.py --prefix hw, train
+seeds 101-105 from 07:00, 12:00, 17:00: 4 movements, 5979 samples, models/trip_estimates/ring_movement_times.json;
+the town's table had 0-21 samples on them, from town cars waiting to turn off): ring-to-ring movements in the
+estimate come from it.
+
+Ring trips' estimates, dev seeds 11-20: 3948 trips from 07:00, 12:00, 17:00, median error 24.0 s on 190 s trips, 71 %
+within 20 %; 3545 trips from 09:00, 14:00, 19:00, 23.7 s, 69 %.
+
+The town, the same 60 paired runs (dev seeds 11-20 from 07:00, 09:00, 12:00, 14:00, 17:00, 19:00), 200 laps against
+planned trips:
+
+| | 200 laps | Planned trips | Runs better |
+|---|---|---|---|
+| cars on the ring | 21.0 | 19.6 | |
+| town cars standing (share) | 0.625 | 0.642 | 27 of 60 |
+| trips parked | 373.7 | 365.0 | 23 of 60 |
+| cars taken off (accidents, knots) | 16.9 | 21.5 | 26 of 60 |
+
+A small cost on the means, near half the runs either way (the town moves this much from any change). No ring car went
+onto the town's roads (counted every minute; seed 11 from 12:00, run on another SUMO build, so not the same run). What may cost: about three times more ring cars
+appearing mid-road (a trip each 1-3 laps instead of 200 laps). Kept (the user's request); next to try: longer trips.
+
+Tests on the PC: 66 passed (test_highway, test_trip_estimates, test_route_delay_table, test_route_guidance with its
+SUMO and CARLA tests, test_town05_agents, test_pose_proc).

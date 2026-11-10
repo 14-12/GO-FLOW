@@ -42,7 +42,8 @@ def test_ring_cars_follow_the_curve_and_appear_out_of_sight():
     c = _Conn()
     share = {"v": 1.0}
     seen = {"ok": True}
-    hw = HighwayTraffic(c, [["a", "b"]], lambda s: share["v"], free=lambda e, p: seen["ok"], peak=6, speed=22.0)
+    hw = HighwayTraffic(c, [["a", "b"]], lambda s: share["v"], free=lambda e, p: seen["ok"], peak=6, speed=22.0,
+                        planned=False)
     hw.setup()
     assert c.speeds == {"a": 22.0, "b": 22.0}
     running = {}
@@ -97,7 +98,7 @@ def test_the_rings_own_greens_are_kept_short():
 def test_a_ring_car_sent_the_short_way_goes_round_again():
     """A ring car rerouted (an accident's detour) would end its trip on the ring, in sight: its route is renewed."""
     c = _Conn()
-    hw = HighwayTraffic(c, [["a", "b"]], lambda s: 1.0, peak=1)
+    hw = HighwayTraffic(c, [["a", "b"]], lambda s: 1.0, peak=1, planned=False)
     hw.setup()
     hw.step({}, 0.0)
     vid = c.added[0][0]
@@ -109,3 +110,51 @@ def test_a_ring_car_sent_the_short_way_goes_round_again():
     hw._k = 4
     hw.step({vid: NS()}, 0.0)
     assert routes[vid][0] == "b" and len(routes[vid]) > 100 and hw.rerouted == 1
+
+
+def _planned(free=lambda e, p: True):
+    c = _Conn()
+    hw = HighwayTraffic(c, [["a", "b"]], lambda s: 1.0, peak=1, free=free)
+    hw.setup()
+    hw.step({}, 0.0)
+    vid, rid, kw = c.added[0]
+    routes = {vid: tuple(c.routes[rid])}
+    c.vehicle.getRoute = lambda v: routes[v]
+    c.vehicle.setRoute = lambda v, edges: routes.__setitem__(v, tuple(edges))
+    return c, hw, vid, kw, routes
+
+
+def test_a_ring_car_has_a_planned_trip_with_an_end():
+    """(10 Nov) 1-3 laps from where it appears, leaving part way along its last road: a start, an end, an estimate."""
+    c, hw, vid, kw, routes = _planned()
+    edges = routes[vid]
+    assert 3 <= len(edges) <= 7 and all(a != b for a, b in zip(edges, edges[1:]))   # along the loop
+    assert 150.0 <= float(kw["arrivalPos"]) <= 440.0 and hw.end_of(vid) == (float(kw["arrivalPos"]), 0)
+    assert hw.end_of("live1") is None
+
+
+def test_a_ring_car_whose_end_is_in_sight_drives_one_more_lap():
+    seen = {"end": False}                                         # it appears out of sight
+    c, hw, vid, kw, routes = _planned(free=lambda e, p: not seen["end"])
+    seen["end"] = True
+    edges = routes[vid]
+    c.vehicle.getRouteIndex = lambda v: len(edges) - 3          # not yet near its end: left alone
+    hw.step({vid: NS()}, 0.0)
+    assert routes[vid] == edges and hw.extended == 0
+    c.vehicle.getRouteIndex = lambda v: len(edges) - 2          # the road before its last, its end in sight
+    hw.step({vid: NS()}, 0.0)
+    assert len(routes[vid]) == 2 + 2 and routes[vid][:2] == edges[-2:] and hw.extended == 1
+    assert hw.end_of(vid)[1] == 1                                # its end moved: a new destination for its estimate
+    seen["end"] = False                                          # out of sight: it ends there
+    c.vehicle.getRouteIndex = lambda v: len(routes[v]) - 1
+    hw.step({vid: NS()}, 0.0)
+    assert hw.extended == 1
+
+
+def test_a_planned_ring_car_given_another_way_goes_round_to_a_trip_end():
+    c, hw, vid, kw, routes = _planned()
+    routes[vid] = ("b", "a")                                     # an accident's detour: to the last road, the short way
+    c.vehicle.getRouteIndex = lambda v: 0
+    c.vehicle.getRoadID = lambda v: "b"
+    hw.step({vid: NS()}, 0.0)
+    assert routes[vid] == ("b", "a", "b") and hw.rerouted == 1

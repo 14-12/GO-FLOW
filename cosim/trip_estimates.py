@@ -26,6 +26,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TYPICAL = ROOT / "models" / "route_guidance" / "movement_times.json"
+# (10 Nov) the ring road's movements from its own cars' trips (tools/route_delay_table.py --prefix hw, train seeds): the
+# town's cars seldom drive the ring, and those that do wait at its junctions to turn off; ring cars go round
+RING_TIMES = ROOT / "models" / "trip_estimates" / "ring_movement_times.json"
 log = logging.getLogger("trip_estimates")
 
 # traci.constants
@@ -63,6 +66,7 @@ class Leg:
     t1: float | None = None
     how: str | None = None        # parked | arrived | stopped | extended (another destination) | gone (taken off)
     last_road: str = ""
+    end_v: int | None = None      # a ring car's planned end, its version (cosim/highway.HighwayTraffic.end_of)
 
     @property
     def real_s(self) -> float | None:
@@ -71,7 +75,7 @@ class Leg:
 
 class TripEstimates:
     def __init__(self, net, typical_file: Path | None = TYPICAL, speeds: dict | None = None, area_names: dict | None = None,
-                 stat: str = "median_s", place_name=None):
+                 stat: str = "median_s", place_name=None, end_of=None, ring_file: Path | None = RING_TIMES):
         """net: sumolib network (roads' lengths and limits); speeds: road -> limit set at run time (the ring road's
         80 km/h); area_names: parking area -> place name; stat: the table's "median_s" (each road's median: on dev seeds 11-20
         within 20 % 0.411 against 0.338 with the mean, the mean's sum overestimating by 23 s, docs/WORKLOG.md 10 Nov) or
@@ -92,8 +96,17 @@ class TripEstimates:
                 a, _, b = k.partition(">")
                 if b and v["n"] >= 3:
                     self.typical[(a, b)] = float(v[stat])
+        ring = set(speeds or {})
+        if ring and ring_file is not None and Path(ring_file).is_file():   # ring road to ring road: its own cars'
+            card = json.loads(Path(ring_file).read_text(encoding="utf-8"))
+            for k, v in card["movements"].items():
+                a, _, b = k.partition(">")
+                if a in ring and b in ring and v["n"] >= 3:
+                    self.typical[(a, b)] = float(v[stat])
         self.area_names = area_names or {}
         self.place_name = place_name
+        self.end_of = end_of      # vid -> (m along its last road, version) for ring cars' planned trips, else None
+        self.live: dict[str, dict] = {}   # vid -> its time left now, the app's live traffic in (cosim/live_eta.for_car)
         self.active: dict[str, Leg] = {}
         self.done: list[Leg] = []
         self.last: dict[str, Leg] = {}     # each car's latest leg (the viewer's panel), kept after it ends
@@ -172,6 +185,14 @@ class TripEstimates:
                 return n
         return self.area_names.get(area)
 
+    def _end(self, vid: str):
+        if self.end_of is None:
+            return None
+        try:
+            return self.end_of(vid)
+        except Exception:  # noqa: BLE001
+            return None
+
     def _open(self, c, vid: str, now: float, start_name: str | None = None) -> None:
         if self.skip(c, vid):
             self.stats["skipped"] += 1
@@ -201,10 +222,14 @@ class TripEstimates:
                 edges = edges[:j + 1]
                 dest_edge, dest_pos = se, float(s.endPos)
                 dest_name = self.name(vid, s.stoppingPlaceID) if s.stoppingPlaceID else None
+        end = self._end(vid) if not stops else None
+        if end is not None:       # (10 Nov) a ring car's planned trip: it leaves part way along its last road
+            dest_pos = end[0]
         est, free, share = self.estimate(edges, pos, dest_pos)
         leg = Leg(vid, now, edges[0], pos, start_name, dest_edge, dest_pos, dest_name, round(est, 1), round(free, 1),
                   round(share, 2), rid, edges)
         leg.last_road = edges[0]
+        leg.end_v = end[1] if end is not None else None
         self.active[vid] = self.last[vid] = leg
         self.stats["legs"] += 1
 
@@ -243,6 +268,9 @@ class TripEstimates:
                 except Exception:  # noqa: BLE001
                     route = ()
                 still = leg.dest_edge in route
+                if leg.end_v is not None:   # a ring car: its trip's end moved (one more lap, round again)?
+                    end = self._end(vid)
+                    still = still and end is not None and end[1] == leg.end_v
                 leg.changes.append((round(now - leg.t0, 1), "new way" if still else "new destination"))
                 if not still:   # another destination: this trip ends here, a new one starts with its own estimate
                     leg.dest_changed = True
@@ -295,7 +323,8 @@ class TripEstimates:
         return {"t0": leg.t0, "elapsed_s": (leg.t1 if leg.t1 is not None else now) - leg.t0, "est_s": leg.est_s,
                 "free_s": leg.free_s, "table_share": leg.table_share, "start": leg.start_name, "dest": leg.dest_name,
                 "dest_edge": leg.dest_edge, "changes": list(leg.changes), "dest_changed": leg.dest_changed,
-                "ended": leg.how, "real_s": leg.real_s}
+                "ended": leg.how, "real_s": leg.real_s,
+                "live": self.live.get(vid) if leg.how is None else None}
 
 
 def plan_names(demand):

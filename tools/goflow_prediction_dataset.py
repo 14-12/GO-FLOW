@@ -140,9 +140,11 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         ring = HighwayTraffic(c, loops, lambda s_: daily.target_at(curve, s_) / top,
                               types=[(t, n) for t, n in pool.per_hour.items() if base.get(t) != "bus"],
                               type_for=pop.type_for, seed=seed + 3, **({"peak": 0} if ring_trips else {}),
-                              lengths={e: net.getEdge(e).getLength() for lp in loops for e in lp}, policy=sumo.policy)
+                              lengths={e: net.getEdge(e).getLength() for lp in loops for e in lp}, policy=sumo.policy,
+                              planned=a.get("ring_planned", True))
         ring.protected = im.protected
         ring.setup()
+        sumo.ring = ring   # (10 Nov) for a hook that needs the ring cars' planned trips (tools/eval_trip_estimates.py)
 
     # what is measured: the live connector's own Aggregator (cosim/goflow_prediction.py), so the agents are
     # trained on exactly what the town will send them

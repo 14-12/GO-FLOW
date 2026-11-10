@@ -1,0 +1,50 @@
+{
+ "what": "time on a road by the road taken next (s), the wait at its signal included; first road of a trip left out",
+ "seeds": [
+  101,
+  102,
+  103,
+  104,
+  105
+ ],
+ "scales": "1",
+ "controller": "agents_observed",
+ "recipe": {
+  "minutes": 30.0,
+  "warmup": 5.0,
+  "start_hours": [
+   7.0,
+   12.0,
+   17.0
+  ],
+  "clock_speed": 30,
+  "trips": "purpose",
+  "ring_trips": false,
+  "junction_blocker": 0.0,
+  "road_times": "live",
+  "prefix": "hw"
+ },
+ "made": "2026-11-10 21:52",
+ "movements": {
+  "-36>-38": {
+   "n": 1435,
+   "mean_s": 65.06,
+   "median_s": 60.5
+  },
+  "-38>-36": {
+   "n": 1455,
+   "mean_s": 49.67,
+   "median_s": 46.0
+  },
+  "35>37": {
+   "n": 1520,
+   "mean_s": 49.9,
+   "median_s": 46.0
+  },
+  "37>35": {
+   "n": 1569,
+   "mean_s": 57.22,
+   "median_s": 54.5
+  }
+ }
+}
