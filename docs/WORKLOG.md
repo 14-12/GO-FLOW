@@ -2999,9 +2999,11 @@ whether to turn it on is the user's decision. Test: tests/test_town05_agents.py 
 
 **Live check of the flash model in CARLA.** The H window ran with the flash model for about 2 hours (cameras 1722-1
 and 1126-2, 18-27 detections a second, no error), but no emergency vehicle passed those two cameras while watched;
-the measured numbers remain the clip test above. After about 2 hours at clock x30 the evening peak (491 vehicles)
-left SUMO 29 min behind the clock (4 s of SUMO step per 10 s), and the picture stood still: x30 is too fast for SUMO
-at that size. The console repeats ultralytics' "'half' is deprecated" warning (cosim/inspector.py, `half=` in predict).
+the measured numbers remain the clip test above. After about 2 hours (clock x30: the evening peak, 491 vehicles and
+485 pedestrians) the viewer's SUMO thread no longer kept up with real time: 12 steps in 10 s instead of 20 (SUMO's
+step 4.0 s, the incidents 1.6 s, the population 1.2 s of those 10 s), CARLA at 7.7 fps, the poses held 1747 times
+("SUMO late" counts held poses, not seconds), and the picture stood still. The clock's speed only sets the time of
+day; SUMO steps in real time whatever it is. (Corrected the same day: this first said x30 was too fast for SUMO.) The console repeats ultralytics' "'half' is deprecated" warning (cosim/inspector.py, `half=` in predict).
 
 ## 10 Nov (afternoon): cars taken off, where they come from
 

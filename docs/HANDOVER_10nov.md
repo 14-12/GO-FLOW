@@ -133,5 +133,6 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
 * Cars taken off: half come from accidents (drivers held RELIEVE_REMOVE_S, then taken off, by design), a quarter
   from red-light queues that did not clear in 5 min. The -19 closure was not tried (`_divert` already sends drivers
   around). Fewer removals needs a design choice: traffic let past an accident.
-* The H window ran 2 h with the flash model, no emergency vehicle passed the cameras watched. At x30 the evening peak
-  (491 vehicles) leaves SUMO behind the clock and the picture stands still.
+* The H window ran 2 h with the flash model, no emergency vehicle passed the cameras watched. At the evening peak
+  (491 vehicles, 485 pedestrians) the viewer's SUMO thread fell below real time (12 steps in 10 s) and the picture
+  stood still; the clock's x30 is not the cause (it only sets the time of day).
