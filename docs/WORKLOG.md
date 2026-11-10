@@ -2906,3 +2906,48 @@ side): cars taken off 17.8 -> 19.8 a run (07:00 14.4 -> 15.8, 12:00 11.3 -> 17.7
 that the first run did not have). Per run 0 to 88 cars: one knot at the rush decides a run, and a change that moves
 when cars leave changes which crashes happen. Neither change kept. What would tell more: the removals per accident
 of a kind (a road's only lane blocked) over many more runs than 10 dev seeds give.
+
+
+## Siren detection, step 8 (continued): a model that sees the lights flash (10 Nov, morning)
+
+**Clips.** `tools/record_ev_clips.bat` (CARLA off screen, no SUMO): through each of the 55 inspector cameras, at 08:00
+clear, 15:00 rain and 23:30 night, one ambulance and one police car at a time, lights on and off, twice each, driving
+along a lane 12-50 m in front of the camera (0-12 m/s, towards it or away) or standing; 16 pictures at 10 a second,
+the vehicle's visible box from the instance segmentation. 1309 clips (`out/ev_clips`, 2.4 GB). The light bars do
+flash in CARLA: an ambulance's bar alternates blue and red from one picture to the next (2-3 Hz), a police bar too,
+fainter by day. `tools/ev_clip_features.py` then gives, per picture, what the shipped detector calls the vehicle and
+its light numbers (`cosim/siren_flash.light_numbers`: in the box's upper half, how far the reddest and the bluest
+pixels stand out, the brightest pixels, the mean).
+
+**Model** (`cosim/siren_flash.py`, `models/siren_flash.json`, `tools/ev_flash_model.py`): over 8 pictures at 5 a second
+(1.6 s, the H window's pace), how much the red, blue and bright numbers move (spread, range, step to step), how red
+and blue move against each other, and their means; a logistic regression (numpy only). Trained on the clips of the
+detector set's train and val junctions (1074), tested on those of its 3 test junctions (235), never seen.
+
+Share of test clips called SIREN ON (lights on: higher is better; lights off: lower is better):
+
+| Class | Clips | Detector, one picture | Detector, 3 of 8 pictures | Flash model |
+|---|---|---|---|---|
+| ambulance, lights on | 59 | 0.78 | 0.92 | 0.90 |
+| police, lights on | 59 | 0.59 | 0.63 | 0.76 |
+| ambulance, lights off | 59 | 0.24 | 0.25 | 0.12 |
+| police, lights off | 58 | 0.24 | 0.22 | 0.00 |
+| all lights on | 118 | 0.69 | 0.77 | 0.83 |
+| all lights off | 117 | 0.24 | 0.24 | 0.06 |
+
+By time of day, lights on, flash model / 3-of-8 vote: clear 0.78 / 0.78, rain 0.75 / 0.65, night 0.97 / 0.89; lights
+off, called on: clear 0.08 / 0.33, rain 0.10 / 0.28, night 0.00 / 0.11 (out/ev_clips/report.json).
+
+**In the H window** (`cosim/inspector.TrackVote`): the detector process gives each vehicle box its light numbers; a
+track's siren state is the flash model's once the track has 8 pictures, the detector's 3-of-8 vote before that (and
+without the model). The same test clips through that code (only the pictures where the detector found the vehicle):
+siren-on called on 0.85 (ambulance) and 0.69 (police) against 0.92 and 0.63 with the vote alone; siren-off called on
+0.08 and 0.00 against 0.25 and 0.22. So the model mostly removes false SIREN ON (24 % of lights-off clips -> 4 %) and
+finds about as many real ones. Run on the PC in CARLA (`--demo-camera 40`, the native feed): camera open, 32 FPS,
+detector 28 pictures a second of capacity at 5 taken a second, no error; tests: tests/test_siren_flash.py,
+tests/test_inspector_vote.py, tests/test_cctv.py (40 passed on the PC with the trails and forecaster tests).
+
+**Limits.** The clips have one emergency vehicle at a time and its exact box; in the town the detector's box is
+looser and another vehicle may hide it. Night and day only as three times of day. And, as before: the junction agents'
+pre-emption does not read the cameras, so this changes the H window and the reports, not emergency-vehicle delay
+(the user's decision whether the camera should get a role).

@@ -194,7 +194,9 @@ def test_detector_process_runs_its_own_sensor_for_the_native_feed(monkeypatch):
     t0 = _t.time()
     spawned["cb"](img)
     kind, boxes, dt, t_pic, size = q_out.get(timeout=5)
-    assert kind == "ndet" and boxes == [(1.0, 2.0, 3.0, 4.0, "car", pytest.approx(0.9))] and size == (96, 54)
+    # (10 Nov) each vehicle box also carries its light numbers, for the siren-light model (cosim/siren_flash.py)
+    assert kind == "ndet" and [b[:6] for b in boxes] == [(1.0, 2.0, 3.0, 4.0, "car", pytest.approx(0.9))]
+    assert len(boxes[0][6]) == 4 and size == (96, 54)
     assert t0 - 0.01 <= t_pic <= _t.time()
     q_in.put(("close",))
     q_in.put(None)

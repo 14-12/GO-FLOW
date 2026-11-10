@@ -31,3 +31,30 @@ def test_siren_off_police_stays_off_and_two_vehicles_apart():
         n = "police_lights" if i in (2, 6) else ("police" if i % 3 else "car")
         out = v.relabel(0.2 * i, [(*_box(i), n, 0.7), (*_box(i, 500.0), "car", 0.9)])
     assert out[0][4] == "police" and out[1][4] == "car"
+
+
+class _Flash:
+    """A stand-in for the siren-light model: lights on when the red number swings over 0.1."""
+    pictures, threshold = 4, 0.5
+
+    def prob(self, series):
+        if len(series) < self.pictures:
+            return None
+        red = [s[0] for s in series[-self.pictures:]]
+        return 0.9 if max(red) - min(red) > 0.1 else 0.1
+
+
+def test_siren_light_model_decides_once_it_has_its_pictures():
+    v = TrackVote(flash=_Flash())
+    on, off = [0.05, 0.05, 0.05, 0.05], [0.3, 0.05, 0.05, 0.05]
+    labels = []
+    for i in range(8):
+        # the detector says siren on in 3 of the first 4 pictures, but the bar does not flash
+        n = "police_lights" if i in (0, 1, 2) else "police"
+        labels.append(v.relabel(0.2 * i, [(*_box(i), n, 0.7, on)])[0][4])
+    assert labels[2] == "police_lights"            # the detector's vote, before the model has 4 pictures
+    assert labels[3:] == ["police"] * 5             # then the model: no flashing, siren off
+    v = TrackVote(flash=_Flash())
+    labels = [v.relabel(0.2 * i, [(*_box(i), "ambulance", 0.7, off if i % 2 else on)])[0][4] for i in range(6)]
+    assert labels[3:] == ["ambulance_lights"] * 3   # never called siren on by the detector, but its bar flashes
+    assert all(len(b) == 6 for b in v.relabel(2.0, [(*_box(10), "car", 0.9, on)]))

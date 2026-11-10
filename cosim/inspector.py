@@ -209,13 +209,12 @@ class TrafficCameras:
 
     def _voted(self, t: float, boxes: list) -> list:
         vote = getattr(self, "vote", None)
-        if vote is None:
-            return boxes
-        try:
-            return vote.relabel(t, boxes)
-        except Exception as e:  # noqa: BLE001 - the window keeps the picture's own labels
-            log.debug("track vote: %s", e)
-            return boxes
+        if vote is not None:
+            try:
+                return vote.relabel(t, boxes)
+            except Exception as e:  # noqa: BLE001 - the window keeps the picture's own labels
+                log.debug("track vote: %s", e)
+        return [tuple(b[:6]) for b in boxes]
 
     # ------------------------------------------------------------ cameras in the world
     def nearest(self, x: float, y: float, z: float) -> tuple[int | None, float]:
@@ -386,11 +385,19 @@ def detector_process(q_in, q_out, model_path: str, host: str | None = None, port
         q_out.put(("error", str(e)))
         return
 
+    from cosim.siren_flash import light_numbers
+
     def detect(bgr, imgsz: int = 960):
         r = model.predict(bgr, imgsz=imgsz, conf=0.35, device=dev, verbose=False, half=dev != "cpu")[0]
-        return [(float(x0), float(y0), float(x1), float(y1), r.names[int(k)], float(p))
-                for (x0, y0, x1, y1), k, p in zip(r.boxes.xyxy.cpu().numpy(), r.boxes.cls.cpu().numpy(),
-                                                  r.boxes.conf.cpu().numpy(), strict=True)]
+        out = []
+        rgb = bgr[:, :, ::-1]
+        for (x0, y0, x1, y1), k, p in zip(r.boxes.xyxy.cpu().numpy(), r.boxes.cls.cpu().numpy(),
+                                          r.boxes.conf.cpu().numpy(), strict=True):
+            name = r.names[int(k)]
+            # (10 Nov) the light numbers of a vehicle's box, for the siren-light model (TrackVote, cosim/siren_flash)
+            lights = light_numbers(rgb, (x0, y0, x1, y1)) if name != "pedestrian" else None
+            out.append((float(x0), float(y0), float(x1), float(y1), name, float(p), lights))
+        return out
 
     world = sensor = None
     latest: list = [None]  # (picture, time it came), the newest only
@@ -469,18 +476,31 @@ EMERGENCY = {"ambulance": "ambulance", "ambulance_lights": "ambulance", "police"
 class TrackVote:
     """(10 Nov) The H window's boxes labelled by what each vehicle has been over its last pictures, not by one
     picture: the boxes are followed from picture to picture (camera_reports.Tracker, as the cameras' reports) and an
-    emergency vehicle's label is voted over its track. Siren on once `vote_need` of its last `vote_frames` pictures
-    said so (then kept while the track lives, as in the reports, so the window and the reports agree); ambulance or
-    police by the majority of its emergency pictures. Before, each picture was counted on its own: the detector
-    finds a siren-on vehicle as siren-on in 34 % of pictures and calls a siren-off one siren-on in 9 %
-    (out/detector/eval_town05.md), so the label flickered and one ambulance counted as SIREN ON one picture in three.
-    Other vehicles keep the picture's class."""
+    emergency vehicle's label is voted over its track; ambulance or police by the majority of its emergency pictures.
+    Siren on: once the track has `flash.pictures` pictures, the siren-light model says (cosim/siren_flash.py: does its
+    bar flash?); before that, or without the model, the detector's vote, `vote_need` of its last `vote_frames`
+    pictures (kept while the track lives, as in the camera reports). Before 10 Nov each picture was counted on its
+    own: the detector finds a siren-on vehicle as siren-on in 34 % of pictures and calls a siren-off one siren-on in
+    9 % (out/detector/eval_town05.md), so the label flickered. Other vehicles keep the picture's class. The boxes come
+    back as (x0, y0, x1, y1, class, conf)."""
 
-    def __init__(self, rules=None):
+    def __init__(self, rules=None, flash=None):
+        from collections import deque
+
         from cosim.camera_reports import ReportRules, Tracker
 
         self.rules = rules or ReportRules()
         self.tracker = Tracker(vote_frames=self.rules.vote_frames)
+        if flash is None:
+            try:
+                from cosim.siren_flash import MODEL, SirenFlash
+
+                flash = SirenFlash() if MODEL.is_file() else False
+            except Exception as e:  # noqa: BLE001 - the detector's vote alone
+                log.debug("siren-light model: %s", e)
+                flash = False
+        self.flash = flash or None
+        self._deque = deque
 
     def relabel(self, t: float, boxes: list) -> list:
         from cosim.camera_reports import SIREN
@@ -491,14 +511,23 @@ class TrackVote:
         for b in boxes:
             tr = by_box.get(tuple(float(v) for v in b[:4]))
             if tr is None:
-                out.append(tuple(b))
+                out.append(tuple(b[:6]))
                 continue
             names = list(tr.names)
-            if not tr.siren and sum(1 for n in names if n in SIREN) >= self.rules.vote_need:
+            if self.flash is not None:
+                lights = getattr(tr, "lights", None)
+                if lights is None:
+                    lights = tr.lights = self._deque(maxlen=self.flash.pictures)
+                if len(b) > 6 and b[6] is not None:
+                    lights.append(b[6])
+            p = self.flash.prob(list(tr.lights)) if self.flash is not None else None
+            if p is not None:
+                tr.siren = p >= self.flash.threshold
+            elif not tr.siren and sum(1 for n in names if n in SIREN) >= self.rules.vote_need:
                 tr.siren = True
             kinds = [EMERGENCY[n] for n in names if n in EMERGENCY]
-            if tr.siren or (kinds and 2 * len(kinds) >= len(names)):
-                kind = max(("ambulance", "police"), key=kinds.count) if kinds else "ambulance"
+            if kinds and 2 * len(kinds) >= len(names) or (tr.siren and kinds):
+                kind = max(("ambulance", "police"), key=kinds.count)
                 out.append((*b[:4], kind + ("_lights" if tr.siren else ""), b[5]))
             else:
                 out.append((*b[:4], b[4] if b[4] not in EMERGENCY else (names[-1] if names[-1] not in EMERGENCY

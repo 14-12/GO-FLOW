@@ -408,8 +408,9 @@ Three ideas shape the design.
 * **Detector.** `models/carla-yolo26n-t05.pt` is YOLO26n fine-tuned on CARLA, then on Town05. Its 9 classes:
   car, van, bus, truck, ambulance, ambulance with lights, police, police with lights, pedestrian. In the viewer it
   runs only when you press H (`cosim/inspector.py`, `cctv.py`). There its boxes are followed from picture to
-  picture and an emergency vehicle is labelled by its track (siren on once 3 of its last 8 pictures say so), as the
-  camera reports do.
+  picture and an emergency vehicle is labelled by its track: siren on when its light bar flashes over its last 8
+  pictures (`cosim/siren_flash.py`, a model trained on CARLA clips: `tools/record_ev_clips.bat`), before that when 3 of
+  them say so, as the camera reports do.
 
 ### 5.6 Accidents and the emergency response
 
