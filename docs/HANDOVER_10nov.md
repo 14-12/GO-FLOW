@@ -89,3 +89,21 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
 | Audit scripts (probe a run, classify standing cars, lateral motion, removals, tables) | `out\audit_10nov\` (`probe_run.py`, `devtab2.py`, `devrun.sh`, `lat2.py`, `remdiag.py`, `ovcrab.py`, `README.txt`) |
 | v7 build | `tools\goflow_v7_build.bat` -> `out\goflow_prediction\v7\` |
 | Priority agent | `agents\priority_agent\`, `cosim\goflow_priority.py`, off by default |
+
+## 6. Night of 10 Nov: done, and what is left (details and numbers in docs/WORKLOG.md)
+
+* Committed (never pushed): the merge with Yosr's 5 commits, then one commit per step below.
+* Forecasters v7: built, dev and test (seeds 81-90, once) passed the bar; shipped in `models/goflow`. Test seeds now
+  used: 21-90. Anything new: 91 and above.
+* Fixed on the way: a "crash" between two cars put on the road overlapping (follower standing) broke an incident
+  every 2 s; the v7 bat left the dev seeds out (comma in a batch argument; dataset tool `--resume`).
+* Lane changes (step 6): the glitch was the viewer's body heading (a chord of the front's path: the rear slid
+  sideways in turns, lane changes and drifts). Now a tractrix (`interp.Trails`), measured with
+  `tools/check_lateral.py`: sliding 57-61 -> 12-14 s per vehicle-hour. Left: sideways moves while standing that the
+  town allows on purpose (squeezes past wrecks, buses into their stop).
+* Siren (step 8): the H window votes over each vehicle's track. Left: a model that sees the lights flash needs clips
+  recorded in CARLA; and the user's decision on what the camera should do, since the agents' pre-emption does not
+  read it (so it cannot change emergency-vehicle delay as wired).
+* Cars taken off (step 4): looked at one by one; buses held in knots, not at stops; the two seeds that lock start
+  with an accident on road -19. Buses off kerb lanes tried, not kept. Next: the -19 knot.
+* Not yet seen in CARLA: the forecast launcher with v7 (computer use timed out at night; it needs approving again).
