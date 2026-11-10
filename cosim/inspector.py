@@ -164,6 +164,7 @@ class TrafficCameras:
                         _, boxes, dt, t_pic, size = msg
                         if self.active is None or not self.native:
                             continue
+                        boxes = self._voted(t_pic, boxes)
                         times = (times + [dt])[-20:]
                         self.det = (self.det + [(t_pic, boxes, size)])[-2:]
                         self.view = (None, count(boxes), len(times) / sum(times), self.names[self.active])
@@ -176,6 +177,7 @@ class TrafficCameras:
                         sent_t.clear()
                         if bgr is None or self.active is None:
                             continue
+                        boxes = self._voted(t_pic, boxes)
                         times = (times + [dt])[-20:]
                         rate = len(times) / sum(times)
                         if self.native:  # the picture is CARLA's window: only the boxes and the counts
@@ -204,6 +206,16 @@ class TrafficCameras:
                 busy = True
             except Exception:  # noqa: BLE001 - the detector is still on the last one
                 pass
+
+    def _voted(self, t: float, boxes: list) -> list:
+        vote = getattr(self, "vote", None)
+        if vote is None:
+            return boxes
+        try:
+            return vote.relabel(t, boxes)
+        except Exception as e:  # noqa: BLE001 - the window keeps the picture's own labels
+            log.debug("track vote: %s", e)
+            return boxes
 
     # ------------------------------------------------------------ cameras in the world
     def nearest(self, x: float, y: float, z: float) -> tuple[int | None, float]:
@@ -248,6 +260,7 @@ class TrafficCameras:
         bp = self.world.get_blueprint_library().find("sensor.camera.rgb")
         self.native = native
         self.det = []
+        self.vote = TrackVote()   # a new camera: new tracks
         self.active = i
         self.view = None
         if native:
@@ -448,6 +461,49 @@ def _iou(a, b) -> float:
     inter = ix * iy
     union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
     return inter / union if union > 0 else 0.0
+
+
+EMERGENCY = {"ambulance": "ambulance", "ambulance_lights": "ambulance", "police": "police", "police_lights": "police"}
+
+
+class TrackVote:
+    """(10 Nov) The H window's boxes labelled by what each vehicle has been over its last pictures, not by one
+    picture: the boxes are followed from picture to picture (camera_reports.Tracker, as the cameras' reports) and an
+    emergency vehicle's label is voted over its track. Siren on once `vote_need` of its last `vote_frames` pictures
+    said so (then kept while the track lives, as in the reports, so the window and the reports agree); ambulance or
+    police by the majority of its emergency pictures. Before, each picture was counted on its own: the detector
+    finds a siren-on vehicle as siren-on in 34 % of pictures and calls a siren-off one siren-on in 9 %
+    (out/detector/eval_town05.md), so the label flickered and one ambulance counted as SIREN ON one picture in three.
+    Other vehicles keep the picture's class."""
+
+    def __init__(self, rules=None):
+        from cosim.camera_reports import ReportRules, Tracker
+
+        self.rules = rules or ReportRules()
+        self.tracker = Tracker(vote_frames=self.rules.vote_frames)
+
+    def relabel(self, t: float, boxes: list) -> list:
+        from cosim.camera_reports import SIREN
+
+        live = self.tracker.update(t, [b[:4] for b in boxes], [b[4] for b in boxes])
+        by_box = {tr.box: tr for tr in live}
+        out = []
+        for b in boxes:
+            tr = by_box.get(tuple(float(v) for v in b[:4]))
+            if tr is None:
+                out.append(tuple(b))
+                continue
+            names = list(tr.names)
+            if not tr.siren and sum(1 for n in names if n in SIREN) >= self.rules.vote_need:
+                tr.siren = True
+            kinds = [EMERGENCY[n] for n in names if n in EMERGENCY]
+            if tr.siren or (kinds and 2 * len(kinds) >= len(names)):
+                kind = max(("ambulance", "police"), key=kinds.count) if kinds else "ambulance"
+                out.append((*b[:4], kind + ("_lights" if tr.siren else ""), b[5]))
+            else:
+                out.append((*b[:4], b[4] if b[4] not in EMERGENCY else (names[-1] if names[-1] not in EMERGENCY
+                                                                          else "car"), b[5]))
+        return out
 
 
 def count(boxes) -> dict:

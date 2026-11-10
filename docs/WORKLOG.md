@@ -2781,3 +2781,42 @@ comma splits a batch file's arguments: the first dataset (D7_ao_x1) came out wit
 quoted now, and `tools/goflow_prediction_dataset.py --resume` finishes a folder (keeps the runs its runs.json lists,
 runs the seeds missing, makes dataset.npz again); the bat resumes any folder that exists instead of deleting it.
 Build restarted at 03:43: D7_ao_x1 gets its 10 dev runs, then the others.
+
+
+## Siren detection, step 8: the H window votes over each vehicle's track (10 Nov, night)
+
+**Done: tracking and voting in the H window** (`cosim/inspector.TrackVote`). The window counted one picture at a
+time. Its boxes now go through the cameras' own tracker (`camera_reports.Tracker`) and an emergency vehicle is
+labelled by its track: SIREN ON once 3 of its last 8 pictures said so (then kept while the track lives), ambulance or
+police by the majority of its emergency pictures; a car called an emergency vehicle in one picture stays a car. The
+rule is the one of the cameras' reports, so the window shows what the reports say. Tests:
+`tests/test_inspector_vote.py`.
+
+What the vote gives, from the detector's measured per-picture rates (carla-yolo26n-t05, Town05 held-out junctions,
+`out/detector/eval_town05.md`: siren on found as siren on in 174 of 517 pictures, siren off called siren on in 36 of
+410), pictures taken as independent (they are not: the same vehicle at the same angle errs alike, so these are
+upper bounds):
+
+| Pictures of the vehicle (5 a second) | Siren on: confirmed | Siren off: called on |
+|---|---|---|
+| 8 (1.6 s) | 54 % | 2.5 % |
+| 25 (5 s) | 96 % | 14 % |
+| 50 (10 s) | 99.9 % | 29 % |
+
+A siren-off emergency vehicle watched long enough gets called on (the latch). 4 of 8 would give 96 % / 5 % at 10 s
+but needs 2.4 s instead of 1.4 s to confirm; not changed without clips to measure it on.
+
+**Per class** (the same test set, AP50): ambulance 0.43, ambulance with lights 0.45, police 0.19, police with lights
+0.42. Police without lights is the weak class; between the two states, 73 siren-on boxes were called siren off and
+36 siren-off boxes siren on.
+
+**Judged by emergency-vehicle delay: the camera cannot change it as the town is wired.** The junction agents'
+pre-emption is driven by the vehicle's own request (`agents_actuated._requests`); the cameras' siren votes (`ems` in
+the reports) reach no controller by default (only the GO-FLOW priority agent reads them, and it is off). So a better
+detector changes the H window and the reports, not the delay. For the camera to count, it needs a role, for example
+confirming a request before a signal is cut, or calling a signal for an emergency vehicle whose request is lost: the
+user's decision.
+
+**Not done yet: a model that sees the lights flash.** The Town05 detector dataset is single pictures 20 s apart
+(`out/dataset_town05/meta.jsonl`): nothing to learn a flash from. It needs short clips (2 s at 10 pictures a second)
+of emergency vehicles with the lights on and off, recorded in CARLA on the PC.
