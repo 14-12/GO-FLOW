@@ -136,3 +136,5 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
 * The H window ran 2 h with the flash model, no emergency vehicle passed the cameras watched. At the evening peak
   (491 vehicles, 485 pedestrians) the viewer's SUMO thread fell below real time (12 steps in 10 s) and the picture
   stood still; the clock's x30 is not the cause (it only sets the time of day).
+* The viewer's SUMO thread at the evening peak: busy 81 % -> 45 % (the simulated cameras read SUMO's subscriptions,
+  the ground of standing vehicles kept; the same trips, checked); the "'half'" warning gone (`quantize=16`).

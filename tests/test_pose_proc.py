@@ -301,3 +301,26 @@ def test_drivers_sit_in_the_cars_nearest_the_camera():
     assert drv.driver_in == {10: 101} and 101 not in pv
     vs, _, pv, _, _, _ = drv.picture(0.0, eye=(30.0 + DRIVER_KEEP_M + 10.0, 300.0))  # the camera flew away
     assert drv.driver_in == {} and 101 in pv and drv.drivers_free == [101]
+
+
+def test_poser_looks_the_ground_up_again_only_for_vehicles_that_moved():
+    """cosim.run.Poser.begin_step (10 Nov): a vehicle standing still keeps its ground; one that moved is looked up."""
+    from types import SimpleNamespace as NS
+
+    from cosim.run import Poser
+
+    asked = []
+
+    class Frame:
+        def to_carla_xy(self, x, y):
+            return x, -y
+
+    p = Poser(Frame(), lambda x, y, yaw: (asked.append((x, y)) or (1.0, 0.0)))
+    p._ground_of = lambda v: (asked.append(v.vid) or (float(v.x), 0.0))  # the lookup, counted
+    car = lambda vid, x: NS(vid=vid, x=x, y=0.0, angle=90.0, length=4.5)  # noqa: E731
+    s1 = NS(vehicles={"a": car("a", 0.0), "b": car("b", 5.0)})
+    p.begin_step(None, s1)
+    asked.clear()
+    s2 = NS(vehicles={"a": car("a", 0.0), "b": car("b", 6.0)})
+    p.begin_step(s1, s2)
+    assert asked == ["b"] and p._g == {"a": (0.0, 0.0), "b": (6.0, 0.0)} and p._from["b"] == (5.0, 0.0)

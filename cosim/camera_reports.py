@@ -516,6 +516,7 @@ class SimulatedCameras:
         self.flash_rng = random.Random(seed * 7919 + 1)
         self._in_view: dict[str, int] = {}
         self._flash_done: set[str] = set()
+        self._subscribed = False
         self.rules = rules or ReportRules()
         self.rng = random.Random(seed)
         self.recall, self.false_per_frame = recall, false_per_frame
@@ -545,12 +546,14 @@ class SimulatedCameras:
         """One picture from every camera. emergency: vehicle id -> on a run (siren on)."""
         self.frames += 1
         seen_ems = set()
+        lane_subs, veh_subs = self._subscriptions(tc)
         for c, lanes in enumerate(self.by_cam):
             acc = self._acc[c]
             for ln in list(lanes):
                 n = q = 0
                 try:
-                    ids = tc.lane.getLastStepVehicleIDs(ln)
+                    r = lane_subs.get(ln)
+                    ids = r[_LANE_IDS] if r is not None and _LANE_IDS in r else tc.lane.getLastStepVehicleIDs(ln)
                 except Exception:  # noqa: BLE001 - a lane the layout has and the network no longer has: since
                     lanes.remove(ln)  # 27 Oct the parking lanes' movements at the signals are gone
                     self.dropped_lanes.append(ln)
@@ -561,7 +564,9 @@ class SimulatedCameras:
                         moto = self._moto[vid] = tc.vehicle.getVehicleClass(vid) == "motorcycle"
                     if moto:
                         continue
-                    if not self._visible(ln, tc.vehicle.getLanePosition(vid), self._len(tc, vid)):
+                    vr = veh_subs.get(vid)
+                    pos = vr[_POS] if vr is not None and _POS in vr else tc.vehicle.getLanePosition(vid)
+                    if not self._visible(ln, pos, self._len(tc, vid)):
                         continue
                     if vid in emergency:
                         p = self.siren_recall if emergency[vid] else self.siren_false
@@ -584,7 +589,7 @@ class SimulatedCameras:
                     if self.rng.random() >= self.recall:
                         continue
                     n += 1
-                    q += tc.vehicle.getSpeed(vid) < 0.1
+                    q += (vr[_SPEED] if vr is not None and _SPEED in vr else tc.vehicle.getSpeed(vid)) < 0.1
                 a = acc.setdefault(ln, [0, 0])
                 a[0] += n
                 a[1] += q
@@ -599,6 +604,33 @@ class SimulatedCameras:
                 self._ems_lane.pop(vid, None)
                 self._in_view.pop(vid, None)
                 self._flash_done.discard(vid)
+
+    def _subscriptions(self, tc) -> tuple[dict, dict]:
+        """(10 Nov) What frame() reads, from SUMO's subscriptions where it can: each camera lane's vehicles (subscribed
+        here once; answered with every step) and the vehicles' lane positions and speeds (cosim/agents_actuated.wire
+        adds the position to the vehicles' subscription). Before, one TraCI round trip per lane and per vehicle seen:
+        475 lanes a step, 45 ms of every 0.5 s step at the evening peak (cProfile, SUMO alone) and more in the viewer.
+        The same values as the calls (SUMO's last step), so the reports are the same; a lane or vehicle not answered
+        (subscribed this step, or a test's stand-in) is asked as before."""
+        if not self._subscribed:
+            self._subscribed = True
+            sub = getattr(tc.lane, "subscribe", None)
+            if sub is not None:
+                for lanes in self.by_cam:
+                    for ln in lanes:
+                        try:
+                            sub(ln, [_LANE_IDS])
+                        except Exception:  # noqa: BLE001 - not in the network: frame() drops it as before
+                            pass
+        try:
+            lane_subs = tc.lane.getAllSubscriptionResults()
+        except Exception:  # noqa: BLE001
+            lane_subs = {}
+        try:
+            veh_subs = tc.vehicle.getAllSubscriptionResults()
+        except Exception:  # noqa: BLE001
+            veh_subs = {}
+        return lane_subs or {}, veh_subs or {}
 
     def step(self, tc, t: float, emergency: dict[str, bool]) -> list[dict] | None:
         """Call every SUMO step: takes the pictures when due, returns the reports when due."""
@@ -627,6 +659,11 @@ class SimulatedCameras:
             self._acc[c] = {}
         self.frames = 0
         return out
+
+
+_LANE_IDS = 0x12   # traci.constants.LAST_STEP_VEHICLE_ID_LIST
+_POS = 0x56        # traci.constants.VAR_LANEPOSITION
+_SPEED = 0x40      # traci.constants.VAR_SPEED
 
 
 def _poisson(rng: random.Random, lam: float) -> int:

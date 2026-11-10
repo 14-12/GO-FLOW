@@ -988,6 +988,9 @@ def wire(pol, sumo, seed: int, more_on_run=None, cam_dir: Path | None = None) ->
         cam_dir = Path(cam_dir or ROOT / "out" / "town05_cameras")
         parked_file = cam_dir / "parked_static.json"
         parked = json.loads(parked_file.read_text(encoding="utf-8")) if parked_file.is_file() else None
+        vv = getattr(sumo, "_veh_vars", None)   # (10 Nov) the cameras read the vehicles' lane positions from SUMO's
+        if vv is not None and _tc.VAR_LANEPOSITION not in vv:  # subscription, not one call each (camera_reports)
+            vv.append(_tc.VAR_LANEPOSITION)
         cams = SimulatedCameras(Layout.load(cam_dir), seed=seed, parked=parked,
                                 siren_model="flash" if getattr(pol, "siren_flash", 0) else "vote")
         pol.visible = cams.layout.visible

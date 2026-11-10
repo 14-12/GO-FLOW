@@ -3047,3 +3047,39 @@ as they roll (`_squeeze`), and one lane stays open beside the wrecks at 30 km/h,
 one (as on -19). Nothing added. In one bad run (17:00, seed 18) the accidents were on the centre's 54-64 m two-lane
 roads: the free lane stood in a queue to the next signal, and 946 drivers took another way during one of them. Cars
 stopped right behind a wreck and taken off: 38 in the 30 audit runs (7 %), the share a zipper merge could still help.
+
+## 10 Nov (evening): the viewer's SUMO thread at the evening peak
+
+**Why.** After 2 hours live (evening peak, 491 vehicles, the H window open) the viewer's SUMO thread fell below real
+time and the picture stood still (above). Measured: `town05_freefly.bat` with `--set-time 17:30 --clock-speed 1 --demo
+900` (the town fills to the 17:30 level, ~490 vehicles, in 15 min), the thread's own timing every 10 s; and cProfile
+of the same town in SUMO alone (17:30, seed 18, 20 min).
+
+**What took the time.** The simulated cameras (agents_observed's reports, cosim/camera_reports.SimulatedCameras):
+one TraCI call per camera lane every step (475 lanes) and two per vehicle seen, 45 ms of every 0.5 s step in SUMO
+alone, half the run's time; in the viewer they sit in "sumo.step". Then the ground under each drawn vehicle
+(cosim/run.Poser.begin_step: a CARLA map lookup on each road level, every vehicle, every step).
+
+**Changed (both exact).**
+* SimulatedCameras reads each camera lane's vehicles from a lane subscription (one answer with the step) and the
+  vehicles' lane positions and speeds from the vehicles' subscription (`wire` adds the lane position to it); a lane
+  or vehicle not answered yet is asked as before.
+* Poser keeps the ground of a vehicle that has not moved since the last step (x, y, angle and length the same).
+* Tried, not kept: reading only the routes of vehicles near an accident in `incidents._divert` (within 7 roads of
+  it is almost the whole of Town05: 52 197 calls instead of 54 521).
+
+**Same traffic.** Dev seed 11 at 07:00 and seed 18 at 17:00 (probe runs, 30 min): the same trips, every one
+(tripinfo identical), in 56-59 s instead of 95-101 s. Tests: tests/test_pose_proc.py (the ground kept), the camera
+tests in tests/test_town05_agents.py (39 passed on the PC).
+
+**Viewer, same settings, before / after** (SUMO thread busy, ms in every 10 s; CARLA fps):
+
+| Vehicles in town | Before | After | CARLA fps before / after |
+|---|---|---|---|
+| 200-300 | 4720 | 2709 | 31.5 / 32.1 |
+| 300-400 | 6164 | 3533 | 25.5 / 25.4 |
+| 400-500 | 8098 | 4481 | 21.2 / 21.6 |
+
+At the peak the thread is now busy 45 % of the time instead of 81 %. The rest, at 490 vehicles: SUMO's own step and
+the cameras 1.8 s, the incidents 1.2 s (mostly `_divert` reading every route every 5 s per accident), the population
+0.8 s, the ground 0.4 s. CARLA's frame rate is the GPU's and did not change.

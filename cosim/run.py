@@ -255,9 +255,14 @@ class Poser:
         self._g = {}
         self._from = {}
         for vid, v in cur.vehicles.items():
-            self._g[vid] = self._ground_of(v)
             p = prev.vehicles.get(vid) if prev else None
-            self._from[vid] = old.get(vid) or (self._ground_of(p) if p else self._g[vid])
+            o = old.get(vid)
+            if o is not None and p is not None and (p.x, p.y, p.angle, p.length) == (v.x, v.y, v.angle, v.length):
+                self._g[vid] = o  # (10 Nov) standing still: the same ground, not looked up again (exact; 6 cars in
+                #   10 stand at the evening peak, and the lookups were a quarter of the viewer's SUMO thread)
+            else:
+                self._g[vid] = self._ground_of(v)
+            self._from[vid] = o or (self._ground_of(p) if p else self._g[vid])
         self.prev, self.cur = prev, cur
 
     def _ground_of(self, v) -> tuple[float, float]:
