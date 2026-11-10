@@ -586,14 +586,14 @@ def test_forecast_weighs_balance_and_extends_a_green_about_to_queue():
 
 
 def test_camera_backup_gives_green_to_a_siren_without_a_request():
-    """+camback (10 Nov): a siren the cameras confirm on an approach with no request at the junction gets that
+    """camback (10 Nov, on by default): a siren the cameras confirm on an approach with no request at the junction gets that
     approach's links, within the same limits as a request; request_loss drops a fixed share of requests."""
     from types import SimpleNamespace as NS
 
     from cosim.agents_actuated import ObservedActuatedAgents, _Agent, make
 
     tc = NS(lane=NS(getLastStepHaltingNumber=lambda ln: 0))
-    ag = make("agents_observed+camback")
+    ag = make("agents_observed")
     assert isinstance(ag, ObservedActuatedAgents) and "camback" in ag.on
     ag._len = {"out_0": 75.0, "out_1": 75.0}
     a = _Agent("J", ["Gr", "rG"], ["car", "car"], [5.0, 5.0], [60.0, 60.0], [0, 1], {}, {}, {}, {},
@@ -616,7 +616,7 @@ def test_camera_backup_gives_green_to_a_siren_without_a_request():
     ag.observe([{"tls": "J", "lanes": {}, "ems": [{"lane": "in_1", "votes": 2, "of": 8, "confirmed": False}]}])
     ag._camera_backup(tc, 100.0)                                   # not confirmed: nothing
     assert ag.requests == {}
-    assert not make("agents_observed")._lost("ev", "J")
+    assert "camback" not in make("agents_observed-camback").on and not make("agents_observed")._lost("ev", "J")
     lossy = make("agents_observed@request_loss=0.5")
     lost = sum(lossy._lost(f"ev{i}", "J") for i in range(400))
     assert 150 < lost < 250 and lossy._lost("ev0", "J") == lossy._lost("ev0", "J")

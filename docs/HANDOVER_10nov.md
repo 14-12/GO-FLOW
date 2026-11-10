@@ -125,9 +125,11 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
 * Camera back-up for lost emergency requests (the user's choice): `agents_observed+camback`. A siren the cameras
   confirm with no request heard at that junction gets the approach's green, with a request's limits. Dev seeds 11-20:
   with 10 % of requests lost, ambulance time loss 71.8 -> 53.9 s and waiting 267 -> 188 s/km (7/10 seeds); with none
-  lost about no change (+3 s/km, +6.9 s, within the spread). Off by default: the user decides whether to turn it on.
+  lost no direction at 07:00, 12:00 or 17:00. On by default (the user's decision); `agents_observed-camback` without it.
 * The simulated cameras call sirens with the flash model's measured rates (`camera_reports.FLASH_ON / FLASH_OFF`,
   `@siren_flash=0` for the old vote); the counts are unchanged draw for draw.
+* Getting past accidents: drivers already move over from the crash on (`_merge`, `_squeeze`, a lane left open at
+  30 km/h); nothing added. A zipper merge could help the 7 % stopped right behind a wreck.
 * Cars taken off: half come from accidents (drivers held RELIEVE_REMOVE_S, then taken off, by design), a quarter
   from red-light queues that did not clear in 5 min. The -19 closure was not tried (`_divert` already sends drivers
   around). Fewer removals needs a design choice: traffic let past an accident.

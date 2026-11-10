@@ -88,8 +88,10 @@ import traci.constants as _tc
 ROOT = Path(__file__).resolve().parents[1]
 COVERAGE = ROOT / "out" / "town05_cameras" / "coverage.json"
 VEH_M = 7.5
-FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall")
-OPTIONAL = ("batch", "extend", "noflow", "forecast", "camback")  # off unless named: "agents+batch"
+FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall", "camback")
+OPTIONAL = ("batch", "extend", "noflow", "forecast")  # off unless named: "agents+batch"
+# camback (cameras as a back-up for lost emergency requests, agents_observed only): on since 10 Nov (the user's
+# decision), "agents_observed-camback" without it; measured in docs/WORKLOG.md (10 Nov, afternoon)
 DEFAULT_OFF = ("trickle",)  # off unless named ("agents+trickle") since 25 Oct: with two greens a cycle
 # (tools/build_town05_signals.py, opposite approaches together) ending a green kept alive by moving cars costs a
 # whole switch; measured (tools/check_highway.py, 20 min at 17:30, 8 seeds): town's share of cars standing 0.437
@@ -178,7 +180,7 @@ class ActuatedAgents:
     forecast_w = 0.5               # +forecast: fill counted this much more per unit of risk (balance)
     forecast_extend_p = 0.8        # +forecast: risk from which a green at its maximum is extended
     # Requests that never arrive (10 Nov): the share of (emergency vehicle, junction) requests lost on the way, for
-    # measuring +camback; 0 in normal runs. Which ones is fixed per pair (a hash), so paired runs lose the same ones.
+    # measuring camback; 0 in normal runs. Which ones is fixed per pair (a hash), so paired runs lose the same ones.
     request_loss = 0.0
     loss_seed = 0
     siren_flash = 1                # agents_observed: the simulated cameras call sirens as the H window does since 10 Nov
@@ -604,8 +606,9 @@ class ActuatedAgents:
         return True
 
     def _camera_backup(self, tc, now: float) -> None:
-        """+camback (10 Nov): a siren the junction's cameras confirmed on an approach, and no request at that junction
-        (lost on the way, or a vehicle with no radio): the junction gives that approach its green as if asked. A
+        """camback (10 Nov; on by default since that afternoon): a siren the junction's cameras confirmed on an
+        approach, and no request at that junction (lost on the way, or a vehicle with no radio): the junction gives
+        that approach its green as if asked. A
         request the junction heard and its limits refused stays refused: the cameras do not overrule it. Only
         what the cameras report (the confirmed siren, the lane it is on, the queue they count there) and the exit
         lane's own detectors; the same limits as a request: ev_patience_s per approach, at most ev_queue_max vehicles

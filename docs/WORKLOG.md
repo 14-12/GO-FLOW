@@ -3023,3 +3023,25 @@ another road (seed 18: -5) and -19 was full of its queue. Over the 30 audit runs
 Half come from accidents: their drivers wait RELIEVE_REMOVE_S and are then taken off (cosim/incidents._relieve), by
 design. Fewer would need traffic to get past an accident (police letting cars by on the other lane or the kerb lane),
 which is a design decision, not a fix.
+
+## 10 Nov (afternoon): the camera back-up on by default (the user's decision)
+
+`camback` is now one of the junction agents' default features (`FEATURES`); `agents_observed-camback` runs without
+it. With no requests lost, checked at the three audit hours on the paired dev seeds 11-20 (on against off):
+
+| Start | Waiting s/km | Ambulance time loss s | All EV time loss s | Cars taken off |
+|---|---|---|---|---|
+| 07:00 | 219 -> 222 (4/10) | 57.0 -> 63.9 | 57.7 -> 59.1 | 14.4 -> 14.3 |
+| 12:00 | 200 -> 229 (4/10) | 59.6 -> 64.3 | 63.1 -> 61.6 | 11.3 -> 16.7 |
+| 17:00 | 263 -> 232 (6/10) | 73.3 -> 71.7 | 71.9 -> 65.9 | 27.7 -> 16.2 |
+
+No direction across the three hours (the town moves this much from any change); with 10 % of requests lost it helps
+(above). The 07:00 run with it on by default gives exactly the `+camback` runs above (the same trips).
+
+**Getting past an accident.** Asked: drivers move over carefully before the police come, then pass on a free lane. That
+is already how incidents work: from the crash on, drivers on the blocked lane are told to merge up to
+150 m before the wrecks and on the road before it before the junction (`_merge`), those stopped right behind pull out
+as they roll (`_squeeze`), and one lane stays open beside the wrecks at 30 km/h, the kerb lane where it is the only
+one (as on -19). Nothing added. In one bad run (17:00, seed 18) the accidents were on the centre's 54-64 m two-lane
+roads: the free lane stood in a queue to the next signal, and 946 drivers took another way during one of them. Cars
+stopped right behind a wreck and taken off: 38 in the 30 audit runs (7 %), the share a zipper merge could still help.
