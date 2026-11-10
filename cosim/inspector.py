@@ -379,7 +379,8 @@ def detector_process(q_in, q_out, model_path: str, host: str | None = None, port
 
         dev = os.environ.get("FREEFLY_YOLO_DEVICE") or (0 if torch.cuda.is_available() else "cpu")
         model = YOLO(model_path)
-        model.predict(np.zeros((540, 960, 3), np.uint8), imgsz=960, device=dev, verbose=False, half=dev != "cpu")
+        prec = 16 if dev != "cpu" else None  # FP16 on the GPU (ultralytics 8.4: `quantize`, formerly `half`)
+        model.predict(np.zeros((540, 960, 3), np.uint8), imgsz=960, device=dev, verbose=False, quantize=prec)
         q_out.put(("ready", f"YOLO26n (CARLA-trained) on {'GPU' if dev != 'cpu' else 'CPU'}"))
     except Exception as e:  # noqa: BLE001
         q_out.put(("error", str(e)))
@@ -388,7 +389,7 @@ def detector_process(q_in, q_out, model_path: str, host: str | None = None, port
     from cosim.siren_flash import light_numbers
 
     def detect(bgr, imgsz: int = 960):
-        r = model.predict(bgr, imgsz=imgsz, conf=0.35, device=dev, verbose=False, half=dev != "cpu")[0]
+        r = model.predict(bgr, imgsz=imgsz, conf=0.35, device=dev, verbose=False, quantize=prec)[0]
         out = []
         rgb = bgr[:, :, ::-1]
         for (x0, y0, x1, y1), k, p in zip(r.boxes.xyxy.cpu().numpy(), r.boxes.cls.cpu().numpy(),

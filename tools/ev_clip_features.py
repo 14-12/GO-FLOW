@@ -56,11 +56,12 @@ def main(argv=None) -> int:
         from ultralytics import YOLO
 
         dev = 0 if torch.cuda.is_available() else "cpu"
+        prec = 16 if dev != "cpu" else None  # FP16 on the GPU (ultralytics 8.4: `quantize`, formerly `half`)
         model = YOLO(a.model)
         names = model.names
 
         def detect(bgr):
-            r = model.predict(bgr, imgsz=960, conf=0.35, device=dev, verbose=False, half=dev != "cpu")[0]
+            r = model.predict(bgr, imgsz=960, conf=0.35, device=dev, verbose=False, quantize=prec)[0]
             return [(list(map(float, b)), names[int(k)], float(s)) for b, k, s in
                     zip(r.boxes.xyxy.tolist(), r.boxes.cls.tolist(), r.boxes.conf.tolist())]
     feats, dets, keep, crops = [], [], [], []

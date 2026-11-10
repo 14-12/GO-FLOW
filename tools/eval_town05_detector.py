@@ -66,7 +66,7 @@ def inspector_view(model, images: list[Path], names: list[str]) -> dict:
     for k in range(0, len(images), 8):
         batch = images[k:k + 8]
         for img, r in zip(batch, model.predict([str(p) for p in batch], imgsz=960, conf=CONF, verbose=False,
-                                                half=True), strict=True):
+                                                quantize=16), strict=True):
             h, w = r.orig_shape
             gb, gg = gt_boxes(img.parent.parent.parent / "labels" / img.parent.name / f"{img.stem}.txt", w, h, names)
             pb = r.boxes.xyxy.cpu().numpy()
@@ -107,7 +107,7 @@ def main(argv=None) -> int:
     for mp in a.models.split(","):
         model = YOLO(str(ROOT / mp))
         names = [model.names[i] for i in range(len(model.names))]
-        v = model.val(data=str(data), split=a.split, imgsz=960, batch=4, half=True, plots=False, verbose=False,
+        v = model.val(data=str(data), split=a.split, imgsz=960, batch=4, quantize=16, plots=False, verbose=False,
                       project=str(ROOT / "out" / "detector"), name=f"eval_town05_{Path(mp).stem}", exist_ok=True)
         per_class = {names[c]: round(float(v.box.ap50[i]), 3) for i, c in enumerate(v.box.ap_class_index)}
         res = {"mAP50": round(float(v.box.map50), 3), "mAP50-95": round(float(v.box.map), 3), "AP50": per_class}
