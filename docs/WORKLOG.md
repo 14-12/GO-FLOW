@@ -2820,3 +2820,23 @@ user's decision.
 **Not done yet: a model that sees the lights flash.** The Town05 detector dataset is single pictures 20 s apart
 (`out/dataset_town05/meta.jsonl`): nothing to learn a flash from. It needs short clips (2 s at 10 pictures a second)
 of emergency vehicles with the lights on and off, recorded in CARLA on the PC.
+
+
+## Cars still taken off as a last resort, step 4 of the list (10 Nov, night)
+
+Dev seeds 11-20, the viewer's day (clock 30 from 07:00, 5 min warm-up, 30 min, the junction agents, accidents),
+SUMO alone, with the code of tonight; every car taken off looked at when taken off (what stood ahead of it, its lane,
+its signal). 14.4 a run (4.0 behind accidents, 10.4 knots), 144 in all, but 81 of them on two seeds (14 and 18:
+40 and 41; seed 14 also left 96 trips unstarted, the town locked) and 3-8 on the others.
+
+What stood ahead of the car taken off: an ordinary car standing 43, a bus 38, an accident's vehicle 30, nothing within
+50 m 28, a car moving 5. **None of the 38 buses was at its stop**: every one stood in the queue itself, 18 of them on
+road -19 (whose kerb parking lane, SUMO lane type "parking", 2 m wide, 5 km/h, is open to buses) and most of the
+others at a red light. So "cars behind a bus at its stop cannot pass" is not what takes cars off on these days; buses held in the
+same knots are.
+
+Tried, not kept: buses kept off the kerb parking lanes that have no stop of theirs (`BusLines`, lane permissions):
+taken off 14.4 -> 22.0 a run (fewer on 5 of 10 seeds), waiting +25 s/km (lower on 5 of 10), ambulance time loss
++15 s. The runs are chaotic at this traffic level (one knot at the rush decides a seed: per seed 0 to 69 cars), so ten
+seeds tell little about a change this small; a fix of the knots themselves (junction 2086 and road -19 on seeds 14,
+15, 18) is the next step.
