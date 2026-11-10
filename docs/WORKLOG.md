@@ -2838,8 +2838,10 @@ same knots are.
 Tried, not kept: buses kept off the kerb parking lanes that have no stop of theirs (`BusLines`, lane permissions):
 taken off 14.4 -> 22.0 a run (fewer on 5 of 10 seeds), waiting +25 s/km (lower on 5 of 10), ambulance time loss
 +15 s. The runs are chaotic at this traffic level (one knot at the rush decides a seed: per seed 0 to 69 cars), so ten
-seeds tell little about a change this small; a fix of the knots themselves (junction 2086 and road -19 on seeds 14,
-15, 18) is the next step.
+seeds tell little about a change this small. On both bad seeds (14 and 18) the knot starts with an accident on road
+-19 (206 m, the kerb places, buses of line L3): its queue fills roads 15 and 6 and the junctions 2296, 1292 and 1574
+behind it. A fix of that (how drivers leave -19 round a crash, or the accident's lane closed further back) is the next
+step.
 
 
 ## Forecasters v7: the bar, written before the test (10 Nov, 04:35)
