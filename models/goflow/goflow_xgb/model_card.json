@@ -1,5 +1,5 @@
 {
- "version": "xgb_c30_v6",
+ "version": "xgb_c30_v7",
  "task": "GO-FLOW occupancy forecast",
  "horizon_s": 120,
  "dt_s": 30.0,
@@ -7,12 +7,12 @@
  "accidents": true,
  "demand_scales": [
   1.0,
-  2.0,
-  3.0
+  1.15,
+  1.3
  ],
  "signal_controllers": [
-  "coordinated",
-  "agents_observed"
+  "agents_observed",
+  "coordinated"
  ],
  "source": "exact",
  "train_seeds": [
@@ -68,23 +68,29 @@
     "careless_share": null,
     "clock_speed": 30.0,
     "minutes": 30.0,
-    "controller": "coordinated"
+    "controller": "agents_observed",
+    "trips": "purpose",
+    "start_hour": 6.0
    },
    {
-    "scale": 2.0,
+    "scale": 1.15,
     "accidents": true,
     "careless_share": null,
     "clock_speed": 30.0,
     "minutes": 30.0,
-    "controller": "coordinated"
+    "controller": "agents_observed",
+    "trips": "purpose",
+    "start_hour": 6.0
    },
    {
-    "scale": 3.0,
+    "scale": 1.3,
     "accidents": true,
     "careless_share": null,
     "clock_speed": 30.0,
     "minutes": 30.0,
-    "controller": "coordinated"
+    "controller": "agents_observed",
+    "trips": "purpose",
+    "start_hour": 6.0
    },
    {
     "scale": 1.0,
@@ -92,27 +98,13 @@
     "careless_share": null,
     "clock_speed": 30.0,
     "minutes": 30.0,
-    "controller": "agents_observed"
-   },
-   {
-    "scale": 2.0,
-    "accidents": true,
-    "careless_share": null,
-    "clock_speed": 30.0,
-    "minutes": 30.0,
-    "controller": "agents_observed"
-   },
-   {
-    "scale": 3.0,
-    "accidents": true,
-    "careless_share": null,
-    "clock_speed": 30.0,
-    "minutes": 30.0,
-    "controller": "agents_observed"
+    "controller": "coordinated",
+    "trips": "purpose",
+    "start_hour": 6.0
    }
   ]
  },
  "notes": [
-  "Retrained 8 Nov (v6) on D4_c30_x{1,2,3}_acc (coordinated) + D6_ao_x{1,2,3}_acc (agents_observed, the agents wired as in the viewer): the clock at 30, crashes on, traffic x1 / x2 / x3, seeds 101-130 train, 11-20 dev; test seeds 41-50 opened once (docs/WORKLOG.md 8 Nov)."
+  "Retrained 10 Nov (v7) on D7_ao_x1, D7_ao_x1.15, D7_ao_x1.3 (the junction agents on the cameras) and D7_c_x1 (coordinated): the town since 9-10 Nov (skipped greens fixed, trips at the day's rate with nobody taken off, the town's own traffic 0.45 of the old curve, trips with a purpose, junction crashes rerouted), the clock at 30, crashes on; seeds 101-130 train, 11-20 dev; test seeds 81-90 opened once (docs/WORKLOG.md 10 Nov)."
  ]
 }

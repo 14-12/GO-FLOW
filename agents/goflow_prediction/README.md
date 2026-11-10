@@ -30,21 +30,24 @@ A queue sampled every 30 s swings with the signal (cycle 115 s), so `congestion.
 long queue *starts* when the mean reaches the level after a whole cycle under it, from under 0.6 x the level. A
 LightGBM classifier (the forecast's features plus the approach against its level) gives the chance of a start within
 6 steps (3 minutes); trained with `python -m goflow_prediction.congestion --dataset ... --model DIR --train-seeds ...
---dev-seeds ...`. The shipped model is v6 (8 Nov, clock 30), trained under both the coordinated signals and the
-junction agents (`agents_observed`, wired as in the viewer: cameras and emergency requests). Test seeds 41-50 (5 h per
-row, never used before), alert at 0.7 (`tools/goflow_prediction_test_score.py`):
+--dev-seeds ...`. The shipped model is v7 (10 Nov, clock 30), trained on the town as it is since 9-10 Nov (skipped
+greens fixed, trips at the day's rate with nobody taken off, the town's own traffic 0.45 of the old curve, trips with
+a purpose, junction crashes rerouted): the junction agents (`agents_observed`, wired as in the viewer) at traffic x1,
+x1.15 and x1.3, and the coordinated signals at x1 (`tools\goflow_v7_build.bat`). Test seeds 81-90 (5 h per row,
+never used before), alert at 0.7 (`tools/goflow_prediction_test_score.py`), v6 on the same runs in brackets:
 
-| Signals | Traffic | Long queues | Caught before they start | Alerts right | Median warning |
-| --- | --- | --- | --- | --- | --- |
-| coordinated | x2 | 36 | 25 | 25 of 49 | 30 s |
-| coordinated | x3 | 89 | 70 | 75 of 162 | 60 s |
-| agents_observed | x1 | 3 | 0 | 0 of 2 | - |
-| agents_observed | x2 | 146 | 100 | 101 of 235 | 60 s |
-| agents_observed | x3 | 293 | 252 | 285 of 622 | 60 s |
+| Signals | Traffic | Long queues | Caught before they start | Alerts right | Median warning | Queue fill MAE +120 s (stays as now) |
+| --- | --- | --- | --- | --- | --- | --- |
+| agents_observed | x1 | 37 | 29 (v6: 0 of 28) | 32 of 62 | 60 s | 0.041 (0.049; v6 0.044) |
+| agents_observed | x1.15 | 54 | 38 (v6: 12 of 48) | 43 of 80 | 45 s | 0.045 (0.054; v6 0.048) |
+| agents_observed | x1.3 | 74 | 53 (v6: 23 of 80) | 56 of 126 | 60 s | 0.051 (0.060; v6 0.056) |
+| coordinated | x1 | 102 | 68 (v6: 10 of 91) | 72 of 133 | 60 s | 0.047 (0.054; v6 0.055) |
 
-`p_long` runs high: of the approaches given 0.7-0.9, about 45 % started a long queue within 3 minutes. v4, trained under
-the coordinated signals only, forecast queues under the junction agents no better than "it stays as now"; v5's agent
-data had the agents unconnected (docs/WORKLOG.md, 8 Nov). The junction agents can read the warnings
+(A long queue is counted against each model's own level, so the counts of long queues differ a little between v6
+and v7.) `p_long` still runs high: of the approaches given 0.7-0.9, 43-56 % started a long queue within 3 minutes
+(0.9-1.0: 84-88 %). Earlier: v4, trained under the coordinated signals only, forecast queues under the junction agents
+no better than "it stays as now"; v5's agent data had the agents unconnected; v6 (8 Nov, x1 / x2 / x3 of the old
+demand) was trained on a town that no longer exists (docs/WORKLOG.md, 8 and 10 Nov). The junction agents can read the warnings
 (`agents_observed+forecast`): off by default, see docs/WORKLOG.md (8 Nov) for what it does to the traffic.
 
 The candidates are LightGBM (and LightGBM + GO-FLOW when her real forecast is in the message), last value, and the

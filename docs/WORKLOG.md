@@ -2856,3 +2856,42 @@ Written before any v7 number is seen. The test opens once, on seeds 81-90 (T7_ao
    queues caught, on T7_ao_x1.15 and T7_ao_x1.3.
 
 GO-FLOW's occupancy at +120 s is reported against "it stays as now" and v6, not part of the bar.
+
+
+## Forecasters v7: dev, test, shipped (10 Nov, morning)
+
+**Data.** `tools\goflow_v7_build.bat` on the PC made D7_ao_x1, D7_ao_x1.15 and D7_ao_x1.3 (seeds 101-130 and 11-20, a
+day at clock 30 from 06:00, accidents, trips with a purpose, no deadlock breaker) and trained the four models
+(all steps EXIT 0, ALL DONE). To save time, D7_c_x1 and the four test sets T7_* (seeds 81-90) were made in the cloud
+with the same code (SUMO 1.27.1) while the PC worked, checked by md5 after copying, and the bat took them as they were
+(`--resume`: every seed there). A cloud copy of x1.3 (`D7_ao_x1.3_cloud`) was not used. The cloud runs carry no git
+commit in their meta (the cloud copy is not a git checkout).
+
+**Dev** (seeds 11-20, each dataset of D7_all on its own, `goflow_prediction.evaluate --part`, DSO4 with its GO-FLOW
+model, the live code path): queue fill MAE, v7 / v6 / "it stays as now":
+
+| Data | +60 s | +120 s | +300 s |
+|---|---|---|---|
+| agents x1 | 0.0370 / 0.0393 / 0.0421 | 0.0412 / 0.0419 / 0.0486 | 0.0463 / 0.0471 / 0.0550 |
+| agents x1.15 | 0.0387 / 0.0407 / 0.0456 | 0.0419 / 0.0425 / 0.0514 | 0.0464 / 0.0476 / 0.0580 |
+| agents x1.3 | 0.0474 / 0.0509 / 0.0546 | 0.0526 / 0.0542 / 0.0631 | 0.0606 / 0.0618 / 0.0738 |
+| coordinated x1 | 0.0406 / 0.0551 / 0.0766 | 0.0472 / 0.0557 / 0.0554 | 0.0556 / 0.0735 / 0.0896 |
+
+The long-queue classifier on dev at 0.7: x1.15 24 of 50 alerts right, 23 of 36 caught; x1.3 61 of 137, 57 of 74.
+
+**Test, opened once** (seeds 81-90, `tools/goflow_prediction_test_score.py`, out/goflow_prediction/test4_v7; v6 on the
+same runs in out/goflow_prediction/test4_v6):
+
+| Data | Fill MAE +60 / +120 / +300 s: v7 | v6 | stays as now | Long queues at 0.7, v7: alerts right, caught | v6 | GO-FLOW occ. +120 s: v7 / v6 / now |
+|---|---|---|---|---|---|---|
+| agents x1 | 0.0371 / 0.0408 / 0.0462 | 0.0397 / 0.0438 / 0.0492 | 0.0428 / 0.0493 / 0.0558 | 32 of 62, 29 of 37 | 0 of 1, 0 of 28 | 0.0362 / 0.0398 / 0.0444 |
+| agents x1.15 | 0.0413 / 0.0454 / 0.0524 | 0.0443 / 0.0481 / 0.0551 | 0.0481 / 0.0544 / 0.0637 | 43 of 80, 38 of 54 | 12 of 14, 12 of 48 | 0.0388 / 0.0426 / 0.0480 |
+| agents x1.3 | 0.0455 / 0.0510 / 0.0603 | 0.0496 / 0.0559 / 0.0654 | 0.0519 / 0.0598 / 0.0713 | 56 of 126, 53 of 74 | 23 of 30, 23 of 80 | 0.0418 / 0.0469 / 0.0503 |
+| coordinated x1 | 0.0399 / 0.0467 / 0.0551 | 0.0542 / 0.0549 / 0.0733 | 0.0709 / 0.0542 / 0.0848 | 72 of 133, 68 of 102 | 10 of 28, 10 of 91 | 0.0393 / 0.0485 / 0.0434 |
+
+The bar: (1) below "stays as now" on 9 of 9 rows; (2) below v6 on 12 of 12; (3) at 0.7, x1.15 54 % of alerts right
+and 70 % of long queues caught, x1.3 44 % and 72 %. **Passed: v7 shipped** in `models/goflow` (dso4, dso4_goflow,
+goflow_xgb, model cards; `.gitattributes` keeps them byte for byte). v6 on the new town gave few alerts (its levels
+were set on the old, heavier demand). `p_long` still runs high: given 0.7-0.9, 43-56 % started a long queue within
+3 min (0.9-1.0: 84-88 %). Tests: tests/test_goflow_prediction.py 19 passed, the two agents' own 21 and 15 passed.
+Not yet seen in CARLA with v7 (`town05_freefly_forecast.bat`): computer use on the PC timed out at night.
