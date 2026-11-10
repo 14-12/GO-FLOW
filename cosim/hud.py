@@ -107,6 +107,28 @@ def speed_label(speed: float) -> str:
     return f"{m:g} MIN = 1 HOUR" if abs(m - round(m, 1)) < 1e-6 else f"{speed:g} X REAL TIME"
 
 
+SIGNALS = {"coordinated": "fixed-cycle signals", "actuated": "actuated signals", "agents_observed": "junction agents",
+           "agents": "junction agents (exact counts)", "default": "network's own signals"}
+
+
+def setup_text(controller: str, demand_scale: float = 1.0) -> str:
+    """(9 Nov) What runs the town, for the HUD strip: who runs the signals (--controller) and, when it is not the
+    town's own, the traffic level (--demand-scale), so a picture says what it was taken under."""
+    import re
+
+    base = re.split(r"[-+@]", controller, maxsplit=1)[0]
+    goflow = base.endswith("_goflow")
+    base = base.removesuffix("_goflow")
+    text = SIGNALS.get(base, controller)
+    if goflow:
+        text += " + GO-FLOW priority"
+    if "+forecast" in controller:
+        text += " + forecasts"
+    if abs(demand_scale - 1.0) > 1e-9:
+        text += f"   ·   traffic x{demand_scale:g}"
+    return text
+
+
 @dataclass
 class HudState:
     game_s: float
@@ -118,6 +140,7 @@ class HudState:
     camera: str = ""
     status: str = ""        # replaces LIVE / PAUSED in the strip (e.g. LOADING)
     note: str = ""          # a short message (e.g. "Screenshot saved"), shown in the strip
+    setup: str = ""         # (9 Nov) who runs the signals and the traffic level (setup_text), shown in the strip
     help_alpha: int = 0     # 0..255: the key help at the bottom
     speed: float = daily.GAME_SPEED  # game seconds per real second (--clock-speed): the card's "2 MIN = 1 HOUR"
 
@@ -317,6 +340,8 @@ class Hud:
     def strip(self, st: HudState) -> pygame.Surface:
         dot = (255, 196, 84) if st.paused else (255, 84, 84)
         parts = [st.status or ("PAUSED" if st.paused else "LIVE"), f"{st.vehicles:,} vehicles in the city".replace(",", " ")]
+        if st.setup:
+            parts.append(st.setup)
         if st.camera:
             parts.append(st.camera)
         if st.fps:

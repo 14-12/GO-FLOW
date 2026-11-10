@@ -2410,3 +2410,320 @@ the road before it. No glitch, a jam.
   into kerb places, 15 out (12 started while SUMO still had the car parked). The building drives (Parking Central) did
   not come up in this run by 15:54 (the first run's at 13:18 and 14:48, unchanged code).
 
+
+## GO-FLOW priority agent: integration, step 0-4 (4 Nov)
+
+The priority agent of the GO-FLOW `priority-agent` branch (ADSP: priority tracking, rule coordinator, safety layer,
+LLM coordinator, PPO) brought in under `agents/priority_agent/` (its own venv, `tools\setup_goflow_priority.bat`).
+Only its coordinator runs here, as an advisor to the junction agents (`cosim/goflow_priority.py`,
+`--controller agents_goflow` / `agents_observed_goflow`, viewer `--goflow-priority`, off by default). The PPO is not
+used: it was trained for 2 greens, 4 approaches of 2 lanes and a 1 s step, and Town05 has 4-5 greens a signal.
+
+* Shadow check (`agents\priority_agent\town05\shadow_check.py`, seed 11, x0.8, 900 s): the agent's unchanged code
+  runs on Town05 without an error and changes no signal state (same SHA-256 of every signal state as a run without
+  it); `Intersection.from_sumo` finds 4-5 greens at every signal (PPO needs 2) and maps the approaches wrongly at
+  5 signals (2014 and 2328: the three roads fall into one direction; 1882, 2240, 2296: a walking area counted as a
+  fourth approach). Hence the adapter speaks link indices, not N/E/S/W.
+* Smoke run, one seed only (seed 11, x0.8, 1800 s, emergency every 120 s, `tools/eval_town05_baseline.py`; run in the cloud: Linux, Python 3.13, SUMO 1.27.1):
+  agents vs agents_goflow: ambulances on a run 60.8 vs 45.3 s time loss (9 vehicles), car waiting 104.0 vs 110.3 s,
+  pedestrian time loss 83.8 vs 85.0 s. One seed: not a result; the car cost is to be checked on dev seeds 11-16
+  (horizon 20/30/45 s) before the held-out runs. Plan computed in 0.04 ms (p50), 0.10 ms (p95).
+* Tests: `tests\test_goflow_priority.py` (names, the child process never fatal, stale plans ignored, the flag);
+  `agents\priority_agent\town05\tests` (8, in the agent's venv).
+
+## GO-FLOW priority agent: the LLM in the background, camera sightings (4 Nov)
+
+`agents/priority_agent/town05/llm_town.py`: the agent's LLM coordinator (B5) reworked for a live city. The rules'
+plan is answered at once on every state; events (new and cancelled requests, conflicts between emergency vehicles,
+dispatch messages, and **flashing lights the cameras confirm on a lane where no vehicle sent a request**) go to a
+worker thread that calls Ollama; what the LLM decides is laid over the rules' plan from the next state on. It never
+blocks: before, the agent paused SUMO during each call (3.4 s mean on the corridor).
+
+Guardrails, in code: ModeSafety on every mode; an emergency vehicle holding a junction is never displaced by a lower
+one (class, then arrival); escalation only for a vehicle named in a dispatch message received; camera-only green
+(`request_green_for_lane`) only with a confirmed sighting on that lane in the last 10 s, one per junction per 120 s,
+20 s at most, the junction agents' own guards still applying; answers after the call's deadline (20 s) refused.
+LLM down, slow or wrong: the rules' plan stays.
+
+Checked (cloud, SUMO 1.27.1, no Ollama there): 8 tests with a scripted model (`town05/tests/test_town05_llm.py`:
+the rules answer at once and the LLM overrides later; police never before an ambulance; LLM down = rules only; late
+answers refused; camera green limits; escalation needs a dispatch message); `agents_observed_goflow` with
+`--llm` and no Ollama, seed 11, x0.8, 900 s: runs on the rules, one `llm_unavailable` line; seed 12: 62 confirmed
+camera sightings reached the agent in 900 s. Not yet measured: the LLM's real latency on the PC's CPU next to
+CARLA, and whether its decisions help (needs Ollama on the PC).
+
+## GO-FLOW priority agent: after the review (5 Nov)
+
+* **A public hook instead of a subclass override.** `ActuatedAgents.request_source` (None by default) lets an outside
+  planner say who should get which link; `_external_requests` runs every such request through the agents' own
+  guards (next signal: patience, stopped on its green, `_can_pass`; further on: the exit's room). The safety rules
+  stay in one place. `cosim/goflow_priority.py` no longer overrides `_requests` or copies the guards. With the hook
+  unset nothing changes: `agents` and `agents_observed` give the same figures as on `main` (seed 11, x0.8, 1800 s:
+  car waiting 104.02 / 107.78 s, emergency time loss 60.83 / 81.67 s), and their stats gain no key.
+* **In charge or fallen back, in every result.** The hook counts `external_plan_steps` and
+  `external_fallback_steps` in the agents' stats, which `tools/eval_town05_baseline.py` saves with every run
+  (`agent_stats`), with `goflow_timeouts`, `goflow_errors`, `goflow_restarts`, `goflow_down`, `goflow_refused` and,
+  with the LLM, `goflow_llm_calls / failures / late / refused / p95_latency_s`. Seed 11: GO-FLOW in charge on 3580
+  of 3600 steps (the first 10 s before its first plan), no timeout, no restart.
+* **No signal priority for recovery trucks** (they drive with hazard lights, not a siren): GO-FLOW plans police and
+  ambulances only; a loaded truck waved off at the stop line keeps the agents' own rule.
+* **Held-out seeds 31-40** in `tools\eval_town05_goflow.bat final`; seeds 21-30 only for comparison.
+* Same figures as before the refactor (seed 11, x0.8, 1800 s): agents_goflow 45.26 s emergency time loss, cars
+  110.27 s waiting; agents_observed_goflow 49.15 s, cars 102.79 s. One seed.
+
+## GO-FLOW priority: a refused vehicle goes back to the agents' own rule (5 Nov)
+
+Seen in the sumo-gui demo (`tools\goflow_priority_demo.bat`, an emergency vehicle every ~45 s): police cars waiting
+at reds. GO-FLOW's safety layer refused them 94 times in 30 min ("3 pre-emptions in 300 s" at 1427, police are not
+exempt), and since the plan still claimed those vehicles, the junction agents did not ask for them either: no
+priority at all, worse than the agents alone. Now a vehicle refused in a plan is handed back to the agents' own rule
+for that step (its accepted junctions stay in the plan); counted as `goflow_handed_back`.
+
+Seed 11, x0.8, 1800 s, emergency every 45 s (`--no-gui`; mean time loss, s):
+
+| | ambulances (19) | police (21) | police waiting | others waiting |
+|---|---|---|---|---|
+| agents (without GO-FLOW) | 114.3 | 73.0 | 46.4 | 120.8 |
+| agents_goflow before the fix | 122.1 | 79.1 | 55.9 | 130.8 |
+| agents_goflow after the fix | 103.9 | 68.0 | 44.8 | 128.7 |
+
+One seed. The cost for the other vehicles (+8 s) is what the dev runs have to settle (horizon, rate limit).
+
+
+## GO-FLOW priority agent: reviewed, merged, heavy traffic fixed, tested (9 Nov)
+
+Yosr's branch `integration/priority-agent-town05` (`8e12ee8`) merged with `main` (`c90f93e`). Conflicts in
+`README.md`, `cosim/freefly.py` (main moved the agents' wiring into `agents_actuated.wire()`: kept, only `goflow_role`
+added) and this file. Her seed-11 figures come out the same on the merged code (car waiting 104.02 / 110.27 / 107.78 /
+102.79 s).
+
+**Heavy traffic.** Dev seeds 11-20, `tools/eval_town05_baseline.py`, 1800 s, paired against the agents alone: at x0.8
+GO-FLOW cut the emergency vehicles' time loss (-15.4 s with exact counts, 9 of 10 seeds) for +2 s car waiting, but at
+x1.0 it made the town worse (car waiting +24 s exact counts, +77 s cameras; 1549 vehicles stuck against 824, 2511
+against 732; every 45 s: +166 s, 0 of 10 seeds better). The cause: a request for a signal beyond the vehicle's next one
+had only the exit check (`_external_requests`). GO-FLOW keeps a signal it planned until the vehicle passes it, and
+counts arrival times at 8 m/s or more, so an ambulance stuck in a queue kept the signals ahead holding green for it:
+976 holds a run against the agents' own 122. The agents' own corridor rule has the guard for this (moving at 3 m/s or
+more, due within 25 s at its real speed; see the top of `cosim/agents_actuated.py`). Now the planner's requests
+beyond the next signal go through the same conditions (`_corridor_ok`, `external_guard`; 0 gives the old behaviour).
+
+Dev seeds 11-20 after the fix (mean difference, seeds better; stuck: summed over the 10 runs, GO-FLOW / agents):
+
+| Emergency every | Traffic | Signals on | Car waiting | Throughput /h | Emergency time loss | Stuck |
+|---|---|---|---|---|---|---|
+| 120 s | x0.8 | exact counts | +1.4 s (4/10) | -12 | -7.1 s (8/10) | 0 / 0 |
+| 120 s | x0.8 | cameras | +0.6 s (4/10) | -4 | -1.9 s (5/10) | 0 / 0 |
+| 120 s | x1.0 | exact counts | -6.0 s (7/10) | +33 | -4.0 s (5/10) | 958 / 824 |
+| 120 s | x1.0 | cameras | +40.9 s (4/10) | -288 | +76.5 s (2/10) | 1809 / 732 |
+| 45 s | x0.8 | exact counts | +2.5 s (2/10) | +4 | -1.3 s (7/10) | 0 / 0 |
+| 45 s | x0.8 | cameras | +0.4 s (5/10) | +11 | +3.9 s (5/10) | 0 / 0 |
+| 45 s | x1.0 | exact counts | +37.5 s (3/10) | -218 | +7.9 s (7/10) | 1918 / 1079 |
+| 45 s | x1.0 | cameras | -41.2 s (7/10) | +267 | -39.9 s (8/10) | 1257 / 2318 |
+
+Tried on the same dev seeds and not kept: arrival within 35 s (about the same), within 60 s (x1.0 worse again: +9.6 s,
+1102 stuck against 824), and also limiting the next signal to 150 m as the agents do (no better). At x1.0 the town is
+at the edge of gridlock: one seed's waiting goes from 139 s to 314 s on a small change in the signals, either way, so
+10 seeds do not separate two versions there. Summed over the four x1.0 rows, the fix takes the extra waiting from
++82 s to +8 s a trip on average and the stuck vehicles from 11663 to 5942 (agents alone 4953). The price: most of the
+ambulances' gain at x0.8 came from the same holds, and is gone.
+
+Also fixed: the LLM's queue counts were SUMO's lanes even under `agents_observed`; now the cameras' reports
+(`_gf_state`). `tools/eval_town05_goflow.bat` used test seeds 31-40 (opened for the forecasters' v5): now dev 11-20,
+test 71-80 (61-70 are the route agent's), with `--open-test` (a `TEST_OPENED.lock` per folder, new in
+`tools/eval_town05_baseline.py`). Tests: `tests/test_goflow_priority.py` (8), all 251 pass (3 need `cv2` / `carla`).
+
+**The bar, set before the test** (seeds 71-80, opened once, 1800 s, each GO-FLOW controller against the same agents
+alone, an emergency every 120 s and every 45 s):
+* x0.8: emergency time loss lower on the mean and on at least 7 of 10 seeds; car waiting at most 2 s worse on the
+  mean; no vehicles stuck where the agents alone have none;
+* x1.0: car waiting at most 2 s worse on the mean; vehicles stuck (summed over the seeds) no more than the agents
+  alone.
+Met in every row: recommended with `--goflow-priority`. Not met: it stays an experiment, off by default. On the dev seeds
+above it does not meet it (x0.8 emergency gains too small, x1.0 cameras at 120 s and exact counts at 45 s worse).
+
+**The test** (seeds 71-80, opened once: `out/goflow_priority_eval/test_120`, `test_45`, `TEST_OPENED.lock`, run in the
+cloud: Linux, Python 3.13, SUMO 1.27.1). Mean difference against the agents alone (seeds better; stuck: summed, GO-FLOW /
+agents alone; in brackets the agents alone):
+
+| Emergency every | Traffic | Signals on | Car waiting | Throughput /h | Emergency time loss | Stuck | Bar |
+|---|---|---|---|---|---|---|---|
+| 120 s | x0.8 | exact counts | +0.6 s (4/10) [103.0 s] | -2 | -1.7 s (6/10) [41.2 s] | 0 / 0 | no |
+| 120 s | x0.8 | cameras | +0.0 s (5/10) [101.3 s] | +7 | -4.4 s (7/10) [44.7 s] | 0 / 0 | yes |
+| 120 s | x1.0 | exact counts | +26.0 s (2/10) [158.5 s] | -227 | +46.7 s (2/10) [74.4 s] | 1128 / 337 | no |
+| 120 s | x1.0 | cameras | +12.8 s (5/10) [162.8 s] | -97 | +10.6 s (5/10) [106.4 s] | 839 / 519 | no |
+| 45 s | x0.8 | exact counts | +3.9 s (1/10) [107.8 s] | -1 | -1.8 s (6/10) [43.6 s] | 0 / 0 | no |
+| 45 s | x0.8 | cameras | +0.6 s (5/10) [106.4 s] | +9 | +2.2 s (4/10) [40.4 s] | 0 / 0 | no |
+| 45 s | x1.0 | exact counts | +4.1 s (5/10) [197.5 s] | +14 | +18.4 s (5/10) [122.4 s] | 1231 / 1408 | no |
+| 45 s | x1.0 | cameras | +15.7 s (4/10) [178.0 s] | -83 | +16.3 s (3/10) [111.8 s] | 1138 / 889 | no |
+
+GO-FLOW was in charge on 98-99 % of the steps (the rest: before its first plan), no timeout, no error, never down.
+
+Reading. It does not meet the bar (1 row of 8): it stays off by default, an experiment. Once it may no longer hold
+the signals ahead for a vehicle stuck in a queue, it gives the ambulances about what the agents' own rule gives
+(-4 to +2 s at x0.8), and in heavy traffic it is still worse on most rows (+4 to +26 s waiting, more vehicles stuck on
+3 rows of 4). What is left of its design over the agents' rule (signals planned up to 30 s ahead, arbitration
+between two emergency vehicles) does not show here. The LLM was not run (no Ollama in the cloud). The next seeds
+for any new version: 81 and above.
+
+
+## The town audit, steps 1-3: skipped greens, cars taken off the road, the viewer's default (9 Nov)
+
+Three screenshots (an endless queue behind an accident, cars standing mid-road, a police car read as "siren off")
+and a town that felt wrong. The viewer's log said why: 85-93 % of the town's moving traffic standing at any moment.
+It was running the coordinated signals (the default since 27 Oct) and, from the forecast launcher, twice the traffic.
+Diagnosis runs (SUMO alone, seed 11, evening rush held at 17:30, 20 min) and the full report are in the session; the
+three steps done here:
+
+**1. A skipped walk skipped car greens.** `sumo_side.WalkSkip` skips a walk nobody waits for by going to phase 0.
+That is right when the walk ends the cycle (the actuated programs), but `cosim/coordination.py` puts the busiest green
+first, so in 12 of the 15 coordinated programs the walk is in the middle of the cycle, and every car green after it
+was skipped too. Junction 1427 ran its phase 0 for 109 s and back to phase 0: its other three approaches never went
+green unless someone waited to cross. Now the signal goes on to the next car green after the walk, its clearance and
+buffer (`WalkSkip.after_walk`), and only those seconds go to the next first green. Tests: `tests/test_walk_skip.py`
+(the SUMO one fails on the old code: car greens never shown at 12 signals).
+
+**2. Cars taken off the road.** SUMO runs without teleporting; knots were undone by taking cars off, out of sight:
+* `IncidentManager._relieve` took off any car standing 25 s on an accident's road or any road into it, even one
+  waiting at a red light there. Now: after 45 s a new way (the accident's roads count as slow), from a lane that leads
+  on; taken off only still standing 240 s on the accident's own road, out of sight.
+* `IncidentManager.unjam` took off a car standing 150 s out of sight (in sight it got a new way). Now every car gets a
+  new way first; taken off only still standing another 150 s, out of sight.
+* Every run now reports what was taken off (`IncidentManager.removals()`, `removed` in
+  `tools/goflow_prediction_dataset.py`, `eval_agents_forecast.py`, `eval_route_guidance.py`; the viewer logs
+  `taken off the road` every SUMO minute). Tests: `tests/test_removals.py`.
+
+**3. The viewer's default.** Dev seeds 11-20, a day as the viewer runs it (clock 30 from 07:00, 5 min warm-up then
+30 min, the town's own traffic, trips with a purpose, accidents, buses, ring road), SUMO alone; per km driven (trip
+time minus planned stops):
+
+| Code, signals | Speed | Waiting | Standing | Taken off (accident + knots) | Taken off (population) |
+|---|---|---|---|---|---|
+| before, coordinated | 3.5 km/h | 934 s/km | 89 % | 369 a run | 162 a run |
+| now, coordinated | 9.1 km/h | 283 s/km | 69 % | 7 | 313 |
+| now, actuated | 11.9 km/h | 184 s/km | 59 % | 23 | 324 |
+| now, junction agents (cameras) | 11.3 km/h | 210 s/km | 62 % | 21 | 388 |
+
+The fix: waiting lower on 10 of 10 seeds. Coordinated, even fixed, is worse than the junction agents on 8 of 10
+seeds; actuated and the agents do not differ (actuated lower on 4 of 10 for waiting, faster on 5 of 10). The viewer's
+default is now the junction agents (`--controller agents_observed`); the HUD strip says who runs the signals and,
+when it is not 1, the traffic level (`hud.setup_text`, also in the log at start).
+
+Open, from the same audit:
+* **The population model takes off about half as many cars as enter** (313-388 a run against 590-710 trips), out of
+  sight, when the town holds more than the hour's target (`cosim/live.Population`; mostly the day's curve falling
+  faster, at clock 30, than trips end). Counted now; changing the demand model (trips an hour instead of a count of
+  cars) is a decision of its own.
+* **The signals leave each approach about 15 % of a 115 s cycle** (each approach on its own, a walk of its own,
+  roads of 23-65 m): even the best case keeps 59-62 % of cars standing. Next step of the plan.
+* The forecasters' v6 was trained partly on coordinated runs made with the skipped greens: to be checked.
+
+
+## Honest demand, the town's traffic level, and the signal design (9 Nov, night)
+
+**Cars taken off to follow the curve.** `cosim/live.Population` kept the number of cars on the road on the day's curve
+and took cars off, out of sight, whenever there were more: 313-388 a run against 590-710 trips (dev seeds 11-20, a
+35-minute day). Two causes: at clock 30 the evening curve falls faster than trips end, and the count took in the ring
+road's cars, the buses and the emergency vehicles in the dataset and evaluation tools (the viewer left the ring road
+out), so at 17:30 only about 60 of a target of 116 were town cars.
+
+**Now: trips at the curve's rate** (`Population(flow=True)`, the default): new trips start at curve / mean trip (140 s)
+a second of simulation, the hour read on the town's clock; every car drives its trip to its end; how many are on the
+road follows from how fast they get through. A jump of the clock (start, F6 / F7) fills the town at once, as before.
+Trips SUMO cannot put on the road once its queue is half the curve are counted (`trips_not_started`), not added.
+Tests: `tests/test_daily.py`.
+
+**What the town carries.** With nothing taken off, the old curve locked the town every evening (one day, seed 11:
+260 town cars on the road at 17:45 against a target of 116, 280 trips never started). Swept on dev seeds 11-13 (a day
+at clock 30 from 07:00, SUMO's actuated signals), x the old curve:
+
+| Traffic | Speed | Waiting | Taken off | Trips not started |
+|---|---|---|---|---|
+| 0.40 | 13.1 km/h | 149 s/km | 21 | 4 |
+| 0.45 | 12.7 km/h | 167 s/km | 5 | 5 |
+| 0.50 | 10.4 km/h | 304 s/km | 30 | 5 |
+| 0.55 | 5.7 km/h | 526 s/km | 97 | 65 |
+| 0.70 | 5.2 km/h | 593 s/km | 118 | 134 |
+
+The town's own traffic (x1) is now 0.45 of the old curve (`daily.DEMAND_BASE`, chosen by the user): the evening rush
+at what the town carries. An emergency run every 300 s instead of every 45 s changed little (x0.5: 317 s/km against 304).
+`town05_freefly_forecast.bat` now runs the town's own traffic (`busy`: x1.15); its x2 would now lock the town.
+
+**The signal design (step 4).** Tried on the same days, nothing better than today's:
+* the permissive programs (opposite approaches together, turns giving way; `SIGNAL_LAYOUT=opposites
+  tools/build_town05_signals.py`, rebuilt on today's network: the same as the 26 Oct set): x0.4 264 s/km against
+  149, more cars standing inside junctions. Town05's approaches have two lanes and no turn bays: a car waiting to
+  turn left holds up the lane behind it;
+* longest green of the agents' programs (`PROTECTED_GREEN`), junction agents, dev seeds 11-15: 20 s 221 s/km, 30 s
+  (today) 186 s/km, 45 s 300 s/km and three times the cars taken off.
+
+**The controllers at the new traffic level** (dev seeds 11-20, the day as above):
+
+| Signals | Speed | Waiting | Standing | Taken off (last resort) | Ambulance time loss |
+|---|---|---|---|---|---|
+| junction agents (the default) | 10.3 km/h | 260 s/km | 64 % | 27 a run | 74.8 s |
+| actuated | 11.4 km/h | 219 s/km | 61 % | 23 | 84.6 s |
+| coordinated (fixed) | 7.8 km/h | 374 s/km | 74 % | 24 | 129.6 s |
+
+Agents and actuated: no clear difference for cars (5 of 10 seeds each way); the agents get the ambulances through
+faster on 7 of 10. Coordinated is worse on 9 of 10. The default stays the junction agents.
+
+Open: most of the cars still taken off are behind accidents and in knots as a last resort (about 25 a run);
+the forecasters must be checked and retrained on this town (after steps 5-7).
+
+
+## Cars taken off as a last resort, steps 5-7 of the audit (10 Nov)
+
+Same days as before (dev seeds 11-20, a day at clock 30 from 07:00, the town's own traffic, SUMO alone), the junction
+agents on the cameras, paired against the run before.
+
+**Why cars were still taken off** (21 cars on dev seeds 11-12, each looked at when taken off):
+* 6 were parked in a car park near an accident: `_relieve` took a parked car for one held up. Now parked cars, cars
+  at a stop and cars off the road are never counted as held up.
+* most of the others stood on the roads into junction 979, behind a crash inside it, until the 300 s last resort
+  (the junction agents then rightly held back greens into those full roads). **Step 7:** drivers coming up to a
+  junction where a wreck stands in the way of their movement now take another way out, one their own lane leads to
+  and the wreck leaves free (`IncidentManager._reroute_junction`; a movement is blocked when its way through the
+  junction passes within 2.5 m of a wreck, `_blocked_links`). Rerouting is the same whether you watch or not; only
+  the last resort (taken off) is out of sight.
+
+| | Taken off a run (behind accidents + knots) | Waiting | Ambulance time loss |
+|---|---|---|---|
+| before | 27.2 (12.9 + 14.3) | 260 s/km | 74.8 s |
+| now | 18.1 (5.6 + 12.5) | 244 s/km (lower on 5 of 10) | 61.9 s (lower on 6 of 10) |
+
+What is left (dev seeds 13-16, looked at): mostly one seed, two crashes near the centre at the rush and a jam over
+five junctions (the town runs at what it carries; a crash there locks it, as in a real town), and cars behind a bus
+standing at its stop, which a standing car cannot pass (no sideways move while standing).
+
+**Step 5, spillback and neighbours.** Max-pressure (`max_pressure_walk`, which weighs each movement by its queue
+minus the queue it feeds) against the junction agents, both on exact counts: waiting +44 s/km (lower on 4 of 10),
+ambulances +18 s (it has no pre-emption here). The agents' own rule of no green into a full exit (`spill`) is worth
+4 s/km (without it worse on 9 of 10). The agents stay as they are.
+
+**Step 6, lane changes.** Measured across the whole road (seed 11, 12 min of the evening rush): 866 lane changes,
+median 4.0 s (10 % under 2.5 s, 10 % over 5 s; about 4 s on real roads); 1548 small drifts inside a lane (0.5 s each,
+700 m sideways in all); 1835 steps sideways at low speed steeper than the 12 deg the viewer turns a body; 415 steps
+sideways while standing (the squeezes past wrecks, buses into their stop). Tried, not kept:
+* sideways speed at most 0.2 x forward speed and 0.6 m sideways gap (`lcMaxSpeedLatFactor`, `minGapLat`): steep moves
+  1835 -> 436, no overlap in `tools/check_overlaps.py` (1 before), but on the dev days waiting +44 s/km (lower on 4 of
+  10) and 43 cars taken off a run against 18: lane changes too slow in queues;
+* `lcSublane` 0.1: lane changes shorter (median 2.5 s);
+* the viewer's low-speed limit 12 -> 17 deg (`interp.Trails`): no difference.
+A short clip of the glitch seen in CARLA is needed to go further.
+
+**Also:** the population counts simulation time, one SUMO step a call (a tool that holds the hour still,
+`tools/check_overlaps.py`, got no new trips at all: 65 vehicles in 5 minutes, now 254); the same as before when the
+clock moves. `tools/goflow_prediction_dataset.py --trips purpose` (the default, as the viewer; the forecasters' v6
+data had random trips); `eval_agents_forecast.py` and `eval_route_guidance.py` use trips with a purpose too.
+
+
+## The forecasters' v7: data and training on the new town (10 Nov, started)
+
+The town changed under the forecasters (skipped greens fixed, trips at the day's rate with nobody taken off, the
+town's own traffic 0.45 of the old curve, the junction agents by default, trips with a purpose, junction crashes
+rerouted), so v6 is retrained once, after all the changes. `tools\goflow_v7_build.bat` makes four datasets on
+seeds 101-130 and 11-20 (the junction agents at x1, x1.15 and x1.3, coordinated at x1; a day at clock 30 from 06:00,
+accidents, no deadlock breaker, as the viewer) and the same on test seeds 81-90, then trains v7 with the v6 recipe
+into `out\goflow_prediction\v7\models`. Not yet scored or shipped: `models\goflow` is still v6 (`docs/HANDOVER_10nov.md`).
+A first try in the cloud (39 of 40 runs of the x1 dataset) was cut off by a restart of the cloud machine; the
+build runs on the PC.

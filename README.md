@@ -193,7 +193,8 @@ town05_freefly.bat
 
 | Viewer option | Default | What it does |
 | --- | --- | --- |
-| `--controller` | `coordinated` | Who runs the signals: `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents_observed` (junction agents fed by the cameras), `agents` (the same agents on exact counts). `agents_observed+forecast` with `--goflow-prediction --goflow-traffic`: the agents also weigh the forecasters' long-queue warnings (balance, extending a green at its maximum; off by default, `cosim/agents_actuated.py`) |
+| `--controller` | `agents_observed` | Who runs the signals: `agents_observed` (junction agents fed by the cameras; the default since 9 Nov, before it was `coordinated`), `coordinated` (one 115 s cycle, green waves), `actuated` (SUMO's actuated programs), `agents` (the same agents on exact counts). `agents_observed+forecast` with `--goflow-prediction --goflow-traffic`: the agents also weigh the forecasters' long-queue warnings (balance, extending a green at its maximum; off by default, `cosim/agents_actuated.py`) |
+| `--goflow-priority` | off | With `--controller agents` or `agents_observed`: the GO-FLOW priority agent (`agents/priority_agent`, its own Python environment from `tools\setup_goflow_priority.bat`) plans the emergency vehicles' requests: every signal within 30 s of an emergency vehicle, ambulance before police (recovery trucks keep the agents' own rule). The agents still run the signals, through their `request_source` hook (`cosim/goflow_priority.py`); `--goflow-confirm v2i\|camera`; `--goflow-llm qwen2.5:3b` adds the LLM coordinator in the background (Ollama on the CPU; the rules act at once and stay in charge when it is slow or down). An experiment: on the test seeds (9 Nov) it did not do better than the agents' own rule, and worse in heavy traffic (`docs/WORKLOG.md`) |
 | `--set-time HH:MM` | saved clock | Start the clock at this time |
 | `--clock-speed` | 30 | Town seconds per real second: 30 = 2 real minutes a town hour, a day in 48 minutes (60 until 7 Nov); 1 = real time. The GO-FLOW forecasters run only at the speed they were trained at (30) |
 | `--accidents / --no-accidents` | on | Careless drivers crash; the police and recovery trucks respond |
@@ -220,7 +221,7 @@ town05_freefly.bat
 | `--route-guide / --no-route-guide` | on | The route agent and its mini-map: F follows a car (section 5.9) |
 | `--route-costs typical\|free` | typical | The route agent's costs: typical times from past trips (signals in) or the free-flow times it was built with (docs/WORKLOG.md, 8 Nov) |
 | `--route-explain / --no-route-explain` | on | With the route agent: one sentence on each of its decisions from the local LLM (Ollama running with `qwen2.5:7b`); off for the run if Ollama does not answer |
-| `--demand-scale X` | 1 | Multiplies the day's vehicle curve: 2 or 3 make queues fill at the junctions (no gridlock in SUMO at 3, crashes on). The forecasters are told the same scale, as in their training data |
+| `--demand-scale X` | 1 | Multiplies the town's traffic (new trips an hour). 1 is the town's own traffic since 9 Nov: 0.45 of the route files' vehicles an hour (`daily.DEMAND_BASE`), what Town05 carries at the evening rush; from about 1.2 the town locks at the rush. The forecasters are told the same scale, as in their training data |
 
 ### Signal sets
 
@@ -258,7 +259,7 @@ All of these are in `tools\`. Results go to `out\`, logs to `tools\logs\`.
 | Rebuild the SUMO scenario from CARLA's map | `build_town05.bat` | no |
 | Checks on signals, junction stops, pedestrians, overlaps, accidents | `audit_town05_signals.py`, `check_*.py` | no |
 | Every kind of incident, SUMO only, with the ring road and the bus lines | `.venv\Scripts\python tools\check_accidents.py --ring --buses --minutes 60` | no |
-| Fly with the GO-FLOW forecasters on (forecast panel, road chips, long-queue alerts, F10), traffic x2 (`normal`: as it is) | `town05_freefly_forecast.bat` | yes |
+| Fly with the GO-FLOW forecasters on (forecast panel, road chips, long-queue alerts, F10), the town's own traffic (`busy`: x1.15, long queues at the rush) | `town05_freefly_forecast.bat` | yes |
 | GO-FLOW forecasters: datasets, the live connector checked (agents answer, a killed one restarts, live = offline replay) | `tools\goflow_prediction_graph.py`, `goflow_prediction_dataset.py`, `goflow_prediction_live_check.py --goflow` | no |
 | GO-FLOW forecasters scored once on test seeds (live code path, long-queue alerts, calibration) | `.venv\Scripts\python tools\goflow_prediction_test_score.py --seeds ... --out ... --reason ...` | no |
 | Junction agents with and without the forecasters' warnings, paired seeds | `.venv\Scripts\python tools\eval_agents_forecast.py --seeds 11-20 --scales 2,3 --out ...` (needs the agents' packages in the venv) | no |
@@ -369,6 +370,9 @@ Three ideas shape the design.
   `.webster.add.xml`, `.coordinated.add.xml`). `tools/use_signals.py` copies a set over the files in use.
 * **At run time** the controller (`cosim/controllers.py`, chosen by `--controller`) drives SUMO's signals:
   * `coordinated` keeps every junction on the common cycle (`CycleKeeper` in `sumo_side.py`);
+  * a pedestrian walk nobody waits for is skipped and the signal goes on to the next car green (`WalkSkip` in
+    `sumo_side.py`; before 9 Nov it went back to the first green, which in the coordinated programs skipped every car
+    green after the walk);
   * `actuated` uses SUMO's gap-out logic;
   * the agents modes add the junction agents (5.5).
 * **Pre-emption:** an emergency vehicle on a run within 120 m of a signal cuts the conflicting green short, or
@@ -391,6 +395,15 @@ Three ideas shape the design.
   * serves an emergency vehicle on a run first;
   * treats someone waiting at a crossing as a call for that green.
   `agents_observed` uses the cameras; `agents` uses exact counts (the upper bound).
+* **GO-FLOW priority agent** (`--controller agents_goflow` / `agents_observed_goflow`, or `--goflow-priority` in the
+  viewer). The same agents, but their pre-emption requests come from the GO-FLOW coordinator, a separate process in
+  its own Python environment (`agents/priority_agent/town05/serve.py`, JSON lines). If it is slow, crashed or not
+  installed, the agents use their own requests, so the town runs exactly as under `agents` / `agents_observed`.
+  With `--goflow-llm`, an LLM (Ollama) works in the background on events: conflicts between emergency vehicles,
+  unconfirmed requests, and flashing lights the cameras confirm on a lane where no vehicle sent a request (it may
+  then give that lane a green of 20 s at most, one per junction every 120 s). Its decisions pass the agent's safety
+  layer before they reach the junction agents; its transcripts are in `out/goflow_priority/<run>/decisions.jsonl`.
+  Evaluation: `tools\eval_town05_goflow.bat`.
 * **Detector.** `models/carla-yolo26n-t05.pt` is YOLO26n fine-tuned on CARLA, then on Town05. Its 9 classes:
   car, van, bus, truck, ambulance, ambulance with lights, police, police with lights, pedestrian. In the viewer it
   runs only when you press H (`cosim/inspector.py`, `cctv.py`).
@@ -437,6 +450,13 @@ Three ideas shape the design.
   contact and the police record, and the
   look-alikes with the seconds each camera has them in its picture.
 
+**Cars taken off the road** (9 Nov). SUMO runs without teleporting, so a knot never undoes itself. Cars held up
+behind an accident, or standing in a knot, first get a new way (`IncidentManager._relieve`, `unjam`); only if they
+still stand much longer, out of sight, are they taken off as a last resort. Since 9 Nov the town's traffic is new trips
+started at the day's rate, every car driving its trip to its end (`cosim/live.Population`); before, a count of cars
+was kept on the curve by taking cars off out of sight. Every run reports these
+(`removed` in the results, `taken off the road` in the viewer's log).
+
 ### 5.7 Red-light camera and the police office
 
 A red-light enforcement site as real ones are built, at one approach of a signalised junction (`--enforce`,
@@ -477,7 +497,7 @@ or timed: whether they reach the line on amber or red depends only on where they
 
 | Part | Source |
 | --- | --- |
-| Clock: two real minutes are one game hour; demand follows a daily curve (Little's law on the mean trip); day and night lighting | `cosim/daily.py`, `solar.py` |
+| Clock: two real minutes are one game hour; new trips start at the daily curve's rate (since 9 Nov; before, a count of cars kept on the curve); day and night lighting | `cosim/daily.py`, `live.py`, `solar.py` |
 | Demand: passenger cars, deliveries, trucks, motorcycles, about 2900 vehicles an hour at the peak | `scenarios/town05/*.rou.xml` |
 | Three bus lines on closed loops, with CARLA bus shelters at the stops | `tools/build_town05_pt.py`, `town05.pt.add.xml` |
 | Pedestrians on the pavements and crosswalks, with walk signals | `cosim/extras.py`, `ped_lights.py` |

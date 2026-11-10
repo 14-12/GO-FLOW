@@ -239,6 +239,8 @@ def main(argv=None) -> int:
     ap.add_argument("--skip-done", action="store_true", help="keep runs already written")
     ap.add_argument("--out", default=str(OUT), help="output folder (runs/ and the tables go there)")
     ap.add_argument("--title", default="Town05 baseline (SUMO alone)")
+    ap.add_argument("--open-test", default=None, metavar="REASON",
+                    help="these are held-out test seeds: open them once (OUT/TEST_OPENED.lock; refused if it exists)")
     ap.add_argument("--ignore-junction-blocker", type=float, default=None, metavar="S",
                     help="SUMO's deadlock breaker: a vehicle standing in a junction for S seconds is no longer waited for "
                          "by the others (no vehicle is removed). Off by default, as in every run before 24 Oct")
@@ -248,6 +250,14 @@ def main(argv=None) -> int:
     controllers = a.controllers.split(",")
     scales = [float(x) for x in a.scales.split(",")]
     seeds = [int(x) for x in a.seeds.split(",")]
+    if a.open_test and not a.aggregate_only:
+        lock = out_dir / "TEST_OPENED.lock"
+        if lock.is_file():
+            print(f"test seeds already opened here: {lock.read_text(encoding='utf-8')}")
+            return 2
+        out_dir.mkdir(parents=True, exist_ok=True)
+        lock.write_text(json.dumps({"seeds": seeds, "reason": a.open_test, "when": time.strftime("%Y-%m-%d %H:%M"),
+                                    "args": vars(a)}), encoding="utf-8")
     if not a.aggregate_only:
         todo = [(c, sc, sd) for sc in scales for sd in seeds for c in controllers
                 if not (a.skip_done and (runs / f"{tag(c, sc, sd)}.json").is_file())]

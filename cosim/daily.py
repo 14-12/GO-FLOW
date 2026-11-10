@@ -217,13 +217,25 @@ class GameClock:
 
 # ---------------------------------------------------------------- vehicles in the city
 
-def population_curve(study: dict | None, pool: Pool | None = None, mean_trip_min: float = 10.0) -> list[float]:
+# (9 Nov) The town's own traffic (x1): this share of the scenario's route files' vehicles an hour at the peak.
+# With trips started at the curve's rate and none taken off (cosim/live.Population, flow), Town05 carries about 0.45
+# of the route files' 2900 vehicles an hour at the evening rush before it locks: dev seeds 11-13, a day at clock 30,
+# SUMO's actuated signals: 0.40 13.1 km/h, 0.45 12.7 km/h and 5 cars taken off a run, 0.50 10.4 km/h, 0.55 5.7 km/h
+# and 97 taken off (docs/WORKLOG.md 9 Nov). Its two-lane approaches have no turn bays and its blocks are 23-65 m;
+# signals with permissive turns carried less. Before 9 Nov the count of cars on the curve was kept by taking off
+# about half of those that entered, which hid this.
+DEMAND_BASE = 0.45
+
+
+def population_curve(study: dict | None, pool: Pool | None = None, mean_trip_min: float = 10.0,
+                     base: float = DEMAND_BASE) -> list[float]:
     """Vehicles on the road at each minute of the day (1440 values): measured by the 24 h study
     (tools/day_study_town12.py, its "running_per_minute"), or, without one, estimated as
-    insertions per minute x the mean trip (Little's law; 10 min on Town12, ~2.3 min on Town05)."""
+    insertions per minute x the mean trip (Little's law; 10 min on Town12, ~2.3 min on Town05), the insertions
+    being `base` (DEMAND_BASE) x the route files' vehicles an hour."""
     if study and len(study.get("running_per_minute", [])) >= 1440:
         return [float(v) for v in study["running_per_minute"][:1440]]
-    per_hour = pool.total_per_hour if pool else 4408
+    per_hour = (pool.total_per_hour if pool else 4408) * base
     return [per_hour * demand_factor(m / 60.0) / 60.0 * mean_trip_min for m in range(1440)]
 
 

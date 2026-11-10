@@ -30,8 +30,9 @@ _SIM_VARS = [tc.VAR_TIME, tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_
 
 
 class WalkSkip:
-    """The pedestrian phase of a signal (tools/build_town05_peds.py: every car red, every crossing walk,
-    at the end of the cycle) is skipped when nobody is waiting to cross there: it costs the cars 15 s a
+    """The pedestrian phase of a signal (tools/build_town05_peds.py: every car red, every crossing walk; at the
+    end of the cycle, or in its middle in the coordinated programs) is skipped when nobody is waiting to cross there,
+    the signal going on to the green after it (after_walk): it costs the cars 15 s a
     cycle, which on Town05 at its design demand was enough to lock the town (measured, SUMO alone).
     Waiting: a person on one of the junction's walking areas whose next edge is one of its crossings."""
 
@@ -58,6 +59,7 @@ class WalkSkip:
         self._coord: dict[str, list[float] | None] = {}
         self.bank: dict[str, float] = {}
         self.banked = 0.0
+        self._phases: dict[tuple[str, str], list[str]] = {}  # (tls, program) -> phase states
 
     def _durations(self, c, tid: str) -> list[float] | None:
         """The phase durations of tid's program when it is a coordinated one, else None (asked once)."""
@@ -88,6 +90,28 @@ class WalkSkip:
             return
         self.banked += b
         self.bank[tid] = 0.0
+
+    def after_walk(self, c, tid: str, k: int) -> int:
+        """The phase that follows the walk at index k and its clearance and buffer (every car red): the next phase
+        with a car green or amber, or 0 when the walk block ends the cycle. (9 Nov) It used to be 0 always. That is
+        right when the walk ends the cycle (the actuated programs), but the coordinated programs put the busiest
+        green first (cosim/coordination.py) and so the walk in the middle of the cycle in 12 of 15 signals: a skipped
+        walk then skipped every car green after it. Junction 1427 ran phase 0 for 109 s and back to phase 0, its
+        other three approaches never green (SUMO alone, evening rush, seed 11)."""
+        key = (tid, c.trafficlight.getProgram(tid))
+        phases = self._phases.get(key)
+        if phases is None:
+            phases = []
+            for lg in c.trafficlight.getAllProgramLogics(tid):
+                if lg.programID == key[1]:
+                    phases = [ph.state for ph in lg.phases]
+                    break
+            self._phases[key] = phases
+        cross = set(self.cross.get(tid, ()))
+        j = k + 1
+        while j < len(phases) and not any(ch in "GgyY" for i, ch in enumerate(phases[j]) if i not in cross):
+            j += 1
+        return j if j < len(phases) else 0
 
     def is_walk(self, tid: str, state: str) -> bool:
         idx = self.cross.get(tid)
@@ -156,15 +180,20 @@ class WalkSkip:
                     self.served += 1
                     self.last_served = tid
                 else:
+                    try:
+                        k = c.trafficlight.getPhase(tid)
+                        nxt_k = self.after_walk(c, tid, k)
+                    except Exception:  # noqa: BLE001
+                        k, nxt_k = None, 0
                     durs = self._durations(c, tid)
-                    if durs is not None:  # the walk and what follows it to the end of the cycle
+                    if durs is not None and k is not None:  # the walk block only (its clearance and buffer)
                         try:
-                            k = c.trafficlight.getPhase(tid)
                             left = c.trafficlight.getNextSwitch(tid) - c.simulation.getTime()
-                            self.bank[tid] = self.bank.get(tid, 0.0) + left + sum(durs[k + 1:])
+                            end = nxt_k if nxt_k > k else len(durs)
+                            self.bank[tid] = self.bank.get(tid, 0.0) + left + sum(durs[k + 1:end])
                         except Exception:  # noqa: BLE001
                             pass
-                    c.trafficlight.setPhase(tid, 0)
+                    c.trafficlight.setPhase(tid, nxt_k)
                     self.skipped += 1
                     walk = False
                     tls[tid] = c.trafficlight.getRedYellowGreenState(tid)

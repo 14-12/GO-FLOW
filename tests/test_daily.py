@@ -123,6 +123,8 @@ def test_population_curve_and_target():
     assert daily.target_at(curve, 60.0 * 100 + 30) == pytest.approx(100.5)
     est = daily.population_curve(None)
     assert len(est) == 1440 and max(est) > min(est) * 5
+    full = daily.population_curve(None, base=1.0)
+    assert est[600] == pytest.approx(full[600] * daily.DEMAND_BASE)  # (9 Nov) the town's own traffic: 0.45 of the routes'
 
 
 class FakeConn:
@@ -149,7 +151,7 @@ def test_population_fills_up_and_thins_out_of_sight(tmp_path: Path):
     pool = daily.load_pool(_tiny_scenario(tmp_path / "tiny"))
     ids = {t: [f"pool_{t}_{i}" for i in range(len(r))] for t, r in pool.routes.items()}
     conn = FakeConn()
-    pop = Population(conn, pool, ids, [200.0] * 1440, seed=1)
+    pop = Population(conn, pool, ids, [200.0] * 1440, seed=1, flow=False)   # the count mode (before 9 Nov)
     pop.step({}, 3600.0, lambda vid, v: True)  # far below: filled along the routes, 100 at once
     assert len(conn.added) == 100 and len(conn.routes) == 100
     assert all(kw.get("departPos") == "random_free" for *_, kw in conn.added)
@@ -162,6 +164,31 @@ def test_population_fills_up_and_thins_out_of_sight(tmp_path: Path):
     running = {f"v{i}": None for i in range(300)}
     pop.step(running, 3600.0, lambda vid, v: vid.endswith("7"))  # above: only out-of-sight ones go
     assert conn.removed and all(v.endswith("7") for v in conn.removed) and len(conn.removed) <= 40
+
+
+def test_population_flow_starts_trips_at_the_curves_rate_and_takes_nobody_off(tmp_path: Path):
+    """(9 Nov) The default: new trips at curve / mean trip a second; above the curve nobody is taken off."""
+    pool = daily.load_pool(_tiny_scenario(tmp_path / "tiny"))
+    ids = {t: [f"pool_{t}_{i}" for i in range(len(r))] for t, r in pool.routes.items()}
+    conn = FakeConn()
+    pop = Population(conn, pool, ids, [140.0] * 1440, seed=1, mean_trip_s=140.0)
+    pop.step_s = 0.5
+    pop.step({}, 3600.0, lambda vid, v: True)   # the start: filled along the routes up to the curve
+    assert len(conn.added) == 100 and all(kw.get("departPos") == "random_free" for *_, kw in conn.added)
+    conn.added.clear()
+    pop.pending, pop._k = 0, 1
+    full = {f"v{i}": None for i in range(300)}  # far above the curve: still no one taken off
+    sod = 3600.0
+    for _ in range(120):                        # 60 s of simulation, 15 town seconds a step at clock 30
+        sod += 15.0
+        pop.pending, pop._k = 0, 1
+        pop.step(full, sod, lambda vid, v: True)
+    assert not conn.removed
+    assert len(conn.added) == 60               # 140 cars / 140 s = 1 trip a second
+    conn.added.clear()
+    pop.pending, pop._k = 0, 1
+    pop.step(full, sod + 3600.0, lambda vid, v: True)  # a jump of the clock (F7) with the town full: nothing added
+    assert not conn.added and not conn.removed
 
 
 def test_hud_draws_at_every_hour():
@@ -180,3 +207,18 @@ def test_hud_draws_at_every_hour():
     assert math.sin(dial_angle(0)) == pytest.approx(1.0)
     assert math.sin(dial_angle(12)) == pytest.approx(-1.0)
     assert math.cos(dial_angle(6)) == pytest.approx(-1.0)  # morning on the left
+
+
+def test_population_flow_counts_simulation_time_with_the_hour_held(tmp_path: Path):
+    """(10 Nov) A tool that holds the hour still (tools/check_overlaps.py) still gets new trips."""
+    pool = daily.load_pool(_tiny_scenario(tmp_path / "tiny"))
+    ids = {t: [f"pool_{t}_{i}" for i in range(len(r))] for t, r in pool.routes.items()}
+    conn = FakeConn()
+    pop = Population(conn, pool, ids, [140.0] * 1440, seed=1, mean_trip_s=140.0)
+    pop.step_s = 0.5
+    full = {f"v{i}": None for i in range(140)}
+    pop.step(full, 3600.0, lambda vid, v: True)   # the start (the town already full)
+    for _ in range(120):
+        pop.pending, pop._k = 0, 1
+        pop.step(full, 3600.0, lambda vid, v: True)
+    assert len(conn.added) == 60

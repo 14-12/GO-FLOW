@@ -20,3 +20,14 @@ def test_the_state_carries_the_speed():
 
     assert HudState(game_s=0.0).speed == GAME_SPEED == 30.0
     assert HudState(game_s=0.0, speed=30.0).speed == 30.0
+
+
+def test_the_strip_says_who_runs_the_signals_and_the_traffic_level():
+    """(9 Nov) A picture says what it was taken under: the screenshots of 9 Nov were taken under the fixed-cycle
+    signals and, from the forecast launcher, twice the traffic, and nothing on screen said so."""
+    from cosim.hud import setup_text
+
+    assert setup_text("coordinated") == "fixed-cycle signals"
+    assert setup_text("agents_observed", 2.0) == "junction agents   ·   traffic x2"
+    assert setup_text("agents_observed_goflow+forecast") == "junction agents + GO-FLOW priority + forecasts"
+    assert setup_text("max_pressure") == "max_pressure"

@@ -59,7 +59,7 @@ def parse_args(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--scenario", default="town05")
     ap.add_argument("--controller", default=None,
-                    help="who runs the signals (default: coordinated on town05, else actuated): coordinated (one cycle "
+                    help="who runs the signals (default: agents_observed on town05, else actuated): coordinated (one cycle "
                          "for every signal, green waves: cosim/coordination.py), actuated (SUMO's actuated program), "
                          "agents_observed (the junction "
                          "agents on top of it, from the cameras' reports; cosim/agents_actuated.py), agents (the same "
@@ -97,6 +97,15 @@ def parse_args(argv=None):
     ap.add_argument("--goflow-hud", action=argparse.BooleanOptionalAction, default=False,
                     help="with --goflow-prediction: DSO4's alerts as pills over the junctions (cosim/goflow_prediction_hud.py). "
                          "Off by default, as --agent-hud; the forecasters' status line shows whenever they run")
+    ap.add_argument("--goflow-priority", action="store_true",
+                    help="with --controller agents / agents_observed: the GO-FLOW priority agent plans the emergency "
+                         "vehicles' requests (cosim/goflow_priority.py, agents/priority_agent); off by default")
+    ap.add_argument("--goflow-confirm", choices=("v2i", "camera"), default=None,
+                    help="with --goflow-priority: a request counts on the vehicle's own radio request (v2i) or once a "
+                         "camera has confirmed its siren (camera; default with agents_observed)")
+    ap.add_argument("--goflow-llm", default=None, metavar="MODEL",
+                    help="with --goflow-priority: the LLM coordinator in the background (Ollama model, e.g. qwen2.5:3b); "
+                         "the rules act at once and stay in charge whenever it is slow or down")
     ap.add_argument("--radius", type=float, default=500.0, help="draw the vehicles within this many metres of you")
     ap.add_argument("--rate", type=float, default=60.0,
                     help="vehicle updates per second sent to CARLA (the picture's own rate is the GPU's)")
@@ -304,13 +313,23 @@ def parse_args(argv=None):
                     help="log, every 10 s, where each thread of the viewer spends its time (cosim/sampler.py)")
     args = ap.parse_args(argv)
     if args.controller is None:
-        # Town05: since 27 Oct the coordinated signals (one cycle, green waves: cosim/coordination.py), when the signal
-        # set has them; else the junction agents (they need Town05's cameras, out/town05_cameras)
-        coord = ROOT / "scenarios" / args.scenario / f"{args.scenario}.coordinated.add.xml"
-        if args.scenario == "town05":
-            args.controller = "coordinated" if coord.is_file() else "agents_observed"
-        else:
-            args.controller = "actuated"
+        # Town05: the junction agents on the cameras' reports (9 Nov; from 27 Oct to 9 Nov the coordinated signals,
+        # whose skipped walks skipped car greens too: sumo_side.WalkSkip). Dev seeds 11-20, a day at clock 30 from
+        # 07:00, SUMO alone: agents 11.3 km/h and 210 s waiting a km, actuated 11.9 km/h and 184 s (no clear
+        # difference: 4-5 of 10 seeds), coordinated (fixed) 9.1 km/h and 283 s (worse on 8 of 10). docs/WORKLOG.md
+        args.controller = "agents_observed" if args.scenario == "town05" else "actuated"
+    if args.goflow_priority:
+        base = re.split(r"[-+@]", args.controller, maxsplit=1)[0]
+        if base in ("agents", "agents_observed"):
+            args.controller = base + "_goflow" + args.controller[len(base):]
+            os.environ["GOFLOW_PRIORITY_MODE"] = "live"  # the SUMO thread never waits for it
+            if args.goflow_confirm:
+                os.environ["GOFLOW_PRIORITY_CONFIRM"] = args.goflow_confirm
+            if args.goflow_llm:
+                os.environ["GOFLOW_PRIORITY_ARGS"] = (os.environ.get("GOFLOW_PRIORITY_ARGS", "")
+                                                      + f" --llm --llm-model {args.goflow_llm}").strip()
+        elif not base.endswith("_goflow"):
+            log.warning("--goflow-priority needs the junction agents (--controller agents or agents_observed); ignored")
     return args
 
 
@@ -1143,12 +1162,14 @@ class FreeFly:
         if purpose:  # (8 Nov) trips between the town's places (cosim/purposes.py)
             from cosim.purposes import PurposeDemand, purpose_population
 
-            self.pop = purpose_population(population_class())(self.sumo.conn, pool, route_ids, curve, seed=a.seed)
+            self.pop = purpose_population(population_class())(self.sumo.conn, pool, route_ids, curve, seed=a.seed,
+                                                              mean_trip_s=a.mean_trip_s)
             self.demand = self.pop.demand = PurposeDemand(self.sumo.conn, self.clock.speed, seed=a.seed)
             self.pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
             self.pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
         else:
-            self.pop = population_class()(self.sumo.conn, pool, route_ids, curve, seed=a.seed)
+            self.pop = population_class()(self.sumo.conn, pool, route_ids, curve, seed=a.seed,
+                                          mean_trip_s=a.mean_trip_s)
         base = {t: (re.search(r'vClass="([^"]+)"', vt) or [None, "passenger"])[1] for t, vt in pool.vtypes.items()}
         base.update(vmodels.EMERGENCY_TYPES)
         self.typer = vmodels.Typer(self.sumo.conn, self.cands, self.models, base)
@@ -1450,6 +1471,12 @@ class FreeFly:
         if not wire(pol, self.sumo, a.seed, more_on_run):
             return
         self.agents = pol
+        if hasattr(pol, "goflow_role"):  # GO-FLOW: an accident's police car or recovery truck (cosim/goflow_priority.py)
+            def role(vid: str):
+                r = self.incidents.role.get(vid) if self.incidents is not None else None
+                return r[1] if r and r[1] in ("police", "tow") else None
+
+            pol.goflow_role = role
         frame = self.scen.frame
         for tls, ag in pol.junctions.items():  # where to draw: each green's stop lines, in CARLA's frame
             z = self.zs.get(tls, 0.0)
@@ -2111,6 +2138,11 @@ class FreeFly:
                 if cur.time - getattr(self, "_why_logged", -1e9) >= 60.0:     # (logged every SUMO minute)
                     self._why_logged = cur.time
                     log.info("standing: %s", self._why)
+                    # (9 Nov) cars taken off the road so far, by why (out of sight, as a last resort)
+                    im = self.incidents
+                    log.info("taken off the road: %s", {**(im.removals() if im is not None else {}),
+                                                          "population_excess": getattr(self.pop, "removed", 0),
+                                                          "trips_not_started": getattr(self.pop, "not_added", 0)})
                     if self.parking_motion is not None:
                         log.info("parking drives: %s", self.parking_motion.stats)
             self.places_live = self.demand.live(self.clock.seconds_of_day / 3600.0)
@@ -2390,8 +2422,7 @@ class FreeFly:
             models = a.goflow_prediction_model or models
             gf = (a.goflow_traffic_model or gf) if a.goflow_traffic else None
             self.forecast = GoflowPrediction(self.sumo.conn, model_dirs=models, goflow_model=gf,
-                                             demand_scale=a.demand_scale,
-                                             clock_speed=self.clock.speed)
+                                             demand_scale=a.demand_scale)
             log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
             self.forecast_anchors, self.forecast_dirs = self._approach_anchors(self.forecast.nodes)
             if self.agents is not None and "forecast" in getattr(self.agents, "on", ()):
@@ -4187,10 +4218,15 @@ def main(argv=None) -> int:
     ticker = pygame.time.Clock()
     ui = {"show": True, "follow_t": 0.0, "front": False}  # front: hide when CARLA is not in front (once loaded)
 
+    from cosim.hud import setup_text
+
+    setup = setup_text(args.controller, getattr(args, "demand_scale", 1.0))
+    log.info("signals and traffic: %s (--controller %s)", setup, args.controller)
+
     def state(**kw) -> HudState:
         _, el = scenario_sun(clock.seconds_of_day, lat, lon)
         return HudState(game_s=clock.game_s, vehicles=ff.city_vehicles, target=int(ff.target), paused=clock.paused,
-                        sun_elevation=el, speed=clock.speed, **kw)
+                        sun_elevation=el, speed=clock.speed, setup=setup, **kw)
 
     from cosim.cctv import CCTV, stamp_of
 

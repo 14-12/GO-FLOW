@@ -1,0 +1,22 @@
+<edges>
+  <edge id="W02J1" from="W0" to="J1" numLanes="2" speed="13.89"/>
+  <edge id="J12W0" from="J1" to="W0" numLanes="2" speed="13.89"/>
+  <edge id="J12J2" from="J1" to="J2" numLanes="2" speed="13.89"/>
+  <edge id="J22J1" from="J2" to="J1" numLanes="2" speed="13.89"/>
+  <edge id="J22J3" from="J2" to="J3" numLanes="2" speed="13.89"/>
+  <edge id="J32J2" from="J3" to="J2" numLanes="2" speed="13.89"/>
+  <edge id="J32E0" from="J3" to="E0" numLanes="2" speed="13.89"/>
+  <edge id="E02J3" from="E0" to="J3" numLanes="2" speed="13.89"/>
+  <edge id="N12J1" from="N1" to="J1" numLanes="2" speed="13.89"/>
+  <edge id="J12N1" from="J1" to="N1" numLanes="2" speed="13.89"/>
+  <edge id="S12J1" from="S1" to="J1" numLanes="2" speed="13.89"/>
+  <edge id="J12S1" from="J1" to="S1" numLanes="2" speed="13.89"/>
+  <edge id="N22J2" from="N2" to="J2" numLanes="2" speed="13.89"/>
+  <edge id="J22N2" from="J2" to="N2" numLanes="2" speed="13.89"/>
+  <edge id="S22J2" from="S2" to="J2" numLanes="2" speed="13.89"/>
+  <edge id="J22S2" from="J2" to="S2" numLanes="2" speed="13.89"/>
+  <edge id="N32J3" from="N3" to="J3" numLanes="2" speed="13.89"/>
+  <edge id="J32N3" from="J3" to="N3" numLanes="2" speed="13.89"/>
+  <edge id="S32J3" from="S3" to="J3" numLanes="2" speed="13.89"/>
+  <edge id="J32S3" from="J3" to="S3" numLanes="2" speed="13.89"/>
+</edges>

@@ -1,0 +1,21 @@
+# The full ADSP research environment (corridor experiments, PPO training, dashboard, notebook), as on the
+# priority-agent branch, with SUMO pinned to the project's 1.27.1. Not needed for the Town05 integration.
+eclipse-sumo==1.27.1
+traci==1.27.1
+sumolib==1.27.1
+libsumo==1.27.1
+gymnasium
+stable-baselines3
+sb3-contrib
+torch
+numpy
+pandas
+matplotlib
+seaborn
+langchain-core
+langchain-ollama
+pytest
+nbformat
+nbconvert
+ipykernel
+scipy==1.18.1

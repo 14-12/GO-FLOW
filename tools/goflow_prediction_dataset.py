@@ -84,12 +84,12 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     if purpose:
         from cosim.purposes import PurposeDemand, purpose_population
 
-        pop = purpose_population(Population)(c, pool, rids, curve, seed=seed)
+        pop = purpose_population(Population)(c, pool, rids, curve, seed=seed, mean_trip_s=140.0)
         pop.demand = PurposeDemand(c, a["clock_speed"], seed=seed)
         pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
         pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
     else:
-        pop = Population(c, pool, rids, curve, seed=seed)
+        pop = Population(c, pool, rids, curve, seed=seed, mean_trip_s=140.0)
     cands = [Candidate(m, i["base_type"].lower(), i["special_type"].lower(), int(i["generation"] or 1), ("0",),
                        i["has_lights"]) for m, i in models.items()]
     base = {t: (re.search(r'vClass="([^"]+)"', vt) or [None, "passenger"])[1] for t, vt in pool.vtypes.items()}
@@ -221,6 +221,9 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     return {"seed": seed, "steps": T, "wall_s": round(time.time() - t_wall), "vehicles_end": vehicles_end,
                 "stuck_over_300s": stuck, "stuck_lanes": dict(sorted(where.items(), key=lambda kv: -kv[1])[:6]),
                 "gridlock": stuck > 50, "incidents": len(im.done) + len(im.incidents), "agents_wired": wired,
+                # (9 Nov) ordinary cars taken off the road during the run, by why: a result that needed it says so
+                "removed": {**im.removals(), "population_excess": pop.removed, "trips_not_started": pop.not_added,
+                            "ring_excess": ring.removed if ring is not None else 0},
                 **({"agent_stats": dict(sumo.policy.stats)} if wired else {}),
                 **({"purposes": dict(pop.demand.stats, parked_end=len(pop.demand.parked),
                                      occupancy_end=pop.demand.occupancy())} if purpose else {})}
@@ -250,6 +253,8 @@ def main(argv=None) -> int:
     ap.add_argument("--careless-share", type=float, default=None)
     ap.add_argument("--no-buses", dest="buses", action="store_false")
     ap.add_argument("--no-ring", dest="ring", action="store_false")
+    ap.add_argument("--trips", choices=("purpose", "random"), default="purpose",
+                    help="(10 Nov) trips between the town's places, as the viewer (cosim/purposes.py; before: random)")
     ap.add_argument("--junction-blocker", type=float, default=60.0,
                     help="SUMO --ignore-junction-blocker (60 as agents_final_jb; 0 = off)")
     ap.add_argument("--graph", default=str(ROOT / "out" / "goflow_prediction" / "graph"))
@@ -288,7 +293,7 @@ def main(argv=None) -> int:
     meta = {"dt_s": args.dt, "horizons_s": list(HORIZONS_S), "source": "exact", "controller": args.controller,
                 "clock_speed": args.clock_speed, "start_hour": args.start_hour, "scale": args.scale, "minutes": args.minutes,
                 "warmup": args.warmup, "accidents": args.accidents, "careless_share": args.careless_share, "buses": args.buses,
-                "ring": args.ring, "junction_blocker": args.junction_blocker, "git_commit": git_commit(),
+                "ring": args.ring, "junction_blocker": args.junction_blocker, "trips": args.trips, "git_commit": git_commit(),
                 "tool": "tools/goflow_prediction_dataset.py", "runs": good}
     np.savez_compressed(
         out / "dataset.npz", nodes=np.array([n["node"] for n in nodes]),

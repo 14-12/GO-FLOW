@@ -79,10 +79,24 @@ def hhmm_to_s(text: str) -> float:
 
 
 class Population:
-    """Keeps the number of vehicles on SUMO's roads on the day's curve (see the module doc)."""
+    """The town's traffic on the day's curve.
+
+    flow=True (since 9 Nov, the default): new trips start at the curve's rate, curve / mean_trip_s trips a second
+    of simulation (the curve is that rate x mean_trip_s: Little's law, daily.population_curve), the hour of the day
+    read on the town's clock; one call of step() is one SUMO step (its length asked of SUMO once); every car drives its trip to its end and none is taken off. How many cars are on the
+    road then follows from how fast they get through, as in a real town. After a jump of the clock (F6 / F7, the
+    start) the town is filled at once along the routes (`anywhere`) up to the curve, as before.
+    flow=False (before 9 Nov): the number of cars kept on the curve, cars out of sight taken off when above it. At
+    clock 30 the evening curve falls faster than trips end, and the count took in the ring road's cars, the buses and
+    the emergency vehicles of the tools that passed them: about half as many cars as entered were taken off
+    (dev seeds 11-20, 313-388 in a 35-minute day, docs/WORKLOG.md 9 Nov)."""
+
+    JUMP_S = 300.0   # the town's clock moving more than this (town seconds) in one step: a jump, not time passing
+    MAX_PENDING_SHARE = 0.5  # trips SUMO could not put on the road yet, beyond this share of the curve: not added
 
     def __init__(self, conn, pool, route_ids: dict[str, list[str]], curve: list[float], seed: int = 1,
-                 max_add: int = 25, max_add_anywhere: int = 100, max_remove: int = 40):
+                 max_add: int = 25, max_add_anywhere: int = 100, max_remove: int = 40, flow: bool = True,
+                 mean_trip_s: float = 140.0):
         from cosim import daily
 
         self.daily = daily
@@ -98,6 +112,11 @@ class Population:
         self.pending = 0
         self.added = self.removed = 0
         self._k = 0
+        self.flow, self.mean_trip_s = flow, mean_trip_s
+        self.step_s: float | None = None   # SUMO's step length, asked once
+        self._sod: float | None = None
+        self._acc = 0.0
+        self.not_added = 0   # (flow) trips not started: SUMO's insertion queue already long (a town at a standstill)
         self.type_for = None  # (vehicle id, demand type) -> the type it is inserted with (cosim/vmodels.Typer)
 
     def typed(self, vid: str, t: str) -> str:
@@ -131,11 +150,13 @@ class Population:
                 log.debug("add %s failed: %s", vid, e)
 
     def step(self, running: dict, seconds_of_day: float, may_remove) -> float:
-        """After a SUMO step. running: SUMO id -> Vehicle; may_remove(vid, v): out of sight."""
+        """After a SUMO step. running: SUMO id -> Vehicle; may_remove(vid, v): out of sight (count mode only)."""
         target = self.target(seconds_of_day)
         self._k += 1
         if self._k % 4 == 1:
             self.pending = len(self.conn.simulation.getPendingVehicles())
+        if self.flow:
+            return self._flow_step(running, seconds_of_day, target)
         deficit = target - len(running) - self.pending
         if deficit > 0:
             anywhere = deficit > 0.25 * target  # far below (a jump in time): fill along the routes
@@ -155,6 +176,37 @@ class Population:
                         k -= 1
                     except Exception:  # noqa: BLE001 - already gone
                         pass
+        return target
+
+
+    def _flow_step(self, running: dict, seconds_of_day: float, target: float) -> float:
+        prev, self._sod = self._sod, seconds_of_day
+        d = 0.0 if prev is None else (seconds_of_day - prev) % 86400.0
+        if prev is None or d > self.JUMP_S:  # the start or a jump of the clock: the town filled at once
+            deficit = target - len(running) - self.pending
+            if deficit > 0.25 * target:
+                k = int(min(deficit, self.max_add_anywhere))
+                self.add(k, anywhere=True)
+                self.pending += k
+            self._acc = 0.0
+            return target
+        if self.step_s is None:
+            try:
+                self.step_s = float(self.conn.simulation.getDeltaT())
+            except Exception:  # noqa: BLE001
+                self.step_s = 0.5
+        # trips due in this step: simulation time, so a tool that holds the hour still (tools/check_overlaps.py) gets
+        # its traffic too (counted on the town's clock it got none: 10 Nov)
+        self._acc += target / self.mean_trip_s * self.step_s
+        k = int(self._acc)
+        if k <= 0:
+            return target
+        self._acc -= k
+        if self.pending > self.MAX_PENDING_SHARE * target:
+            self.not_added += k
+            return target
+        self.add(k)
+        self.pending += k
         return target
 
 
@@ -219,7 +271,7 @@ class Live:
         if sp.is_file():
             study = json.loads(sp.read_text(encoding="utf-8"))
         self.curve_source = "24 h study" if study and len(study.get("running_per_minute", [])) >= 1440 else "estimate"
-        curve = daily.population_curve(study, pool)
+        curve = daily.population_curve(study, pool, base=1.0)  # Town12: its own study (DEMAND_BASE is Town05's)
         self.sumo = SumoSide(scen.folder, a.controller, seed=a.seed, port=a.sumo_port,
                              extra_args=["--route-files", str(pool_file), "--end", "100000000"])
         self.all_tls = list(self.sumo.tls_ids)

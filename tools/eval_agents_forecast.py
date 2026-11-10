@@ -131,7 +131,7 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     models = Path(args["models"])
     a = {"minutes": args["minutes"], "warmup": args["warmup"], "start_hour": args["start_hour"],
          "clock_speed": GAME_SPEED, "dt": 30.0, "controller": variant, "scale": scale, "accidents": True,
-         "careless_share": None, "buses": True, "ring": True, "junction_blocker": 60.0,
+         "careless_share": None, "buses": True, "ring": True, "junction_blocker": 60.0, "trips": "purpose",
          "sumo_extra": ["--tripinfo-output", str(trip), "--tripinfo-output.write-unfinished", "true"]}
     nodes = json.loads((models / "graph" / "nodes.json").read_text(encoding="utf-8"))
     state: dict = {"ems": set(), "k": 0}
@@ -173,7 +173,7 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
          "ems_n": len(on_run), "ems": mean(on_run, "timeLoss"),
          "t_from": t_from, "rows": state["fc"].rows,      # the 30 s samples: long_queue at the summary
          "forecasts": state["fc"].forecasts, "stuck_over_300s": res["stuck_over_300s"], "gridlock": res["gridlock"],
-         "incidents": res["incidents"], "agent_stats": dict(pol.stats) if pol is not None and hasattr(pol, "stats") else None,
+         "incidents": res["incidents"], "removed": res.get("removed"), "agent_stats": dict(pol.stats) if pol is not None and hasattr(pol, "stats") else None,
          "wall_s": round(time.time() - t_wall)}
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(json.dumps(r, indent=1), encoding="utf-8")

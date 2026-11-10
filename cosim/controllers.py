@@ -515,6 +515,10 @@ def make(name: str):
         from cosim.agents import JunctionAgents, ObservedJunctionAgents
 
         return JunctionAgents() if name == "agents_v1" else ObservedJunctionAgents()
+    if re.split(r"[-+@]", name, maxsplit=1)[0] in ("agents_goflow", "agents_observed_goflow"):  # GO-FLOW priority agent
+        from cosim.goflow_priority import make as make_goflow
+
+        return make_goflow(name)
     if re.split(r"[-+@]", name, maxsplit=1)[0] in ("agents", "agents_observed"):  # step 3, version 2: on the actuated program
         from cosim.agents_actuated import make as make_agents
 

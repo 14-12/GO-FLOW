@@ -1,0 +1,14 @@
+<configuration>
+  <input>
+    <net-file value="../network/single.net.xml"/>
+    <route-files value="../routes/single_base.rou.xml"/>
+  </input>
+  <time><begin value="0"/><end value="1200"/><step-length value="1"/></time>
+  <processing>
+    <time-to-teleport value="-1"/>
+    <!-- Aucun véhicule ne peut ignorer un feu rouge -->
+    <ignore-junction-blocker value="-1"/>
+  </processing>
+  <random_number><seed value="42"/></random_number>
+  <report><no-step-log value="true"/><no-warnings value="false"/></report>
+</configuration>

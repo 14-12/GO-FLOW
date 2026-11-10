@@ -113,7 +113,11 @@ MERGE_BEFORE_M = 150.0       # drivers on the closed lane this far behind the wr
 HOLD_BEFORE_M = 12.0         # traffic held for people crossing stops from this far before them
 HOLD_CLEAR_M = 9.0           # ... or, if it can stop gently, no closer than this (where they cross)
 CLEAR_S = 12.0               # last wreck gone -> lane reopened (the officer has walked back to his car)
-UNJAM_S = 150.0              # a car standing this long out of sight is taken off the road (IncidentManager.unjam)
+UNJAM_S = 150.0              # a car standing this long gets a new way; twice as long, out of sight, it is taken off the
+                             # road as a last resort (IncidentManager.unjam; before 9 Nov: taken off at once, out of sight)
+WRECK_CLEAR_M = 2.5          # (10 Nov) a movement whose way through a junction passes this close to a wreck in it is blocked
+RELIEVE_REROUTE_S = 45.0     # (9 Nov) standing this long on an accident's road or a road into it: a new way
+RELIEVE_REMOVE_S = 240.0     # (9 Nov) still standing this long on the accident's own road, out of sight: taken off
 BLOCK_BEHIND_M = 36.0        # the closed lane is shut this far behind the wrecks (where the cone taper begins)
 BOX_STUCK_S = 40.0           # standing this long inside a junction: it edges through (IncidentManager.unjam)
 NUDGE_S = 8.0
@@ -520,9 +524,10 @@ class IncidentManager:
           waits for vehicles already in the junction (SUMO speed mode bit 5; it still gives way to those coming up to
           it), then drives as before. Cars standing in a junction each waiting for another are a deadlock of SUMO's
           junction model (seed 26 of the evaluation: three cars for 10 minutes, their exit empty).
-        * A car that has not moved for `after_s` gets a new way (rerouted on travel times) if it is in sight, and is
-          taken off the road if it is not (its driver gave up and turned off; the day's curve brings another
-          elsewhere). SUMO runs without teleporting, so a knot never undoes itself: after an incident at the evening
+        * A car that has not moved for `after_s` gets a new way (rerouted on travel times); still standing after
+          another `after_s`, out of sight, it is taken off the road as a last resort (its driver gave up and turned
+          off; the day's curve brings another elsewhere; counted in removals()). Before 9 Nov it was taken off at
+          once out of sight. SUMO runs without teleporting, so a knot never undoes itself: after an incident at the evening
           rush the town stayed locked for the rest of the run (115 cars standing over 2 minutes, 28 min,
           tools/check_accidents.py). Incident vehicles and buses are never taken."""
         c = self.conn
@@ -541,6 +546,7 @@ class IncidentManager:
             if v.speed > 0.3 or vid in self.role or vid.startswith("pt_") or (self.protected(vid) and not depot_car) \
                     or (parked is not None and vid in parked):
                 self.jammed.pop(vid, None)
+                getattr(self, "unjam_tries", {}).pop(vid, None)
                 getattr(self, "green_wait", {}).pop(vid, None)
                 getattr(self, "line_seen", {}).pop(vid, None)
                 continue
@@ -598,10 +604,16 @@ class IncidentManager:
                 continue  # (a depot's vehicle is never taken off: its depot counts on it)
             if now - t0 < after_s:
                 continue
-            if self.visible is not None and self.visible(v.x, v.y):
+            # (9 Nov) a new way first, whether in sight or not; taken off only still standing after another after_s,
+            # out of sight (before: taken off at once out of sight, 302 cars in 23 minutes of the evening rush while
+            # the coordinated signals skipped greens, seed 11)
+            tries = self.__dict__.setdefault("unjam_tries", {})
+            in_sight = self.visible is not None and self.visible(v.x, v.y)
+            if in_sight or tries.get(vid, 0) < 1:
+                tries[vid] = tries.get(vid, 0) + 1
                 try:
                     c.vehicle.rerouteTraveltime(vid, currentTravelTimes=True)
-                    self.stats["rerouted_in_sight"] = self.stats.get("rerouted_in_sight", 0) + 1
+                    self.stats["unjam_rerouted"] = self.stats.get("unjam_rerouted", 0) + 1
                 except Exception:  # noqa: BLE001
                     pass
                 # (3 Nov) the quickest way by travel times may need a lane it cannot reach from where it stands (the
@@ -1782,6 +1794,112 @@ class IncidentManager:
                     log.debug("reroute %s: %s", vid, e)
         inc.rerouted = done
 
+    def _blocked_links(self, inc: Incident) -> tuple[str | None, set]:
+        """(10 Nov) A crash inside a junction: the junction and the (from lane, to edge) movements whose way through it
+        passes within WRECK_CLEAR_M of a wreck standing there (by the internal lanes' shapes)."""
+        cached = getattr(inc, "blocked_links", None)
+        if cached is not None:
+            return cached
+        wrecks = [w for w in inc.wrecks if not w.removed and w.lane.startswith(":")]
+        if not wrecks:
+            return None, set()
+        junction = wrecks[0].lane[1:].rsplit("_", 2)[0]
+        try:
+            node = self.net.getNode(junction)
+        except Exception:  # noqa: BLE001
+            return None, set()
+        pts = []  # each wreck's front (SUMO's position) and middle
+        for w in wrecks:
+            a = math.radians(w.angle)
+            pts += [(w.x, w.y), (w.x - math.sin(a) * w.length / 2.0, w.y - math.cos(a) * w.length / 2.0)]
+        blocked = set()
+        for conn in node.getConnections():
+            via = conn.getViaLaneID()
+            if not via:
+                continue
+            try:
+                shape = self.net.getLane(via).getShape()
+            except Exception:  # noqa: BLE001
+                continue
+            near = any(math.hypot(x - px, y - py) <= WRECK_CLEAR_M for x, y in shape for px, py in pts) or \
+                any(w.lane == via for w in wrecks)
+            if not near and len(shape) >= 2:  # between the shape's points too
+                for (x0, y0), (x1, y1) in zip(shape, shape[1:]):
+                    for px, py in pts:
+                        dx, dy = x1 - x0, y1 - y0
+                        t = max(0.0, min(1.0, ((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy or 1.0)))
+                        if math.hypot(x0 + t * dx - px, y0 + t * dy - py) <= WRECK_CLEAR_M:
+                            near = True
+            if near:
+                blocked.add((conn.getFromLane().getID(), conn.getTo().getID()))
+        inc.blocked_links = (junction, blocked)
+        return inc.blocked_links
+
+    def _reroute_junction(self, inc: Incident) -> None:
+        """(10 Nov) Drivers coming up to a junction where a wreck stands in the way of their movement take another way
+        out of it, one their own lane leads to and the wreck leaves free, then on to where they were going (as a
+        driver does when he sees it; a navigation app would have told those further back: _divert). Before, they
+        drove up to the wreck and stood at the green until taken off as a last resort: most of the cars taken off on
+        two dev seeds stood on the roads into junction 979 behind a crash in it."""
+        junction, blocked = self._blocked_links(inc)
+        if not blocked:
+            return
+        c = self.conn
+        done = inc.__dict__.setdefault("junction_rerouted", set())
+        try:
+            node = self.net.getNode(junction)
+        except Exception:  # noqa: BLE001
+            return
+        free: dict[str, list[str]] = {}
+        for conn in node.getConnections():
+            key = (conn.getFromLane().getID(), conn.getTo().getID())
+            if key not in blocked and conn.getFromLane().allows("passenger"):
+                free.setdefault(key[0], []).append(key[1])
+        for e in node.getIncoming():
+            eid = e.getID()
+            try:
+                ids = c.edge.getLastStepVehicleIDs(eid)
+            except Exception:  # noqa: BLE001
+                continue
+            for vid in ids:
+                if vid in done or vid in self.role or vid.startswith(("inc", "pt_")) or self.protected(vid):
+                    continue
+                try:
+                    if c.vehicle.getStopState(vid):
+                        continue
+                    lane = c.vehicle.getLaneID(vid)
+                    route = list(c.vehicle.getRoute(vid))
+                    i = c.vehicle.getRouteIndex(vid)
+                except Exception:  # noqa: BLE001
+                    continue
+                if route[i] != eid or i + 1 >= len(route) or (lane, route[i + 1]) not in blocked:
+                    continue
+                done.add(vid)
+                best = None
+                for alt in sorted(set(free.get(lane, []))):
+                    try:
+                        r = self._route(alt, route[-1], c.vehicle.getTypeID(vid), vid) if alt != route[-1] else None
+                    except Exception:  # noqa: BLE001
+                        continue
+                    if r is not None and not r.edges:
+                        continue
+                    cost = r.travelTime if r is not None else 0.0
+                    if best is None or cost < best[0]:
+                        best = (cost, [alt] if r is None else list(r.edges))
+                if best is None:  # no free way from its lane to where it was going: it goes somewhere else
+                    for alt in sorted(set(free.get(lane, []))):
+                        on = self._onwards(alt, c.vehicle.getTypeID(vid).split("@" + vid)[0])
+                        if on and on[0] == alt:
+                            best = (0.0, on)
+                            break
+                if best is None:
+                    continue
+                try:
+                    c.vehicle.setRoute(vid, [eid] + best[1])
+                    self.stats["junction_rerouted"] = self.stats.get("junction_rerouted", 0) + 1
+                except Exception as e:  # noqa: BLE001
+                    log.debug("junction reroute %s: %s", vid, e)
+
     def _detour_home(self, vid: str, starts: list, home: str, avoid: str):
         """(cost, edges): from one of `starts` to a road 300-900 m away not through `avoid`, then to `home`; None."""
         c = self.conn
@@ -2030,28 +2148,52 @@ class IncidentManager:
             self.squeezed.pop(o, None)
 
     def _relieve(self, inc: Incident, now: float, vehicles: dict) -> None:
-        """A queue behind an incident that does not move, out of sight, dissolves: those drivers turned off somewhere
-        (they are taken off the road; the day's curve brings others elsewhere). Without it the queue backed up across
-        junctions and locked the town at the evening rush, no way through for the police either (SUMO alone,
-        tools/check_accidents.py). In sight the queue stays as it is."""
+        """Drivers held up by an accident turn off, as drivers do: standing RELIEVE_REROUTE_S on the accident's road
+        or a road into it, a driver takes another way (the accident's roads count as slow: _divert), from a lane that
+        leads on (_keep_lane). Only as a last resort, still standing RELIEVE_REMOVE_S on the accident's own road and
+        out of sight, a driver is taken off the road (counted: removals()). Without anything the queue backed up across
+        junctions and locked the town at the evening rush (SUMO alone, tools/check_accidents.py).
+        Before 9 Nov any car standing 25 s on those roads or on any road into them was taken off at once, out of sight,
+        even one waiting at a red light there: 79-103 cars in 20 minutes of the evening rush, seed 11."""
         c = self.conn
         edges = set(getattr(inc, "diverted", []))
         feeders = {f.getID() for e in edges for f in self.net.getEdge(e).getIncoming()}
+        rerouted = self.__dict__.setdefault("relieve_rerouted", set())
+        parked = getattr(self, "parked", None) or {}
         for vid, v in vehicles.items():
-            if vid in self.role or vid.startswith("pt_") or self.protected(vid):
+            # (10 Nov) a car parked at a place is not held up: 6 of 21 cars taken off as "stuck" on two dev seeds were
+            # parked in a car park near an accident (cosim/purposes.py)
+            if vid in self.role or vid.startswith("pt_") or self.protected(vid) or vid in parked:
                 self.standing.pop(vid, None)
                 continue
             if v.speed > 0.3:
                 self.standing.pop(vid, None)
+                rerouted.discard(vid)
                 continue
             t0 = self.standing.setdefault(vid, now)
-            if now - t0 < 25.0:
+            if now - t0 < RELIEVE_REROUTE_S:
                 continue
             try:
                 road = c.vehicle.getRoadID(vid)
             except Exception:  # noqa: BLE001
                 continue
             if road not in edges and road not in feeders:
+                continue
+            try:
+                if c.vehicle.getStopState(vid) & 1 or not c.vehicle.getLaneID(vid):  # at a stop, or off the road
+                    continue
+            except Exception:  # noqa: BLE001
+                continue
+            if vid not in rerouted:
+                rerouted.add(vid)
+                try:
+                    c.vehicle.rerouteTraveltime(vid, currentTravelTimes=False)
+                    self.stats["relieve_rerouted"] = self.stats.get("relieve_rerouted", 0) + 1
+                except Exception:  # noqa: BLE001
+                    pass
+                self._keep_lane(vid, near_end=12.0)
+                continue
+            if road not in edges or now - t0 < RELIEVE_REMOVE_S:
                 continue
             if self.visible is not None and self.visible(v.x, v.y):
                 continue
@@ -2061,6 +2203,12 @@ class IncidentManager:
                 self.standing.pop(vid, None)
             except Exception:  # noqa: BLE001
                 pass
+
+    def removals(self) -> dict:
+        """(9 Nov) Ordinary cars taken off the road so far, by why: still standing behind an accident (_relieve) and
+        still standing in a knot after a new way (unjam). Every run reports them: a result that needed cars taken
+        off says so."""
+        return {"behind_accident": self.stats.get("relieved", 0), "knots": self.stats.get("unjammed", 0)}
 
     def _advance(self, inc: Incident, now: float, vehicles: dict) -> None:
         c = self.conn
@@ -2074,6 +2222,7 @@ class IncidentManager:
             self._merge(inc)
         if inc.phase not in ("clearing", "closed") and int(now * 2) % 4 == 3:  # every 2 s
             self._reroute_turns(inc)
+            self._reroute_junction(inc)
         if inc.phase not in ("clearing", "closed") and int(now * 2) % 4 == 1:  # every 2 s
             self._recentre(inc, now, vehicles)
         if inc.phase not in ("clearing", "closed") and int(now * 2) % 20 == 7:  # every 10 s: buses come and go
