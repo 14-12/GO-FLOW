@@ -3083,3 +3083,102 @@ tests in tests/test_town05_agents.py (39 passed on the PC).
 At the peak the thread is now busy 45 % of the time instead of 81 %. The rest, at 490 vehicles: SUMO's own step and
 the cameras 1.8 s, the incidents 1.2 s (mostly `_divert` reading every route every 5 s per accident), the population
 0.8 s, the ground 0.4 s. CARLA's frame rate is the GPU's and did not change.
+
+## 10 Nov (evening): the ring road carrying the town's trips, tried, not kept
+
+**Why.** For every car to have a trip with an end (and so a trip-time estimate), the ring road's own cars (looping,
+appearing and leaving out of sight, cosim/highway.py) would go, and the town's trips would use the ring where it is
+quicker, as drivers would (`router_knows_ring`: the trips' route search knows the ring's 80 km/h; HighwayTraffic with
+peak 0 has no cars of its own). Option `ring_trips` in tools/goflow_prediction_dataset.one_run (off by default).
+
+**Measured.** 07:00, dev seeds 11-20, 30 min, agents_observed, before -> after:
+
+| | Before (ring cars) | After (ring as real trips) |
+|---|---|---|
+| cars on the ring | 26.6 | 2.8 |
+| town share standing | 0.63 | 0.69 |
+| trips done | 323 | 289 |
+| cars taken off | 14.3 | 31.6 |
+
+Few trips are quicker by the ring (2.8 cars on it instead of 26.6), and the town's own roads take the rest: more
+standing, fewer trips done, twice the cars taken off. Not kept: `ring_trips` stays off. Still the user's decision: give
+the ring cars a planned trip along the ring (appear and leave out of sight as now) so they too have an estimate, or
+leave them without one.
+
+## 10 Nov (evening): every car's trip time estimated when it sets off
+
+**What (the user's request).** Every car but buses and trucks has an estimate of its trip, from where it sets off to
+where it ends, made once at the start as a navigation app would; the follow panel shows it. `cosim/trip_estimates.py`
+(TripEstimates): a trip runs from a departure or pulling out of a parking space to parking, a stop at its route's end
+or arrival. The estimate: each road's typical time by the road taken next (its signal's wait in it) from the table of
+past trips, the first road from where the car is, the last at its limit up to the stop; a road the table does not know
+at its limit. A new way keeps the estimate (noted); a new destination ends the trip ("extended") and starts another.
+Never re-estimated on the way. Wired into the viewer (cosim/freefly.py, stepped right after SUMO's step) and the panel
+(cosim/route_minimap.py: ITS TRIP: DRIVING / DONE IN, ESTIMATED AT START, EST. TIME LEFT / OVER ESTIMATE / OFF BY, from
+X to Y · N m left; the agent's own tiles left out when a trip estimate exists, as asked). The agents decide nothing
+from it; SUMO's real times only grade it (tools/eval_trip_estimates.py).
+
+**A table from the viewer's own traffic.** tools/route_delay_table.py: --start-hours, --trips purpose, --ring-trips,
+--junction-blocker, and `--road-times live`: each car's time on a road read from the run's own step (the road every
+car is on, which SUMO sends with each step), filed by the road taken next, instead of SUMO's route output. Why: the
+route output has only cars that finished (cars parked at home never "arrive": the samples leant on through traffic
+and visitors), and with exit times SUMO quit twice on train runs ("vector too long", seed 105 from 12:00, seed 106
+from 07:00; the same runs pass with the live reading). Left out: a road where the car parked or stopped, the first
+road of each trip (it starts part way along it), a road left by teleporting, its last road. On seed 101 from 07:00 the
+two readings agree where both have the movement (79 movements with 5+ samples: median difference 0.0 s) and the live
+one has twice the samples (2195 against 1114). Built from TRAIN seeds 101-110, x1, from 07:00, 12:00, 17:00,
+purpose trips, junction blocker 0 as the viewer: models/trip_estimates/movement_times.json, 207 movements, 49 495
+samples. tests/test_route_delay_table.py (3).
+
+**A fault found by the accuracy run.** SUMO says a car's parking ended one step before it drops that stop: the trip
+opened at that step took the space it was leaving as its destination (same road, same spot, 0 s). 43 % of the trips
+to a place on the dev seeds (4220 of 9820), real time ~112 s, estimate 0. Seen car by car in one dev run (the stop
+list at the trip's start: the space left first, the place it goes to second). Fixed: while the car still stands at
+its stop, that stop is skipped (`getStopState & 1`); tests/test_trip_estimates.py (5).
+
+**Accuracy, dev seeds 11-20 from 07:00, 12:00, 17:00** (30 min each after 5 min warm-up, agents_observed; trips
+that ended parked, at a stop or at their route's end; error = real - estimate; tools/eval_trip_estimates.py, the
+same trips scored again with each table by `--rescore`, which gives a run's own estimates back exactly):
+
+| | Trips | Median abs error | Median error | Within 20 % | Within 60 s |
+|---|---|---|---|---|---|
+| before the fix (new table, mean per road) | 13 009 | 55.5 s | +6.7 s | 0.22 | 0.53 |
+| new table, mean per road | 14 968 | 33.1 s | -16.0 s | 0.36 | 0.74 |
+| new table, median per road | 14 968 | 27.1 s | +5.0 s | 0.39 | 0.78 |
+| old table (models/route_guidance), mean | 14 968 | 35.9 s | -23.1 s | 0.34 | 0.73 |
+| **old table, median per road (kept)** | 14 968 | 27.2 s | -1.2 s | 0.41 | 0.80 |
+
+The sum of each road's mean overestimates (a signal's wait is skewed: a few long waits); the median per road does not.
+Old against new table, both with the median, paired by run: the old is better in 22 of 30 runs within 20 % and 26 of
+30 within 60 s, at each start hour; the median error ties (15 of 30). The old table was made from random trips at
+x1, x2 and x3 traffic: its slower roads likely make up for what the estimate leaves out (slowing into a space), so
+the edge is partly luck; it is the one measured better. Kept: the old table, each road's median
+(TripEstimates(stat="median_s"), the default); the new table stays for later work. Selected on dev; no test seeds
+opened.
+
+With it: trips to a place 0.43 within 20 % (median error +2.9 s), through traffic 0.38 (-10.1 s); trips that took
+60-180 s 0.51 within 20 %, 0.91 within 60 s; under 60 s 0.17 within 20 % (one red light is more than 20 %); 3-10 min
+0.34 (these are the slow ones: an accident, a long queue; +61 s). The town hour changes little (0.31-0.46 within
+20 %): no table by hour needed. Trips given another way (709): 0.32 within 20 %, +40 s.
+
+**keep_driving.** A car gets a new destination only when its trip would end in view (before: also whenever the town
+had fewer cars than its curve). Viewer at the evening peak, `--set-time 17:30 --clock-speed 1 --demo 900`, before /
+after: trips extended 710 -> 652, vanished in view 3 -> 1, vehicles in town at 17:45 503 -> 507 (the same fill minute
+by minute). Most new destinations were given in view anyway: cars without a place to park (through traffic,
+emergency vehicles) about to end in front of the camera; their trip ends "extended" and a new one starts with its own
+estimate. Ring-road cars are not touched (routes of 200 laps, `_keep_round`). Tests on the PC: 51 passed
+(test_trip_estimates, test_route_guidance, test_town05_agents, test_pose_proc).
+
+**In CARLA** (tools/freefly_follow_demo.bat: a car followed, a breakdown staged on its way on purpose). A car to
+Brasserie du Nord parked in 2:23 against 2:19 estimated (panel: DONE IN 2:23, ESTIMATED AT START 2:19, OFF BY
++0:04). Two panel faults seen and fixed: the trip named a shared car park's main place ("to Hôpital" for a car going
+to Brasserie du Nord; now the place of the car's own trip plan, `plan_names`); after the town changed the followed
+car's route (an accident's detour) the panel said "0 m left" (the route agent read SUMO's route index against its old
+list; now its way left is SUMO's route, `RouteGuide._follow_sumo`; a SUMO test for it in tests/test_route_guidance.py).
+At 08:00 a car estimated 2:51 drove over 4 min: a detour at 0:56, then the demo's staged breakdown on its next roads
+and a severe crash beside them; the estimate is not made again on the way (as asked), the panel says OVER ESTIMATE.
+Tests on the PC: 57 passed (test_trip_estimates, test_route_guidance with its SUMO tests, test_route_delay_table,
+test_town05_agents, test_pose_proc).
+
+Job runner: a job's `set` stays for the jobs after it (one window calls them all): the follow demo first ran at 17:30
+with the peak demo's FREEFLY_ARGS. Jobs now start with `setlocal`.

@@ -138,3 +138,22 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
   stood still; the clock's x30 is not the cause (it only sets the time of day).
 * The viewer's SUMO thread at the evening peak: busy 81 % -> 45 % (the simulated cameras read SUMO's subscriptions,
   the ground of standing vehicles kept; the same trips, checked); the "'half'" warning gone (`quantize=16`).
+
+## 9. Evening of 10 Nov
+
+* Every car's trip time estimated when it sets off (the user's request; buses and trucks left out):
+  `cosim/trip_estimates.py`, the follow panel's ITS TRIP rows (driving / done in, estimated at start, time left /
+  off by). Dev seeds 11-20: median error 27 s on trips of 112 s (median), 41 % within 20 %, 80 % within 60 s, no bias.
+  Kept: the old table (`models/route_guidance/movement_times.json`) with each road's median; the table from the
+  viewer's own traffic (`models/trip_estimates/movement_times.json`, `route_delay_table.py --road-times live`) is
+  a little worse on dev and kept for later.
+* Fixed on the way: a trip opened as a car pulled out of its space took that space as its destination (43 % of the
+  trips to a place estimated 0 s); a shared car park named the wrong place on the panel; the panel said "0 m left"
+  after a detour (the way left is now SUMO's route).
+* keep_driving: new destinations only in view (710 -> 652 in 15 min at the evening peak; vanished in view 3 -> 1).
+* The ring road carrying the town's trips: tried, not kept. Still the user's decision: ring cars with a planned trip
+  along the ring (so they have an estimate too), or none.
+* The user asked why a followed car estimated 2:51 drove over 4 min: a detour and the demo's staged breakdown on its
+  way. Offered: a second, live "time left" beside the start estimate (the user's decision).
+* Job runner: a job's `set` stays for the next jobs (the runner calls them in one window): start each job with
+  `setlocal`.

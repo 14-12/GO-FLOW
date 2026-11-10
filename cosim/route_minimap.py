@@ -489,17 +489,21 @@ class MiniMap:
         arrived = snap["status"] == "arrived"
         if park is not None:
             rows.append((self._park_row(snap, park, iw), 6))
-        if snap.get("guided"):
+        trip = snap.get("trip")
+        if trip is not None:
+            rows.extend(self._trip_rows(trip, iw, None if arrived else snap.get("left_m")))
+        agent_at = len(rows)   # the agent's rows start here ("IT SEES" heads them)
+        if snap.get("guided") and trip is None:   # (no trip estimate: the agent's own times, from where you pressed F)
             tw = (iw - 16) // 3
             row = pygame.Surface((iw, 54))
             row.fill(BG)
             if arrived:
                 row.blit(self._tile("ARRIVED IN", mmss(snap.get("real_s")), GREEN, tw), (0, 0))
             else:
-                row.blit(self._tile("ON THE WAY", mmss(snap.get("elapsed_s")), TEXT, tw), (0, 0))
+                row.blit(self._tile("SINCE YOU FOLLOWED", mmss(snap.get("elapsed_s")), TEXT, tw), (0, 0))
             typ = snap.get("est_typical_s")
             est = typ if typ is not None else snap.get("est_free_s")
-            row.blit(self._tile("AGENT'S ESTIMATE*", mmss(est), BLUE, tw), (tw + 8, 0))
+            row.blit(self._tile("AGENT FROM HERE*", mmss(est), BLUE, tw), (tw + 8, 0))
             if arrived and snap.get("real_s") is not None and est:
                 off = snap["real_s"] - est
                 col = GREEN if abs(off) <= 0.2 * max(snap["real_s"], 1.0) else AMBER
@@ -510,11 +514,12 @@ class MiniMap:
                 row.blit(self._tile("LEFT", "--" if left is None else f"{left:.0f} m", TEXT, tw), (2 * tw + 16, 0))
             rows.append((row, 6))
             if typ is not None:
-                foot = (f"* from where it was picked, with the typical waits at signals (past trips); free flow "
+                foot = (f"* the agent's: from where you pressed F, typical waits at signals in; free flow "
                         f"{mmss(snap.get('est_free_s'))}")
             else:
-                foot = "* free-flow time from where it was picked: no waiting at signals in it"
+                foot = "* the agent's: free flow from where you pressed F, no waiting at signals in it"
             rows.append((self.f_lab.render(foot, True, MUTED), 8))
+        if snap.get("guided"):
             ev = (snap.get("events") or [])[-1:] or []
             if ev:
                 e = ev[0]
@@ -570,7 +575,7 @@ class MiniMap:
                 t = self.f_lab.render(name, True, TEXT if on else MUTED)
                 row.blit(t, (x + 12, 2))
                 x += 22 + t.get_width()
-            rows.insert(0, (row, 6))
+            rows.insert(agent_at, (row, 6))
         elif snap.get("pending"):
             rows.append((self.f_bold.render("PLANNING", True, BLUE), 2))
             rows.append((self.f_txt.render("The agent is reading the car's trip and the alerts...", True, MUTED), 1))
@@ -586,6 +591,55 @@ class MiniMap:
             s.blit(r, (0, y))
             y += r.get_height() + g
         return s
+
+    @staticmethod
+    def _trip_key(trip: dict | None):
+        if trip is None:
+            return None
+        return (int(trip.get("elapsed_s") or 0), trip.get("est_s"), trip.get("ended"), len(trip.get("changes") or ()),
+                trip.get("start"), trip.get("dest"))
+
+    def _trip_rows(self, trip: dict, iw: int, left_m: float | None = None) -> list:
+        """(10 Nov) The car's own trip, from where it set off: driving for, the estimate made then (cosim/
+        trip_estimates.py, never made again), and how it stands against it; where from and to; when the town gave it
+        another way."""
+        rows = []
+        tw = (iw - 16) // 3
+        row = pygame.Surface((iw, 54))
+        row.fill(BG)
+        ended = trip.get("ended")
+        done = ended in ("parked", "arrived", "stopped")
+        el, est = trip.get("elapsed_s"), trip.get("est_s")
+        row.blit(self._tile("ITS TRIP: DONE IN" if done else "ITS TRIP: DRIVING", mmss(el), GREEN if done else TEXT,
+                            tw), (0, 0))
+        row.blit(self._tile("ESTIMATED AT START", mmss(est), BLUE, tw), (tw + 8, 0))
+        if el is not None and est:
+            off = el - est
+            if done:
+                col = GREEN if abs(off) <= 0.2 * max(el, 1.0) else AMBER
+                row.blit(self._tile("OFF BY", ("+" if off >= 0 else "-") + mmss(abs(off)), col, tw), (2 * tw + 16, 0))
+            elif off > 0:
+                row.blit(self._tile("OVER ESTIMATE", "+" + mmss(off), AMBER, tw), (2 * tw + 16, 0))
+            else:
+                row.blit(self._tile("EST. TIME LEFT", mmss(-off), GREEN, tw), (2 * tw + 16, 0))
+        rows.append((row, 4))
+        frm = trip.get("start") or "the road it set off on"
+        to = trip.get("dest") or "the end of its route"
+        left = f"  ·  {left_m:.0f} m left" if left_m is not None and not done else ""
+        rows.append((self.f_lab.render(f"from {frm} to {to}{left}", True, TEXT), 2))
+        share = trip.get("table_share") or 0.0
+        how = ("typical times of past trips, waits at signals in" if share >= 0.5 else
+               "mostly free-flow times (few past trips on its roads)")
+        rows.append((self.f_lab.render(f"estimated when it set off: {how}", True, MUTED), 2))
+        ch = [c for c in trip.get("changes") or [] if c[1] != "new destination given on the way"]
+        if any(c[1] == "new destination given on the way" for c in trip.get("changes") or []):
+            rows.append((self.f_lab.render("its first destination was changed on the way: this is its new trip",
+                                           True, AMBER), 2))
+        if ch:
+            rows.append((self.f_lab.render("given another way at " + ", ".join(mmss(t) for t, _ in ch[-3:]), True,
+                                           AMBER), 2))
+        rows[-1] = (rows[-1][0], 10)
+        return rows
 
     def _header(self, snap: dict, view: str) -> pygame.Surface:
         purpose = PURPOSE.get(snap.get("purpose") or "")
@@ -697,7 +751,8 @@ class MiniMap:
                snap.get("left_m"), tuple((e["t"], e["text"]) for e in snap.get("events") or ()),
                tuple((o["cost"],) for o in snap.get("options") or ()), tuple(snap.get("signals") or ()),
                snap.get("explain"), snap.get("real_s"), snap.get("est_typical_s"),
-               tuple(sorted((snap.get("inputs") or {}).items())), view)
+               tuple(sorted((snap.get("inputs") or {}).items())), view, snap.get("guided"),
+               self._trip_key(snap.get("trip")))
         if key != self._info_key:
             self._info_key = key
             self._info = (self._header(snap, view), self._info_block(snap, view, park))

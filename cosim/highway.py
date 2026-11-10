@@ -35,6 +35,20 @@ MIN_LEN_M = 400.0      # a ring edge: this long at least ...
 MIN_LANES = 3          # ... with this many lanes for cars
 
 
+def router_knows_ring(router, loops, speed: float = HIGHWAY_SPEED) -> int:
+    """(10 Nov) A route search (agents/route_recommendation's Router: the town's trips, cosim/purposes.py) that knows
+    the ring's limit (set in SUMO by HighwayTraffic.setup; the network file has the town's 50 km/h), so trips use the
+    ring where it is quicker, as drivers would. Returns the roads changed."""
+    n = 0
+    for lp in loops:
+        for e in lp:
+            r = router.roads.get(e)
+            if r is not None:
+                r.speed = speed
+                n += 1
+    return n
+
+
 def find_loops(net) -> list[list[str]]:
     """The ring's loops: chains of long multi-lane edges (MIN_LEN_M, MIN_LANES lanes for cars) that lead straight
     on into each other and back to the first. sumolib net. Town05: [['35', '37'], ['-36', '-38']]."""
@@ -166,6 +180,8 @@ class HighwayTraffic:
                         agent.min_dur[k] = min(agent.min_dur[k], max_s)
 
     def target(self, seconds_of_day: float) -> int:
+        if self.peak <= 0:   # (10 Nov) no cars of its own: the ring carries the town's trips (router_knows_ring)
+            return 0
         return max(MIN_PER_LOOP, round(self.peak * min(max(self.share(seconds_of_day), 0.0), 1.0)))
 
     def is_ring_car(self, vid: str) -> bool:

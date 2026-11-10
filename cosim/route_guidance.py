@@ -243,6 +243,8 @@ class RouteGuide:
                 t.last_trail_t = cur.time
         try:
             t.idx = conn.vehicle.getRouteIndex(t.vid)
+            if t.guided:
+                self._follow_sumo(t, conn)
             road = conn.vehicle.getRoadID(t.vid)
             t.signals = [(tl, d, st) for tl, _i, d, st in conn.vehicle.getNextTLS(t.vid)][:4]
         except Exception:  # noqa: BLE001 - gone in this step
@@ -265,6 +267,24 @@ class RouteGuide:
                 if key != t.last_key or cur.time - t.last_plan_t >= REPLAN_S:
                     self._plan(t, cur.time, conn, road, alerts, key)
         self._publish(cur.time)
+
+    @staticmethod
+    def _follow_sumo(t: Trip, conn) -> None:
+        """(10 Nov) The town may give the followed car another way (an accident's detour, a knot undone): its route
+        is then SUMO's, so the way left, its length and the arrival go by the way the car really drives (SUMO's route
+        index read against the old list: the panel said "0 m left" after a detour)."""
+        try:
+            sroute = list(conn.vehicle.getRoute(t.vid))
+        except Exception:  # noqa: BLE001 - gone in this step
+            return
+        if sroute == t.route + t.rest:
+            return
+        try:
+            j = sroute.index(t.dest, max(t.idx, 0))
+        except ValueError:
+            t.route, t.rest = sroute, []
+            return
+        t.route, t.rest = sroute[:j + 1], sroute[j + 1:]
 
     def _stage(self, roads: list[str], cur, conn, im) -> dict | None:
         from cosim.incidents import BREAKDOWN_DECEL
@@ -480,6 +500,8 @@ class RouteGuide:
             "events": [dict(e) for e in t.events[-4:]], "xy": t.xy, "angle": t.angle, "speed": t.speed,
             "trail": list(t.trail), "signals": list(t.signals), "explain": t.explain, "inputs": dict(self.inputs),
             "purpose": t.purpose, "from_place": t.from_place, "to_place": t.to_place, "stop_area": t.stop_area,
+            # (10 Nov) the car's own trip, estimated when it set off (cosim/trip_estimates.py; None: a bus, a truck)
+            "trip": (self.estimates.snapshot(t.vid, now) if getattr(self, "estimates", None) is not None else None),
         }
 
 

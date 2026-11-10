@@ -114,6 +114,7 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
     from cosim.agents_actuated import wire
 
     wired = wire(sumo.policy, sumo, seed, lambda: [v for v in list(im.role) if im.on_run(v)])
+    sumo.population = pop   # (10 Nov) for a hook that needs the town's trips (tools/eval_trip_estimates.py)
     if hook is not None:  # tools/eval_agents_forecast.py: the forecasters in the loop, its own measurements
         hook(sumo, im)
     bus = ring = None
@@ -131,9 +132,14 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         net = sumolib.net.readNet(str(scen.net_file))
         loops = find_loops(net)
         top = max(curve) or 1.0
+        ring_trips = a.get("ring_trips", False)   # (10 Nov) the ring carries the town's trips, no cars of its own
+        if ring_trips and purpose:
+            from cosim.highway import router_knows_ring
+
+            router_knows_ring(pop.demand.places.router, loops)
         ring = HighwayTraffic(c, loops, lambda s_: daily.target_at(curve, s_) / top,
                               types=[(t, n) for t, n in pool.per_hour.items() if base.get(t) != "bus"],
-                              type_for=pop.type_for, seed=seed + 3,
+                              type_for=pop.type_for, seed=seed + 3, **({"peak": 0} if ring_trips else {}),
                               lengths={e: net.getEdge(e).getLength() for lp in loops for e in lp}, policy=sumo.policy)
         ring.protected = im.protected
         ring.setup()

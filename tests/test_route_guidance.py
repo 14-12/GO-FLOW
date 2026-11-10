@@ -139,6 +139,41 @@ def test_the_followed_car_takes_the_agents_route_avoids_a_reported_crash_and_arr
         c.close()
 
 
+@pytest.mark.slow
+def test_the_way_left_is_the_way_sumo_drives_after_the_town_changes_it(tmp_path):
+    """(10 Nov) An accident's detour (cosim/incidents._divert) sets the followed car's route in SUMO: the panel's way
+    left and its length follow it (before: SUMO's route index read against the agent's old list, "0 m left")."""
+    guide = rg.RouteGuide(log_dir=tmp_path)
+    c = _sumo()
+    try:
+        for _ in range(240):
+            c.simulationStep()
+        r = guide.router
+        pick = None
+        for vid in c.vehicle.getIDList():
+            route, idx = list(c.vehicle.getRoute(vid)), c.vehicle.getRouteIndex(vid)
+            if len(route) - idx >= 6 and c.vehicle.getRoadID(vid) == route[idx]:
+                mid = route[idx + 3]
+                alt = r.best(route[idx], route[-1], [{"route": mid, "penalty": 500.0}])
+                if alt and mid not in alt and alt != route[idx:]:
+                    pick = (vid, alt)
+                    break
+        assert pick is not None
+        vid, alt = pick
+        guide.follow(vid)
+        guide.step(_cur(c, c.simulation.getTime(), []), c, None, IM())
+        c.vehicle.setRoute(vid, alt)                         # the town's detour
+        for _ in range(4):
+            c.simulationStep()
+            guide.step(_cur(c, c.simulation.getTime(), list(c.simulation.getArrivedIDList())), c, None, IM())
+        snap = guide.snapshot()
+        sroute, i = list(c.vehicle.getRoute(vid)), c.vehicle.getRouteIndex(vid)
+        assert snap["left"] == sroute[i:sroute.index(snap["dest"], i) + 1]
+        assert snap["left_m"] == round(r.length_m(snap["left"]), 0) and snap["left_m"] > 0
+    finally:
+        c.close()
+
+
 def test_a_bus_is_followed_but_not_routed(guide):
     class Conn:
         class vehicle:  # noqa: N801
@@ -187,6 +222,14 @@ def test_the_mini_map_draws_an_opaque_panel(guide):
     for i in range(30):
         s = mm.render(snap, 0.2 + 0.1 * i, free=free, intro=min(1.0, 0.1 * i))
     assert first.get_height() < s.get_height() and flying.get_height() < s.get_height()
+    # (10 Nov) the car's own trip, estimated when it set off: its rows above the agent's
+    snap["trip"] = {"t0": 40.0, "elapsed_s": 60.0, "est_s": 75.0, "free_s": 40.0, "table_share": 0.9,
+                    "start": "Résidence Bellevue", "dest": "Marché Central", "dest_edge": "-48",
+                    "changes": [(20.0, "new way")], "dest_changed": False, "ended": None, "real_s": None}
+    with_trip = mm.render(snap, 3.5, free=free, intro=1.0)
+    assert with_trip.get_height() >= s.get_height()
+    if with_trip.get_size() == s.get_size():   # (the panel at its tallest: the map gives the rows room)
+        assert (pygame.surfarray.array3d(with_trip) != pygame.surfarray.array3d(s)).any()
     w, h = s.get_size()
     assert w > 400 and h > 400
     for surf in (flying, first, s):

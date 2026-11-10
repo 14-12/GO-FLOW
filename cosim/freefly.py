@@ -1258,6 +1258,20 @@ class FreeFly:
             except Exception:  # noqa: BLE001
                 self.route_guide = None
                 log.error("route guide not started:\n%s", traceback.format_exc())
+        self.estimates = None   # (10 Nov) every car's trip time estimated when it sets off (cosim/trip_estimates.py)
+        try:
+            from cosim.trip_estimates import TripEstimates, area_names, plan_names
+
+            ring = {e: self.highway.speed for lp in self.highway.loops for e in lp} if self.highway is not None else {}
+            self.estimates = TripEstimates(net, speeds=ring,
+                                           area_names=area_names(self.demand.places) if self.demand is not None else {},
+                                           place_name=plan_names(self.demand) if self.demand is not None else None)
+            self.estimates.setup(self.sumo.conn, self.sumo)
+            if self.route_guide is not None:
+                self.route_guide.estimates = self.estimates
+        except Exception:  # noqa: BLE001
+            self.estimates = None
+            log.error("trip estimates not started:\n%s", traceback.format_exc())
         sod = self.clock.seconds_of_day
         target = self.pop.target(sod)
         self.stage = f"Filling the town for {self.clock.hhmm()}: {target:.0f} vehicles"
@@ -2030,13 +2044,12 @@ class FreeFly:
 
     def keep_driving(self, vehicles: dict) -> None:
         """Every second: a vehicle on the last three edges of its trip gets a new destination if it is in
-        view (or the town has no more than it should), so trips don't end in front of the camera;
-        SUMO ends a trip at the end of an edge, often a stop line, and the car vanished there.
-        Emergency vehicles finish their run once out of sight."""
+        view, so trips don't end in front of the camera; SUMO ends a trip at the end of an edge, often a stop
+        line, and the car vanished there. Out of sight a trip ends where it was going (10 Nov: before, a car was
+        also given a new destination whenever the town had no more cars than its curve, a rule from before the
+        population followed the curve's flow of trips (9 Nov): 710 new destinations in 15 minutes at the evening
+        peak, and no car's trip had an end to estimate its time to; tools/goflow_prediction_dataset.py never did it)."""
         c = self.sumo.conn
-        parked = len(self.demand.parked) if self.demand is not None else 0   # (not on the roads)
-        over = len(vehicles) - parked > self.target + 2
-        ems = self.sumo.extras.emergency if self.sumo.extras is not None else {}
         alive = set(c.vehicle.getIDList())  # after this step's removals
         subs = self.sumo.vehicle_subs
         # The route index comes with the step (SumoSide vehicle_vars); a vehicle's route is asked once and
@@ -2069,7 +2082,7 @@ class FreeFly:
                 self.bus.next_lap(vid, idx, route)
                 routes.pop(vid, None)
                 continue
-            if not self.in_view(*self.scen.frame.to_carla_xy(v.x, v.y)) and (over or vid in ems):
+            if not self.in_view(*self.scen.frame.to_carla_xy(v.x, v.y)):
                 continue
             for _ in range(5):
                 dest = self.rng.choice(self.sinks)
@@ -2102,6 +2115,12 @@ class FreeFly:
 
         cur = self.sumo.step()
         self.sim_now = cur.time
+        if self.estimates is not None:
+            try:
+                self.estimates.step(self.sumo.conn, cur.time, cur.arrived)
+            except Exception:  # noqa: BLE001 - never the town's
+                log.exception("trip estimates")
+                self.estimates = None
         if self.forecast is not None:  # --goflow-prediction: a few additions, a message every 30 s, never a wait
             self.forecast.on_step(cur, self.sumo.conn, self.clock.seconds_of_day)
         lap("sumo.step")
