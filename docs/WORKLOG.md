@@ -2736,3 +2736,42 @@ cars then went into their kerb place, off the road, and `_squeeze` asked SUMO fo
 and cut the rest of the incident's step every 2 s. Fixed in `cosim/incidents.py`: a rear-end whose follower stands
 still is no crash (counted as a near miss, `standing follower`); `_squeeze` skips a blocker off the road. Seed 101 run
 again: no such error. Build stopped and restarted at 02:49 with the fix (the aborted log is kept outside git).
+
+
+## Lane changes, step 6: the glitch is the body's heading, not SUMO's lane changes (10 Nov, night)
+
+**How it was looked for.** `tools/check_lateral.py` runs the viewer's town in SUMO alone (one_run: trips with a
+purpose, buses, the ring road, accidents, the junction agents), poses every vehicle 60 times a second with the
+viewer's own code (Catmull-Rom along SUMO's front positions, `interp.Trails`), and follows the body's rear axle
+(0.75 x length behind the front). A car's rear wheels roll, they do not slide: any motion of the rear axle across the
+body is the glitch. An episode: over 0.2 m/s across the body and over 8 deg off its axis, for 0.25 s or more, put
+down with what the car was doing and what was near it. Cars driven into or out of a parking space are left out
+(the viewer poses them on their own, `cosim/parking_motion.py`). Dev seeds 11-13, 10 min of the morning rush each.
+
+**The cause.** `Trails` pointed the body from the point 0.7 x length back *along the front's own path* to the
+front: the rear was pinned to the path the front had drawn. A body is then a chord of that path, and its rear
+slides sideways whenever the path bends: in every turn (on a 10 m radius ~9 deg off the way it rolls), in every lane
+change and in every small drift SUMO's sublane model makes inside a lane. It also made the heading hunt (the turn
+direction reversed ~180 times in 10 minutes). Near queues it shows most: slow lane changes into gaps and round a bus
+at its stop, where the body is long relative to the motion.
+
+**The fix** (`cosim/interp.py`, pose only): the body's rear point is dragged by the front and moves only along the
+body (a tractrix, as a trailer behind its hitch, or a car's rear axle). The caps stay (2.5 deg a pose, 15 deg per
+metre rolled: a standing body never turns) and so does the band round the lane's direction.
+
+| Dev seed | Sliding, s per vehicle-hour (before -> now) | junctions | lane changes | drifts in a lane | standing | bodies cutting into each other (pairs) | yaw acc. p99.9 (deg/s2) | turn reversals |
+|---|---|---|---|---|---|---|---|---|
+| 11 | 61.0 -> 13.7 | 801 -> 144 s | 147 -> 43 s | 148 -> 2 s | 80 -> 74 s | 49 -> 41 | 284 -> 179 | 176 -> 21 |
+| 12 | 57.1 -> 11.9 | 781 -> 150 s | 142 -> 34 s | 168 -> 7 s | 51 -> 48 s | 41 -> 39 | 287 -> 187 | 171 -> 20 |
+| 13 | 56.4 -> 11.5 | 802 -> 148 s | 128 -> 42 s | 157 -> 11 s | 23 -> 26 s | 37 -> 38 | 281 -> 185 | 189 -> 29 |
+
+The same at the body's centre (rear point 0.5 x length, seed 11): 709 -> 196 s. Traffic is not touched (the
+change is in the viewer's poses only; SUMO runs exactly as before), so its speed and waiting are the same by
+construction. Seen in CARLA (`town05_freefly.bat`, 13:00 town time, 25 fps): bodies straight in their lanes, turns
+normal. Tests: `tests/test_trails_slide.py` (a 10 m turn: the rear slid 9.7 deg with the old code, under 3 now).
+
+**What is left: standing sideways moves made on purpose.** 26-74 s of sliding while standing in each 10 minutes
+(all vehicles together), from SUMO moving a stopped vehicle sideways where the town allows it:
+cars squeezing past a wreck (`IncidentManager`, 0.3 m/s while standing) and buses turning into their stop
+(`BusLines.turn_in`, 0.5 m/s). A body cannot turn there without rolling, so it slides. Taking these allowances away
+locked the town before (cars behind a wreck, buses beside their stop); not changed.

@@ -81,13 +81,23 @@ def catmull_rom(p0: tuple[float, float], p1: tuple[float, float], p2: tuple[floa
 
 
 class Trails:
-    """Heading of each vehicle from the path its front bumper has taken: the body points from the point
-    REAR_SHARE x length back along that path to the front, as a car's body follows its front wheels
-    through a turn. No SUMO heading is used, so nothing can disagree with the motion.
+    """Heading of each vehicle from the way its front bumper moves: the body's rear point, REAR_SHARE x length
+    behind the front, is dragged by the front and moves only along the body, as a car's rear wheels roll and
+    do not slide (a trailer behind its hitch, a tractrix). No SUMO heading is used, so nothing can disagree
+    with the motion.
 
     Measured offline on 300 s of Town05 evening traffic, 60 poses a second (~118 vehicles): turning
     direction reversed 20 times against 211 with the even turn from SUMO's step headings, yaw
-    acceleration p99.9 243 against 892 deg/s2 (tools/turn_smoothness.py)."""
+    acceleration p99.9 243 against 892 deg/s2 (tools/turn_smoothness.py).
+
+    (10 Nov) Before, the body pointed from the point REAR_SHARE x length back ALONG THE FRONT'S PATH to the
+    front: the rear was pinned to the front's own path, so on a curve, a lane change or a drift inside the
+    lane its rear slid sideways (a body is a chord of the path; on a 10 m turn ~9 deg off the way it rolls).
+    tools/check_lateral.py (dev seeds 11-13, 10 min of the morning rush each, the viewer's town; the rear axle
+    0.75 x length behind the front sliding over 0.2 m/s and 8 deg off the body): 57-61 s of sliding a
+    vehicle-hour against 12-14 now (junctions 2384 -> 442 s, lane changes 418 -> 118 s, drifts in a lane 473 ->
+    20 s), bodies cutting into each other on a road 127 -> 118 pairs, yaw acceleration p99.9 281-287 -> 179-187
+    deg/s2, turning direction reversed 536 -> 70 times."""
 
     REAR_SHARE = 0.7
     MAX_STEP_DEG = 2.5
@@ -126,24 +136,15 @@ class Trails:
             path.append((x, y))
             if len(path) > self.MAX_POINTS:
                 del path[: len(path) - self.MAX_POINTS // 2]
-        back = self.REAR_SHARE * length
-        px, py = x, y
-        rx = ry = None
-        for qx, qy in reversed(path[:-1]):
-            d = math.hypot(px - qx, py - qy)
-            if d >= back:
-                f = back / d
-                rx, ry = px + (qx - px) * f, py + (qy - py) * f
-                break
-            back -= d
-            px, py = qx, qy
-        if rx is None:
-            rx, ry = path[0]
         # how far the front went forward (along the body) since the last pose: a car turns only as it rolls
         lx, ly = self.last.get(vid, (x, y))
         self.last[vid] = (x, y)
         h = math.radians(self.heading[vid])
         fwd = abs((x - lx) * math.sin(h) + (y - ly) * math.cos(h))
+        # the body's rear point at the last pose; the body now points from it to the front (it is dragged along
+        # the body, never across it)
+        back = self.REAR_SHARE * length
+        rx, ry = lx - math.sin(h) * back, ly - math.cos(h) * back
         if math.hypot(x - rx, y - ry) > 0.05 and fwd > 1e-4:
             want = math.degrees(math.atan2(x - rx, y - ry))
             d = (want - self.heading[vid] + 180.0) % 360.0 - 180.0
