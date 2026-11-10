@@ -162,6 +162,29 @@ def test_simulated_cameras_see_only_the_visible_stretch():
     assert r["ems"] and r["ems"][0]["lane"] == "A_0"
 
 
+def test_simulated_cameras_call_sirens_as_the_flash_model():
+    """siren_model "flash": after FLASH_S in view, one call per vehicle at the flash model's rates, which then holds;
+    the counts' random stream is the same draw for draw as with the vote."""
+    from cosim import camera_reports as cr
+
+    def run(model, on, seed):
+        sim = SimulatedCameras(_layout(), seed=seed, siren_recall=1.0, siren_false=1.0, siren_model=model)
+        out = []
+        for k in range(12):
+            reps = sim.step(_FakeTC, k * 0.5, {"amb": on})
+            if reps is not None:
+                out.append((reps[0]["lanes"], [e["confirmed"] for e in reps[0]["ems"]]))
+        return out
+
+    vote, flash = run("vote", False, 3), run("flash", False, 3)
+    assert [x[0] for x in vote] == [x[0] for x in flash]          # the counts are untouched
+    assert vote[-1][1] == [True]                                  # every picture a siren: the vote confirms
+    calls = [run("flash", False, s)[-1][1] == [True] for s in range(200)]
+    assert abs(sum(calls) / 200 - cr.FLASH_OFF["ambulance"]) < 0.06   # the flash model mostly says no
+    calls = [run("flash", True, s)[-1][1] == [True] for s in range(200)]
+    assert abs(sum(calls) / 200 - cr.FLASH_ON["ambulance"]) < 0.08
+
+
 # ----------------------------------------------------------------------------- walk-aware max-pressure
 
 
@@ -560,3 +583,40 @@ def test_forecast_weighs_balance_and_extends_a_green_about_to_queue():
     fc = {"t": 90.0, "long_queue_s": 180, "nodes": {"J-1": {"p_long": 0.4}, "J-2": {"p_long": 0.0, "long_now": True}}}
     assert long_queue_risk(fc, 100.0) == {"J-1": 0.4, "J-2": 1.0}
     assert long_queue_risk(fc, 140.0) == {} and long_queue_risk(dict(fc, long_queue_s=None), 100.0) == {}
+
+
+def test_camera_backup_gives_green_to_a_siren_without_a_request():
+    """+camback (10 Nov): a siren the cameras confirm on an approach with no request at the junction gets that
+    approach's links, within the same limits as a request; request_loss drops a fixed share of requests."""
+    from types import SimpleNamespace as NS
+
+    from cosim.agents_actuated import ObservedActuatedAgents, _Agent, make
+
+    tc = NS(lane=NS(getLastStepHaltingNumber=lambda ln: 0))
+    ag = make("agents_observed+camback")
+    assert isinstance(ag, ObservedActuatedAgents) and "camback" in ag.on
+    ag._len = {"out_0": 75.0, "out_1": 75.0}
+    a = _Agent("J", ["Gr", "rG"], ["car", "car"], [5.0, 5.0], [60.0, 60.0], [0, 1], {}, {}, {}, {},
+               link_out={0: "out_0", 1: "out_1"}, lane_links={"in_1": {1}, "up_1": {1}})
+    ag.junctions = {"J": a}
+    ag._now, ag._cache = 0.0, {}
+    ag.observe([{"tls": "J", "lanes": {}, "ems": [{"lane": "up_1", "votes": 4, "of": 8, "confirmed": True}]}])
+    ag.requests, ag.request_by = {}, {}
+    ag._camera_backup(tc, 0.0)
+    assert ag.requests == {"J": {1}} and ag.request_by["J"] == "camera" and ag.events[-1]["phases"] == [1]
+    ag.requests = {"J": {0}}                                       # a vehicle asked: the camera stays out of it
+    ag._camera_backup(tc, 1.0)
+    assert ag.requests == {"J": {0}}
+    ag.requests, ag._asked = {}, {("J", "ev"): 0.0}               # one asked and its own limits refused it
+    ag._camera_backup(tc, 1.0)
+    assert ag.requests == {}
+    ag._asked = {}
+    ag._camera_backup(tc, 1.0 + ag.ev_patience_s)                 # seen there too long: stuck, no more green
+    assert ag.requests == {} and ag.stats["cam_patience"] == 1
+    ag.observe([{"tls": "J", "lanes": {}, "ems": [{"lane": "in_1", "votes": 2, "of": 8, "confirmed": False}]}])
+    ag._camera_backup(tc, 100.0)                                   # not confirmed: nothing
+    assert ag.requests == {}
+    assert not make("agents_observed")._lost("ev", "J")
+    lossy = make("agents_observed@request_loss=0.5")
+    lost = sum(lossy._lost(f"ev{i}", "J") for i in range(400))
+    assert 150 < lost < 250 and lossy._lost("ev0", "J") == lossy._lost("ev0", "J")

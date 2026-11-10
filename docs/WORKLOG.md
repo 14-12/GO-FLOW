@@ -2951,3 +2951,75 @@ tests/test_inspector_vote.py, tests/test_cctv.py (40 passed on the PC with the t
 looser and another vehicle may hide it. Night and day only as three times of day. And, as before: the junction agents'
 pre-emption does not read the cameras, so this changes the H window and the reports, not emergency-vehicle delay
 (the user's decision whether the camera should get a role).
+
+## 10 Nov (afternoon): the cameras as a back-up for lost emergency requests
+
+**The question** (user's choice): when a junction's camera sees a siren-on vehicle and no request came from it (lost on
+the way, or a vehicle without the radio), should the junction give priority anyway? Judged by emergency-vehicle delay,
+on the paired dev seeds 11-20 (07:00, 30 min after 5 min warm-up, x1.0, an emergency vehicle every 45 s, `agents_observed`).
+
+**What changed.**
+* `cosim/agents_actuated.py`, `+camback` (optional, off unless named: `agents_observed+camback`): a siren the junction's
+  cameras confirm on one of its approaches (or a lane within 75 m upstream of it), and no request heard at that junction
+  in this step, granted or refused, gives that approach's links the same pre-emption as a request. Only what a real
+  junction has: the cameras' confirmed siren and its lane, the queue they count there, the exit's room, and the
+  requests it received. The request's own limits stay: 45 s per approach (ev_patience_s), at most 8 queued, an exit
+  with room; a request the junction heard and refused is not overruled by the cameras.
+* `request_loss` (setting, 0 by default): the share of (vehicle, junction) requests that never arrive, fixed per pair
+  by a hash so paired runs lose the same ones. Only for measuring: `agents_observed@request_loss=0.1`.
+* `cosim/camera_reports.py`: the simulated cameras now call sirens as the H window does since this morning: the
+  3-of-8 vote, then, after 1.6 s in view, the flash model's call once (per track: ambulance lights on 0.85, off 0.08;
+  police on 0.69, off 0.00, measured on the test junctions' clips); its own random stream, so the counts are unchanged
+  draw for draw (seed 11 identical). `@siren_flash=0` gives the old vote alone. Nothing else reads the sirens except
+  `+camback` and the GO-FLOW priority agent's camera confirmation (`agents_observed_goflow`, not re-measured).
+
+**Results** (mean of 10 dev seeds; in brackets the seeds better than the reference):
+
+| Run | Waiting s/km | Speed km/h | Ambulance time loss s | All EV time loss s | Cars taken off |
+|---|---|---|---|---|---|
+| no requests lost (reference) | 219 | 11.2 | 57.0 | 57.7 | 14.4 |
+| no requests lost, + camera back-up | 222 (4/10) | 11.1 | 63.9 (4/10) | 59.1 (4/10) | 14.3 |
+| 10 % of requests lost | 267 | 10.0 | 71.8 | 63.5 | 25.3 |
+| 10 % lost, + camera back-up | 188 (7/10 vs lost) | 12.0 | 53.9 (7/10 vs lost) | 55.2 (7/10) | 8.3 |
+
+With 10 % of the requests lost (about 11 lost (vehicle, junction) pairs a run), the back-up gives the delay back: ambulance time loss
+71.8 -> 53.9 s, the town's waiting 267 -> 188 s/km. With nothing lost it costs about nothing (waiting +3 s/km,
+ambulances +6.9 s, 4 seeds of 10 better: within the seeds' spread). The town is chaotic: one run set to another moves
+waiting by 50 s/km, so only the large differences above are claims.
+
+**What did not work first** (kept here so it is not tried again): with the detector's 3-of-8 vote alone, a falsely
+confirmed siren stays confirmed while the vehicle is in view, and on two dev seeds 60-70 % of the camera's greens went
+to emergency vehicles with their lights off. With nothing lost the back-up then cost +53 s/km of waiting and +12 s of
+ambulance delay (3/10 seeds better); keeping refused requests refused alone did not help (+69 s/km, +13 s). With the
+flash model's rates: +3 s/km, +6.9 s. With 10 % lost, against the lost run: -56, -37 and -79 s/km for the three
+versions.
+
+**Status.** Kept as an option, off by default (`agents_observed+camback`): with no lost requests it does not help, and
+whether to turn it on is the user's decision. Test: tests/test_town05_agents.py (camera back-up, flash calls).
+
+**Live check of the flash model in CARLA.** The H window ran with the flash model for about 2 hours (cameras 1722-1
+and 1126-2, 18-27 detections a second, no error), but no emergency vehicle passed those two cameras while watched;
+the measured numbers remain the clip test above. After about 2 hours at clock x30 the evening peak (491 vehicles)
+left SUMO 29 min behind the clock (4 s of SUMO step per 10 s), and the picture stood still: x30 is too fast for SUMO
+at that size. The console repeats ultralytics' "'half' is deprecated" warning (cosim/inspector.py, `half=` in predict).
+
+## 10 Nov (afternoon): cars taken off, where they come from
+
+The third try announced (close road -19 when an accident blocks its only lane) was not made: drivers whose way
+crosses an accident's road are already sent around (cosim/incidents._divert: the road counts as 10 min), the cars
+taken off on -19 are 45 of 534, and on -19 the queue usually had a bus of line L3 in it, or the accident was on
+another road (seed 18: -5) and -19 was full of its queue. Over the 30 audit runs (dev seeds 11-20 at
+07:00, 12:00, 17:00; 534 cars, 0-88 a run), by what stood in front of the car taken off:
+
+| Cause | Cars | Share |
+|---|---|---|
+| in the queue behind an accident | 158 | 30 % |
+| right behind an accident's vehicles | 125 | 23 % |
+| a queue at a red light that did not clear in 5 min | 123 | 23 % |
+| a queue away from signals (priority junction, merge) | 46 | 9 % |
+| behind a bus that could not go on | 44 | 8 % |
+| a queue at a green that could not move (exit full) | 38 | 7 % |
+
+Half come from accidents: their drivers wait RELIEVE_REMOVE_S and are then taken off (cosim/incidents._relieve), by
+design. Fewer would need traffic to get past an accident (police letting cars by on the other lane or the kerb lane),
+which is a design decision, not a fix.

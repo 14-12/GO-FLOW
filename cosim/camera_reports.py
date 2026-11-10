@@ -77,6 +77,12 @@ RECALL = 1 - 175 / 2366
 FALSE_BOXES_PER_FRAME = 204 / 3910
 SIREN_RECALL = 174 / 517          # siren-on found as siren-on, per picture
 SIREN_FALSE = 36 / 410            # siren-off emergency vehicle called siren-on, per picture
+# The H window's siren decision since 10 Nov (cosim/inspector.TrackVote with cosim/siren_flash.py): the 3-of-8 vote
+# until a track has 8 pictures at 5 a second (1.6 s), then the flash model's call, once. Its rates per track, measured
+# through that code on the clips of the detector set's 3 test junctions (tools/ev_flash_model.py, docs/WORKLOG.md):
+FLASH_S = 1.6
+FLASH_ON = {"ambulance": 0.85, "police": 0.69}    # lights on, called SIREN ON
+FLASH_OFF = {"ambulance": 0.08, "police": 0.00}   # lights off, called SIREN ON
 
 
 def compass(yaw: float) -> str:
@@ -501,8 +507,15 @@ class SimulatedCameras:
     def __init__(self, layout: Layout, fps: float = 2.0, rules: ReportRules | None = None, seed: int = 1,
                  recall: float = RECALL, false_per_frame: float = FALSE_BOXES_PER_FRAME,
                  siren_recall: float = SIREN_RECALL, siren_false: float = SIREN_FALSE,
-                 parked: dict[str, int] | None = None):
+                 parked: dict[str, int] | None = None, siren_model: str = "vote"):
+        """siren_model: "vote" (the detector's 3-of-8 vote, as before 10 Nov) or "flash" (the vote, then the flash
+        model's call once the vehicle has been in view FLASH_S; its own random stream, so the counts' noise stays the
+        same draw for draw)."""
         self.layout, self.fps = layout, fps
+        self.siren_model = siren_model
+        self.flash_rng = random.Random(seed * 7919 + 1)
+        self._in_view: dict[str, int] = {}
+        self._flash_done: set[str] = set()
         self.rules = rules or ReportRules()
         self.rng = random.Random(seed)
         self.recall, self.false_per_frame = recall, false_per_frame
@@ -554,8 +567,18 @@ class SimulatedCameras:
                         p = self.siren_recall if emergency[vid] else self.siren_false
                         v = self._votes.setdefault(vid, deque(maxlen=self.rules.vote_frames))
                         v.append(self.rng.random() < p)
-                        if sum(v) >= self.rules.vote_need:
+                        if vid not in self._flash_done and sum(v) >= self.rules.vote_need:
                             self._confirmed.add(vid)
+                        if self.siren_model == "flash" and vid not in self._flash_done:
+                            k = self._in_view[vid] = self._in_view.get(vid, 0) + 1
+                            if k >= math.ceil(FLASH_S * self.fps - 1e-9):
+                                cls = "police" if "police" in vid else "ambulance"
+                                p = FLASH_ON[cls] if emergency[vid] else FLASH_OFF[cls]
+                                self._flash_done.add(vid)
+                                if self.flash_rng.random() < p:
+                                    self._confirmed.add(vid)
+                                else:
+                                    self._confirmed.discard(vid)
                         self._ems_lane[vid] = (c, ln)
                         seen_ems.add(vid)
                     if self.rng.random() >= self.recall:
@@ -574,6 +597,8 @@ class SimulatedCameras:
                 self._votes.pop(vid)
                 self._confirmed.discard(vid)
                 self._ems_lane.pop(vid, None)
+                self._in_view.pop(vid, None)
+                self._flash_done.discard(vid)
 
     def step(self, tc, t: float, emergency: dict[str, bool]) -> list[dict] | None:
         """Call every SUMO step: takes the pictures when due, returns the reports when due."""

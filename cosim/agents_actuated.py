@@ -78,6 +78,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import zlib
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -88,7 +89,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COVERAGE = ROOT / "out" / "town05_cameras" / "coverage.json"
 VEH_M = 7.5
 FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall")
-OPTIONAL = ("batch", "extend", "noflow", "forecast")  # off unless named: "agents+batch"
+OPTIONAL = ("batch", "extend", "noflow", "forecast", "camback")  # off unless named: "agents+batch"
 DEFAULT_OFF = ("trickle",)  # off unless named ("agents+trickle") since 25 Oct: with two greens a cycle
 # (tools/build_town05_signals.py, opposite approaches together) ending a green kept alive by moving cars costs a
 # whole switch; measured (tools/check_highway.py, 20 min at 17:30, 8 seeds): town's share of cars standing 0.437
@@ -115,6 +116,8 @@ class _Agent:
     loops: dict[int, list[str]]            # car green -> its induction loops
     covered: bool = True
     link_out: dict[int, str] = field(default_factory=dict)  # link index -> the lane it leaves by
+    lane_links: dict[str, set[int]] = field(default_factory=dict)  # a lane a camera may see a siren on -> the links
+    #   it leads to (its own if it is an approach lane, all of the approach lanes' within reach_m upstream of them)
     stop_lines: dict[int, list[tuple[float, float, float]]] = field(default_factory=dict)  # car green -> (x, y,
     #   heading deg, SUMO's: 0 north, clockwise) where each of its approach lanes meets the junction
     held_for: str | None = None             # the emergency vehicle whose green is being held (one event per hold)
@@ -174,6 +177,12 @@ class ActuatedAgents:
     min_coverage = 0.70
     forecast_w = 0.5               # +forecast: fill counted this much more per unit of risk (balance)
     forecast_extend_p = 0.8        # +forecast: risk from which a green at its maximum is extended
+    # Requests that never arrive (10 Nov): the share of (emergency vehicle, junction) requests lost on the way, for
+    # measuring +camback; 0 in normal runs. Which ones is fixed per pair (a hash), so paired runs lose the same ones.
+    request_loss = 0.0
+    loss_seed = 0
+    siren_flash = 1                # agents_observed: the simulated cameras call sirens as the H window does since 10 Nov
+    #   (the flash model, camera_reports.FLASH_ON / FLASH_OFF); 0: the detector's 3-of-8 vote alone, as before
 
     def __init__(self, off: set[str] | frozenset[str] = frozenset(), fallback: set[str] | None = None,
                  record: bool = False, emergency=None, extra: set[str] | frozenset[str] = frozenset()):
@@ -201,7 +210,11 @@ class ActuatedAgents:
                       "ev_patience": 0, "ev_starved": 0,
                       "ev_exit_full": 0, "ev_queued": 0,
                       "forecast_steps": 0, "forecast_balance_cuts": 0, "forecast_balance_kept": 0,
-                      "forecast_extensions": 0}
+                      "forecast_extensions": 0, "ev_lost": 0, "cam_requests": 0, "cam_patience": 0,
+                      "cam_queued": 0}
+        self._cam_ems: dict[str, set[str]] = {}         # junction -> lanes with a siren its cameras confirmed
+        self._cam_first: dict[tuple[str, str], float] = {}
+        self._lost_seen: set[tuple[str, str]] = set()
         self._stopped_on_green: dict[str, float] = {}
         self.requests: dict[str, set[int]] = {}
         self.request_by: dict[str, str] = {}   # junction -> the emergency vehicle asking (for the events)
@@ -227,6 +240,12 @@ class ActuatedAgents:
                 a[0] += n
                 a[1] += q
         self.obs = {k: (v[0], v[1]) for k, v in out.items()}
+        ems: dict[str, set[str]] = {}
+        for rep in reports:
+            for e in rep.get("ems", []):
+                if e.get("confirmed") and rep.get("tls"):
+                    ems.setdefault(rep["tls"], set()).add(e["lane"])
+        self._cam_ems = ems
 
     def setup(self, conn) -> None:
         tc = conn.tc
@@ -289,6 +308,16 @@ class ActuatedAgents:
             a = _Agent(tls, states, kind, mn, mx, cycle, pre_red, pairs, cross, loops,
                        covered=tls not in self.fallback,
                        link_out={i: ls[0][1] for i, ls in enumerate(links) if ls})
+            own: dict[str, set[int]] = {}
+            for i, ls in enumerate(links):
+                for link in ls:
+                    if not link[0].startswith(":"):
+                        own.setdefault(link[0], set()).add(i)
+            for ln, idx in own.items():
+                for up in self._reach_up(ln):
+                    a.lane_links.setdefault(up, set()).update(idx)
+            for ln, idx in own.items():  # an approach lane: its own links only
+                a.lane_links[ln] = set(idx)
             for k, prs in pairs.items():
                 pts = []
                 for i_lane in dict.fromkeys(x for x, _ in prs):
@@ -524,13 +553,14 @@ class ActuatedAgents:
             wanted -= set(external.get("handles", ()))
         if not wanted:
             self._asked = asked
+            self._camera_backup(tc, now)
             return
         for vid in wanted & set(tc.vehicle.getIDList()):
             upcoming = tc.vehicle.getNextTLS(vid)
             if not upcoming:
                 continue
             tls, link, dist, state = upcoming[0]
-            if tls in self.junctions and dist <= self.detect_m:
+            if tls in self.junctions and dist <= self.detect_m and not self._lost(vid, tls):
                 first = asked[(tls, vid)] = self._asked.get((tls, vid), now)
                 if now - first > self.ev_patience_s:
                     self.stats["ev_patience"] += 1
@@ -549,7 +579,7 @@ class ActuatedAgents:
                 tls2, link2, dist2, _ = upcoming[1]
                 speed = tc.vehicle.getSpeed(vid)
                 if tls2 in self.junctions and dist2 <= self.corridor_m and dist <= self.detect_m \
-                        and speed >= self.corridor_min_speed and dist2 / speed <= self.corridor_eta_s \
+                        and not self._lost(vid, tls2) and speed >= self.corridor_min_speed and dist2 / speed <= self.corridor_eta_s \
                         and self._exit_free(tc, self.junctions[tls2], int(link2)):
                     self.requests.setdefault(tls2, set()).add(int(link2))
                     self.request_by.setdefault(tls2, vid)
@@ -561,6 +591,65 @@ class ActuatedAgents:
                                                      and int(link2) in _greens(a2.states[k])][:1],
                                     "green wave: getting ready for an ambulance")
         self._asked = asked
+        self._camera_backup(tc, now)
+
+    def _lost(self, vid: str, tls: str) -> bool:
+        """Whether this vehicle's request to this junction is one of the lost ones (request_loss)."""
+        if self.request_loss <= 0:
+            return False
+        if zlib.crc32(f"{self.loss_seed}|{vid}|{tls}".encode()) / 2 ** 32 >= self.request_loss:
+            return False
+        self._lost_seen.add((vid, tls))
+        self.stats["ev_lost"] = len(self._lost_seen)
+        return True
+
+    def _camera_backup(self, tc, now: float) -> None:
+        """+camback (10 Nov): a siren the junction's cameras confirmed on an approach, and no request at that junction
+        (lost on the way, or a vehicle with no radio): the junction gives that approach its green as if asked. A
+        request the junction heard and its limits refused stays refused: the cameras do not overrule it. Only
+        what the cameras report (the confirmed siren, the lane it is on, the queue they count there) and the exit
+        lane's own detectors; the same limits as a request: ev_patience_s per approach, at most ev_queue_max vehicles
+        queued on it, an exit with room."""
+        if "camback" not in self.on or not self.uses_cameras:
+            return
+        active = set()
+        heard = {t for t, _ in self._asked}
+        for tls, lanes in sorted(self._cam_ems.items()):
+            a = self.junctions.get(tls)
+            if a is None:
+                continue
+            # a vehicle asked here, granted or not (its own limits said no: a queue ahead, a full exit, patience):
+            # the cameras only keep the time
+            asked = bool(self.requests.get(tls)) or tls in heard
+            for lane in sorted(lanes):
+                links = a.lane_links.get(lane)
+                if not links:
+                    continue
+                key = (tls, lane)
+                active.add(key)
+                first = self._cam_first.setdefault(key, now)
+                if asked or self.requests.get(tls):
+                    continue
+                if now - first > self.ev_patience_s:
+                    self.stats["cam_patience"] += 1
+                    continue
+                if self.obs.get(lane, (0, 0))[1] > self.ev_queue_max:
+                    self.stats["cam_queued"] += 1
+                    continue
+                free = {link for link in sorted(links) if self._exit_free(tc, a, link)}
+                if not free:
+                    continue
+                self.requests[tls] = free
+                self.request_by[tls] = "camera"
+                self.stats["cam_requests"] += 1
+                if now == first:
+                    self._event(a, "ambulance", [k for k in a.cycle if a.kind[k] == "car"
+                                                 and free & _greens(a.states[k])][:1],
+                                "green for flashing lights a camera saw (no request)")
+                break
+        for key in list(self._cam_first):
+            if key not in active:
+                self._cam_first.pop(key)
 
     def _external_requests(self, tc, now: float, items: list[dict], asked: dict) -> None:
         """An outside planner's requests (request_source), through the agents' own guards: its next signal, the
@@ -896,7 +985,8 @@ def wire(pol, sumo, seed: int, more_on_run=None, cam_dir: Path | None = None) ->
         cam_dir = Path(cam_dir or ROOT / "out" / "town05_cameras")
         parked_file = cam_dir / "parked_static.json"
         parked = json.loads(parked_file.read_text(encoding="utf-8")) if parked_file.is_file() else None
-        cams = SimulatedCameras(Layout.load(cam_dir), seed=seed, parked=parked)
+        cams = SimulatedCameras(Layout.load(cam_dir), seed=seed, parked=parked,
+                                siren_model="flash" if getattr(pol, "siren_flash", 0) else "vote")
         pol.visible = cams.layout.visible
 
         def feed(c) -> None:
