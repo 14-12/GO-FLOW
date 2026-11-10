@@ -2895,3 +2895,14 @@ goflow_xgb, model cards; `.gitattributes` keeps them byte for byte). v6 on the n
 were set on the old, heavier demand). `p_long` still runs high: given 0.7-0.9, 43-56 % started a long queue within
 3 min (0.9-1.0: 84-88 %). Tests: tests/test_goflow_prediction.py 19 passed, the two agents' own 21 and 15 passed.
 Not yet seen in CARLA with v7 (`town05_freefly_forecast.bat`): computer use on the PC timed out at night.
+
+**10 Nov, morning: a second try, not kept either.** Most of the cars taken off behind the accident on road -19
+(seeds 14 and 18) had just pulled out of its kerb places: a new trip from a kerb strip puts the car on the kerb lane
+at the strip's door, and with road -19's one driving lane standing it could not merge. Tried: a driver whose door
+gives on a standing queue (a car under 1 m/s within 25 m past the door on the lane it must join) stays in the space
+for now (`purposes.door_blocked`). Measured on dev seeds 11-20 at three starts (07:00, 12:00, 17:00, 30 runs a
+side): cars taken off 17.8 -> 19.8 a run (07:00 14.4 -> 15.8, 12:00 11.3 -> 17.7, 17:00 27.7 -> 25.8); seed 14 at
+07:00 went 40 -> 18 as meant, but other seeds got other accidents and other knots (seed 19: 8 -> 38, a crash on road 6
+that the first run did not have). Per run 0 to 88 cars: one knot at the rush decides a run, and a change that moves
+when cars leave changes which crashes happen. Neither change kept. What would tell more: the removals per accident
+of a kind (a road's only lane blocked) over many more runs than 10 dev seeds give.
