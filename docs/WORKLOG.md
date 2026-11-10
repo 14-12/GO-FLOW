@@ -2727,3 +2727,12 @@ accidents, no deadlock breaker, as the viewer) and the same on test seeds 81-90,
 into `out\goflow_prediction\v7\models`. Not yet scored or shipped: `models\goflow` is still v6 (`docs/HANDOVER_10nov.md`).
 A first try in the cloud (39 of 40 runs of the x1 dataset) was cut off by a restart of the cloud machine; the
 build runs on the PC.
+
+**10 Nov, 02:17: the build had not run; a crash that was not one.** Started on the PC, its log showed
+`incident 1: TraCIException("Lane '' is not known")` every 2 s on several seeds. Cause (seed 101, reproduced in the
+cloud): at t = 1 s SUMO reported a rear-end between two cars just put on the road at a kerb place, the follower
+standing (0 m/s, the car ahead at 1.1 m/s: an overlap from being put on the road, not a hit). It became a crash; both
+cars then went into their kerb place, off the road, and `_squeeze` asked SUMO for the cars on lane `''`, which failed
+and cut the rest of the incident's step every 2 s. Fixed in `cosim/incidents.py`: a rear-end whose follower stands
+still is no crash (counted as a near miss, `standing follower`); `_squeeze` skips a blocker off the road. Seed 101 run
+again: no such error. Build stopped and restarted at 02:49 with the fix (the aborted log is kept outside git).

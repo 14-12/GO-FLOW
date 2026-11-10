@@ -1138,6 +1138,14 @@ class IncidentManager:
                            t_hit=round(now - (1.0 - f) * STEP_S, 3))
             return
         va, vb = vehicles[a], vehicles[b]
+        if col.type == "collision" and col.colliderSpeed < 0.1:
+            # (10 Nov) a rear-end whose follower stands still: it cannot have run into anything. SUMO reports this when
+            # a car is put on the road overlapping the one ahead, or a car pulling in cuts close in front of a standing
+            # one. Before, it made a crash at t = 1 s of a dataset run between two cars just put on the road at a kerb
+            # place; they then went into the place, off the road, and the incident failed every 2 s (_squeeze)
+            self.stats["near_misses"] += 1
+            self.near_why['standing follower'] = self.near_why.get('standing follower', 0) + 1
+            return
         if (va.vclass in NEVER_CARELESS or vb.vclass in NEVER_CARELESS or a.startswith("pt_") or b.startswith("pt_")
                 or not self.allowed()):
             self._halt(a, 2.0)
@@ -2060,6 +2068,8 @@ class IncidentManager:
                 lane = c.vehicle.getLaneID(b)
                 pos = c.vehicle.getLanePosition(b) - c.vehicle.getLength(b)
             except Exception:  # noqa: BLE001
+                continue
+            if not lane:  # (10 Nov) off the road (in a parking place): nobody stands behind it
                 continue
             for o in c.lane.getLastStepVehicleIDs(lane):
                 if o in self.squeezed and o not in self.role:
