@@ -107,3 +107,15 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
 * Cars taken off (step 4): looked at one by one; buses held in knots, not at stops; the two seeds that lock start
   with an accident on road -19. Buses off kerb lanes tried, not kept. Next: the -19 knot.
 * Not yet seen in CARLA: the forecast launcher with v7 (computer use timed out at night; it needs approving again).
+
+## 7. Morning of 10 Nov
+
+* Seen in CARLA: the forecast launcher with v7, normal and `busy` (HUD strip "traffic x1.15", panel "DSO4 ok ·
+  GO-FLOW ok", long-queue alerts); the HUD strip says "junction agents".
+* Siren: `cosim/siren_flash.py` + `models/siren_flash.json` decide SIREN ON in the H window from the light bar's
+  flashing (clips: `tools/record_ev_clips.bat`, `out/ev_clips`); on the test junctions' clips, lights-off vehicles
+  called on 24 % -> 6 %. Still the user's decision: a role for the camera in pre-emption.
+* Cars taken off: holding kerb departures at a standing queue tried on 30 dev runs, not kept; runs too chaotic for a
+  small change to show (0-88 cars a run).
+* A "Job runner" window (`Claude outputs\job_runner.bat`, approved by the user) runs the .bat files put in
+  `Claude outputs\jobs`; close it to stop it.
