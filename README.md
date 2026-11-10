@@ -345,7 +345,8 @@ Three ideas shape the design.
    for it.
 3. The **main loop** turns two successive states into a *segment* for each vehicle near you:
    * a Hermite curve between the two positions (`cosim/interp.py`);
-   * the heading turning evenly from one step to the next;
+   * the body's heading from how its front moves: its rear is dragged along behind it and rolls along the body,
+     never sideways, in turns, lane changes and drifts (`interp.Trails`; `tools/check_lateral.py` measures it);
    * the road height, looked up on the right level of the raised ring road (`carla_side.py`).
 4. It also decides who must be in CARLA:
    * vehicles near you are taken from a pool of parked actors, never spawned during play, since a spawn stalls
@@ -406,7 +407,9 @@ Three ideas shape the design.
   Evaluation: `tools\eval_town05_goflow.bat`.
 * **Detector.** `models/carla-yolo26n-t05.pt` is YOLO26n fine-tuned on CARLA, then on Town05. Its 9 classes:
   car, van, bus, truck, ambulance, ambulance with lights, police, police with lights, pedestrian. In the viewer it
-  runs only when you press H (`cosim/inspector.py`, `cctv.py`).
+  runs only when you press H (`cosim/inspector.py`, `cctv.py`). There its boxes are followed from picture to
+  picture and an emergency vehicle is labelled by its track (siren on once 3 of its last 8 pictures say so), as the
+  camera reports do.
 
 ### 5.6 Accidents and the emergency response
 
