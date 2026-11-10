@@ -2775,3 +2775,9 @@ normal. Tests: `tests/test_trails_slide.py` (a 10 m turn: the rear slid 9.7 deg 
 cars squeezing past a wreck (`IncidentManager`, 0.3 m/s while standing) and buses turning into their stop
 (`BusLines.turn_in`, 0.5 m/s). A body cannot turn there without rolling, so it slides. Taking these allowances away
 locked the town before (cars behind a wreck, buses beside their stop); not changed.
+
+**10 Nov, 03:40: the v7 build left the dev seeds out.** `goflow_v7_build.bat` passed `101-130,11-20` unquoted, and a
+comma splits a batch file's arguments: the first dataset (D7_ao_x1) came out with seeds 101-130 only. The seeds are
+quoted now, and `tools/goflow_prediction_dataset.py --resume` finishes a folder (keeps the runs its runs.json lists,
+runs the seeds missing, makes dataset.npz again); the bat resumes any folder that exists instead of deleting it.
+Build restarted at 03:43: D7_ao_x1 gets its 10 dev runs, then the others.

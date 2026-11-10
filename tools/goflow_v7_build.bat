@@ -28,10 +28,10 @@ echo [goflow v7 build] %DATE% %TIME% jobs %GFP_JOBS% >> "%L%"
 if not exist "%G%\distance.csv" "%PY%" tools\goflow_prediction_graph.py --out "%G%" >> "%L%" 2>&1
 echo 1 graph EXIT %errorlevel% >> "%L%"
 
-call :ds D7_ao_x1 agents_observed 1 101-130,11-20
-call :ds D7_ao_x1.15 agents_observed 1.15 101-130,11-20
-call :ds D7_ao_x1.3 agents_observed 1.3 101-130,11-20
-call :ds D7_c_x1 coordinated 1 101-130,11-20
+call :ds D7_ao_x1 agents_observed 1 "101-130,11-20"
+call :ds D7_ao_x1.15 agents_observed 1.15 "101-130,11-20"
+call :ds D7_ao_x1.3 agents_observed 1.3 "101-130,11-20"
+call :ds D7_c_x1 coordinated 1 "101-130,11-20"
 
 cd /d "%ROOT%\agents\goflow_prediction"
 if not exist "%V%\D7_all.npz" "%PYP%" -m goflow_prediction.data merge "%V%\D7_all.npz" "%V%\D7_ao_x1\dataset.npz" "%V%\D7_ao_x1.15\dataset.npz" "%V%\D7_ao_x1.3\dataset.npz" "%V%\D7_c_x1\dataset.npz" >> "%L%" 2>&1
@@ -61,9 +61,11 @@ pause
 exit /b 0
 
 :ds
-if exist "%V%\%1\dataset.npz" exit /b 0
-if exist "%V%\%1" rmdir /s /q "%V%\%1"
+rem (10 Nov) the seeds come quoted: a comma splits a batch file's arguments, and before this the dev seeds 11-20
+rem were left out of every dataset. A folder from a run cut off is finished (--resume), not made again.
+set RS=
+if exist "%V%\%1" set RS=--resume
 cd /d "%ROOT%"
-"%PY%" tools\goflow_prediction_dataset.py --seeds %4 --minutes 30 --warmup 5 --start-hour 6 --controller %2 --scale %3 --accidents --junction-blocker 0 --trips purpose --graph "%G%" --jobs %GFP_JOBS% --port 8930 --out "%V%\%1" >> "%L%" 2>&1
+"%PY%" tools\goflow_prediction_dataset.py %RS% --seeds %~4 --minutes 30 --warmup 5 --start-hour 6 --controller %2 --scale %3 --accidents --junction-blocker 0 --trips purpose --graph "%G%" --jobs %GFP_JOBS% --port 8930 --out "%V%\%1" >> "%L%" 2>&1
 echo 2 dataset %1 EXIT %errorlevel% >> "%L%"
 exit /b 0

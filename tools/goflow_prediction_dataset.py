@@ -261,21 +261,33 @@ def main(argv=None) -> int:
     ap.add_argument("--jobs", type=int, default=2)
     ap.add_argument("--port", type=int, default=8930)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--resume", action="store_true",
+                    help="(10 Nov) the folder exists: keep the runs its runs.json lists as finished, run the seeds missing, "
+                         "make dataset.npz again (nothing to do when every seed is there)")
     args = ap.parse_args(argv)
     out = Path(args.out)
-    if out.exists():
+    if out.exists() and not args.resume:
         print(f"{out} exists: results are never overwritten")
         return 1
     g = Path(args.graph)
     nodes = json.loads((g / "nodes.json").read_text(encoding="utf-8"))
-    (out / "runs").mkdir(parents=True)
-    shutil.copy(g / "nodes.json", out / "nodes.json")
-    shutil.copy(g / "distance.csv", out / "distance.csv")
+    (out / "runs").mkdir(parents=True, exist_ok=True)
+    for f in ("nodes.json", "distance.csv"):
+        if not (out / f).exists():
+            shutil.copy(g / f, out / f)
     a = vars(args).copy()
     seeds = seeds_arg(args.seeds)
     results = []
+    if args.resume and (out / "runs.json").is_file():
+        results = [r for r in json.loads((out / "runs.json").read_text(encoding="utf-8"))
+                   if "error" not in r and r.get("seed") in seeds and (out / "runs" / f"seed{r['seed']}.npz").is_file()]
+    todo = [s for s in seeds if s not in {r["seed"] for r in results}]
+    if args.resume:
+        print(f"resume {out}: {len(results)} runs kept, {len(todo)} to run", flush=True)
+        if not todo and (out / "dataset.npz").is_file():
+            return 0
     with ProcessPoolExecutor(max_workers=args.jobs) as ex:
-        futs = {ex.submit(one_run, s, a, nodes, str(out), args.port + i): s for i, s in enumerate(seeds)}
+        futs = {ex.submit(one_run, s, a, nodes, str(out), args.port + i): s for i, s in enumerate(todo)}
         for f in as_completed(futs):
             try:
                 r = f.result()
