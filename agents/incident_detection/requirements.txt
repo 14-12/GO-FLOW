@@ -1,0 +1,8 @@
+# Omar's accident agent, inference only, in its own venv (tools\setup_incident_agent.bat), never in the project's.
+# scikit-learn must be the version that saved models/incident_detector.joblib (his requirements: 1.6.1).
+# No torch, ultralytics, OpenCV, LangChain or XGBoost: YOLO runs in the project's venv (cosim/incident_agent_proc.py).
+numpy==2.1.3
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.4.2
+pytest==8.4.2

@@ -289,6 +289,14 @@ def parse_args(argv=None):
                     help="share of private cars whose drivers go on through the end of the amber when stopping would "
                          "mean braking hard, and so sometimes reach the line on red (cosim/red_runners.py "
                          "GAMBLER_SHARE, 0.10; 0: none)")
+    ap.add_argument("--incident-agent", default="",
+                    help="Omar's accident agent (GO-FLOW agents/incident_detection) in shadow on these cameras "
+                         "(layout.json names, ';' between, at most 4; beside CARLA the GTX 1650 keeps 2 at 5 fps, "
+                         "11 Nov): CARLA cameras at 5 fps, YOLO + ByteTrack in a "
+                         "process of its own (cosim/incident_agent_proc.py), his model in its own venv "
+                         "(tools/setup_incident_agent.bat). Its verdicts are shown and written to "
+                         "out/incident_agent/<time>/, never reported to the police or the route alerts "
+                         "(cosim/incident_agent.py). Off by default")
     ap.add_argument("--enforce", default=None,
                     help="SIGNAL:ROAD, e.g. 1292:6: a red-light enforcement camera on that road into that junction "
                          "(cosim/enforcement.py), its controller log and the simulation's own record of who entered "
@@ -3569,6 +3577,32 @@ def enforce_lookups(ff):
     return plate_of, car_of
 
 
+def start_incident_agent(ff, args):
+    """--incident-agent: Omar's accident agent in shadow on the named cameras (cosim/incident_agent.py), or None.
+    A failure to start is logged; the viewer goes on without it."""
+    names = [n.strip() for n in args.incident_agent.split(";") if n.strip()]
+    if not names:
+        return None
+    try:
+        from cosim.camera_reports import Layout
+        from cosim.incident_agent import IncidentAgent
+
+        lay = Layout.load(ROOT / "out" / f"{args.scenario}_cameras")
+        unknown = [n for n in names if n not in lay.names]
+        if unknown or len(names) > 4:
+            raise ValueError(f"--incident-agent: unknown cameras {unknown}" if unknown else
+                             "--incident-agent: at most 4 cameras (one GTX 1650)")
+        specs = {n: lay.cams[lay.names.index(n)].spec for n in names}
+        c0 = lay.cams[0]
+        agent = IncidentAgent(ff.world, specs, c0.width, c0.height, c0.fov, lambda: ff.sim_now,
+                              depicted=ff.depicted_at)
+        agent.start_cameras()
+        return agent
+    except Exception:  # noqa: BLE001 - reported, the viewer goes on without it
+        log.exception("accident agent not started")
+        return None
+
+
 def enforce_step(ff, st: dict, args) -> bool:
     """--enforce, once per pass of the main loop: the site's camera started once the town is loaded and the first
     steps shown, its records written every second; True when --enforce-record's time is up."""
@@ -4839,6 +4873,9 @@ def main(argv=None) -> int:
     inc_demo: dict = {}
     clip_st: dict = {}
     enf_st: dict = {}
+    inc_agent = start_incident_agent(ff, args)  # (11 Nov) --incident-agent: Omar's agent, shadow only
+    inc_agent_said = [time.time()]
+    inc_agent_res = None
     agents_demo: dict = {}
     hw_demo: dict = {}
     dep_demo: dict = {}
@@ -5071,6 +5108,17 @@ def main(argv=None) -> int:
                                                                                        encoding="utf-8")
                     demo = None
                     quit_ = True
+            if inc_agent is not None:  # (11 Nov) Omar's accident agent: its verdicts shown and logged, never acted on
+                try:
+                    for n_ in inc_agent.poll():
+                        note, note_until = n_, time.time() + 6
+                    if time.time() - inc_agent_said[0] >= 30.0:
+                        inc_agent_said[0] = time.time()
+                        log.info("%s; %s", inc_agent.status(), inc_agent.counts)
+                except Exception:  # noqa: BLE001 - reported, the viewer goes on without it
+                    log.exception("accident agent failed")
+                    inc_agent_res = inc_agent.close()
+                    inc_agent = None
             if ff.enf is not None:  # (31 Oct) the red-light camera site (cosim/enforcement.py)
                 try:
                     if enforce_step(ff, enf_st, args):
@@ -5271,6 +5319,16 @@ def main(argv=None) -> int:
     finally:
         if clip_st.get("rec") is not None:  # --record-clips stopped early (Esc, an error): the MP4s closed properly
             clip_st["rec"].close()
+        if inc_agent is not None:  # (11 Nov) its last windows written, its processes stopped
+            try:
+                inc_agent_res = inc_agent.close()
+            except Exception:  # noqa: BLE001
+                log.exception("closing the accident agent")
+        if inc_agent_res is not None:
+            inc_agent_res["args"] = sys.argv[1:]
+            (ROOT / "out" / f"{args.scenario}_freefly_incident_agent.json").write_text(
+                json.dumps(inc_agent_res, indent=2, default=str), encoding="utf-8")
+            log.info("accident agent: %s", json.dumps(inc_agent_res, default=str))
         if getattr(ff, "enf", None) is not None:  # the site's video closed properly, its last records written
             try:
                 ff.enf.stop()
@@ -5340,7 +5398,8 @@ def main(argv=None) -> int:
                                           / max(sum(p["moving_vehicle_pictures"] for p in pose_stats), 1), 4)
                                     if pose_stats else None),
                    "high": stats(demo["high"]), "street": stats(demo["street"]),
-                   "all": stats(demo["high"] + demo["street"]), "screenshots": shots}
+                   "all": stats(demo["high"] + demo["street"]), "screenshots": shots,
+                   "incident_agent": inc_agent_res}
             out = ROOT / "out" / (f"{args.scenario}_freefly_flight.json" if args.demo_flight_only else f"{args.scenario}_freefly_demo.json")
             out.write_text(json.dumps(res, indent=2), encoding="utf-8")
             print(json.dumps(res), flush=True)

@@ -3336,3 +3336,22 @@ checkpoints). Tests on the PC: 107 passed (with tests/test_live_eta.py, test_rem
 quit after a minute (it reads keys from the console, nul ends at once) and `timeout` refused it. Instead
 tools/town05_freefly.bat skips its pause on an error when FREEFLY_NOPAUSE is set (the jobs set it; a double-click keeps
 the pause).
+
+## 11 Nov (night): Omar's accident agent in the viewer, in shadow
+
+Full audit, plan and numbers: `docs/INCIDENT_AGENT_AUDIT.md`. His agent (GO-FLOW `feature/incident-carla-integration`,
+`03a7010`) is in `agents/incident_detection/`, his files byte-identical; ours around them: `stream.py` (his functions
+on a live camera, a window out as soon as it closes), `serve.py` (his process, own venv:
+`tools\setup_incident_agent.bat`), `cosim/incident_agent_proc.py` (YOLO + ByteTrack on the GPU),
+`cosim/incident_agent.py` (CARLA cameras at 5 fps, picture time = the SUMO second shown). Viewer:
+`--incident-agent "2328-2 looking W;2014-3 looking E"`. **Shadow:** verdicts shown and written to
+`out/incident_agent/<time>/windows.jsonl`, never a report: no model meets the agreed criteria.
+
+* Streaming = his batch path: 0 differences in 2 164 windows of real CARLA video (`replay.py`).
+* Viewer 47.4 fps -> 41.6 with 2 cameras, 38-39 with 4; the GTX 1650 keeps 2 cameras at 5 fps beside CARLA (4: half
+  the pictures lost; 93-137 ms a picture against 31 alone; batching did not help live, kept as an option).
+* Graded run (seed 12, 40 min, crash focus 0.5 on the 2 cameras, 6 crashes counted): v1 6 / 6 but 48 false alarms
+  per camera-hour, in alarm 56 % of normal time; his crash moment 3 / 6 within 6 s, no real false alarm in 0.37 h,
+  and it changes between two cameras at the same pose. His process killed live: back in 10 s, one window lost.
+* `lap` added to our venv (ByteTrack; `tools/setup_ml.bat`). Clips from before the evening of 6 Nov have `sim_s` in
+  0.5 s steps: time them by `carla_s` (`tools/incident_agent_rows.py` does).
