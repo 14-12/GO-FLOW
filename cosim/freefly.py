@@ -156,6 +156,13 @@ def parse_args(argv=None):
                     help="native camera: the detector sensor's width in pixels (default cosim/inspector.py)")
     ap.add_argument("--cctv-fov", type=float, default=90.0,
                     help="native: CARLA's view's horizontal field of view, so the detector's boxes land on the vehicles")
+    ap.add_argument("--look", choices=["town", "old"], default="town",
+                    help="the town's weather: town = the sky and its clouds follow the time of day (cosim/look.py); "
+                         "old = one clear weather all day (before 11 Nov)")
+    ap.add_argument("--overlay", choices=["alpha", "key"], default="alpha",
+                    help="how the overlay window is see-through: alpha = every pixel its own transparency (smooth "
+                         "edges, glass and soft shadows over the town; cosim/overlay.AlphaPresenter), key = one "
+                         "see-through colour, solid elsewhere (as before 11 Nov; also used if alpha fails)")
     ap.add_argument("--windowed", action="store_true",
                     help="keep CARLA in its window (default: borderless full screen on its monitor)")
     ap.add_argument("--no-cameras", dest="cameras", action="store_false",
@@ -2598,7 +2605,8 @@ def compose_overlay(screen, size, dirty_prev, full: bool, key, hud=None, keys_pi
         else:
             rects.append(screen.blit(panel, (w - panel.get_width() - 16, h - panel.get_height() - 16)))
     if prompt is not None and not cctv_full:
-        rects.append(screen.blit(prompt, ((w - prompt.get_width()) // 2, h - 96)))
+        # above the accident markers that sit at the bottom edge with their notice (11 Nov: they covered it)
+        rects.append(screen.blit(prompt, ((w - prompt.get_width()) // 2, h - 182)))
     if markers is not None and not cctv_full:  # the accidents (cosim/incident_hud.py)
         rects += markers(screen)
     return rects
@@ -4300,14 +4308,45 @@ def main(argv=None) -> int:
     screen = pygame.display.set_mode(tuple(size), pygame.NOFRAME)
     pygame.display.set_caption(f"{args.scenario.capitalize()} overlay")
     ov = Overlay(pygame.display.get_wm_info()["window"])
+    alpha = {"on": args.overlay == "alpha" and ov.ok, "pres": None, "key": KEY_COLOUR}
+    from cosim import ui as ui_kit
+
+    def canvas_for(window):
+        """What the overlay is drawn on: the window itself (colour key), or with --overlay alpha a surface with
+        per-pixel alpha that AlphaPresenter gives to the window."""
+        hwnd = pygame.display.get_wm_info()["window"]
+        if alpha["on"]:
+            from cosim.overlay import AlphaPresenter
+
+            if alpha["pres"] is not None:
+                alpha["pres"].close()
+            canvas = pygame.Surface(window.get_size(), pygame.SRCALPHA)
+            pres = AlphaPresenter(hwnd, window.get_size())
+            if pres.ok and tuple(canvas.get_masks()) == (0xFF0000, 0xFF00, 0xFF, 0xFF000000):
+                ov.restyle(hwnd, alpha=True)
+                alpha["pres"], alpha["key"] = pres, (0, 0, 0, 0)
+                ui_kit.ALPHA = True
+                return canvas
+            log.warning("overlay: per-pixel alpha not available (%s), the colour key is used", pres.error or "pixel format")
+            alpha["on"], alpha["pres"], alpha["key"] = False, None, KEY_COLOUR
+        ov.restyle(hwnd)
+        ui_kit.ALPHA = False
+        return window
+
+    screen = canvas_for(screen)
     font = pygame.font.Font(str(ROOT / "assets" / "fonts" / "Barlow-Medium.ttf"), 13)
     font_b = pygame.font.Font(str(ROOT / "assets" / "fonts" / "Barlow-SemiBold.ttf"), 15)
 
     def pill(text: str, f=font, bg=(16, 19, 28), fg=(226, 232, 245), pad=14, h=26) -> pygame.Surface:
         t = f.render(text, True, fg)
-        surf = pygame.Surface((t.get_width() + 2 * pad, h))
-        surf.fill(KEY_COLOUR)
-        pygame.draw.rect(surf, bg, surf.get_rect(), border_radius=h // 2)
+        if alpha["on"]:  # smooth ends: drawn 3x and scaled down
+            big = pygame.Surface(((t.get_width() + 2 * pad) * 3, h * 3), pygame.SRCALPHA)
+            pygame.draw.rect(big, (*bg[:3], 236), big.get_rect(), border_radius=h * 3 // 2)
+            surf = pygame.transform.smoothscale(big, (t.get_width() + 2 * pad, h))
+        else:
+            surf = pygame.Surface((t.get_width() + 2 * pad, h))
+            surf.fill(KEY_COLOUR)
+            pygame.draw.rect(surf, bg, surf.get_rect(), border_radius=h // 2)
         surf.blit(t, (pad, (h - t.get_height()) // 2))
         return surf
 
@@ -4439,8 +4478,14 @@ def main(argv=None) -> int:
                     # (10 Nov) the car where the picture shows it, not SUMO's newest step (the SUMO thread runs a
                     # step or two ahead of the picture: the mini-map's car was ahead of the town's)
                     msnap = dict(msnap, xy=ff.scen.frame.to_sumo_xy(sh[1], sh[2]), angle=sh[3] + 90.0)
-                mm = fol["map"].render(msnap, time.time(), fol["view"], free=free, intro=intro)
-                mm_xy = (size[0] - mm.get_width() - 16, size[1] - mm.get_height() - 16)
+                held = fol.get("mm_held")
+                if msnap is None and fol["vid"] is None and held is not None and time.time() - held[0] < 0.2:
+                    mm = held[1]  # flying: the town's map 5 times a second, also while a marker redraws 30 times
+                else:
+                    mm = fol["map"].render(msnap, time.time(), fol["view"], free=free, intro=intro)
+                    fol["mm_held"] = (time.time(), mm)
+                gap = 8 if ui_kit.ALPHA else 16   # (a glass panel carries its shadow's margin)
+                mm_xy = (size[0] - mm.get_width() - gap, size[1] - mm.get_height() - gap)
             rects = []
             if labels:  # the places' labels, kept off the clock and the mini-map
                 avoid = [pygame.Rect(0, 0, hud.W + 40, hud.H + 70)] if ui["show"] else []
@@ -4456,7 +4501,8 @@ def main(argv=None) -> int:
                 mm_h = mm.get_height() + 10
             if fc is not None:  # chips and pills only with --goflow-hud; the panel above the mini-map, unless following
                 rects += forecast_hud.draw(scr, tuple(size), tf, centres, getattr(ff, "forecast_anchors", {}), fc,
-                                           now, args.goflow_hud, panel=fsnap is None, bottom=16 + mm_h)
+                                           now, args.goflow_hud, panel=fsnap is None,
+                                           bottom=(8 if ui_kit.ALPHA else 16) + max(0, mm_h - (16 if ui_kit.ALPHA else 0)))
             return rects
 
         return paint
@@ -4469,17 +4515,21 @@ def main(argv=None) -> int:
         want = ov.client_size()
         if want and list(want) != size:  # the overlay covers the whole CARLA picture
             size[:] = list(want)
-            screen = pygame.display.set_mode(tuple(size), pygame.NOFRAME)
-            ov.restyle(pygame.display.get_wm_info()["window"])
+            screen = canvas_for(pygame.display.set_mode(tuple(size), pygame.NOFRAME))
             ui["follow_t"] = 0.0
             full = True
-        rects = compose_overlay(screen, tuple(size), dirty_prev, full, KEY_COLOUR,
+        rects = compose_overlay(screen, tuple(size), dirty_prev, full, alpha["key"],
                                 hud=(lambda scr: hud.draw(scr, st, margin=16), hud.W, hud.H) if ui["show"] else None,
                                 keys_pill=keys_pill if keys_help else None,
                                 prompt=(pill(prompt, font_b, bg=(255, 196, 84), fg=(20, 20, 20), h=34, pad=18)
                                         if prompt else None),
                                 panel=panel, native=native, markers=markers_draw())
-        if full:
+        if alpha["on"]:
+            alpha["pres"].present(screen, rects + dirty_prev, full)
+            if alpha["pres"].failed == 1:
+                log.warning("overlay: %s", alpha["pres"].error)
+                alpha["pres"].failed += 1
+        elif full:
             pygame.display.flip()
         else:
             pygame.display.update(rects + dirty_prev)
@@ -4536,6 +4586,8 @@ def main(argv=None) -> int:
             draw(state(status="LOADING", note=msg))
         ticker.tick(20)
         if ff.error and not th.is_alive():
+            if os.environ.get("FREEFLY_NOPAUSE"):  # an unattended job: nobody is there to press Esc
+                break
             continue
     if not ff.ready:
         pygame.quit()
@@ -4558,7 +4610,9 @@ def main(argv=None) -> int:
     world, cs = ff.world, ff.cs
     cams = ff.cams
     ui["front"] = args.demo <= 0  # the demo's screenshots want the overlay over CARLA whatever is in front
-    weather = carla.WeatherParameters(**WEATHER["clear"])
+    from cosim import look as look_mod
+
+    weather = carla.WeatherParameters(**(WEATHER["clear"] if args.look == "old" else look_mod.weather_fields(45.0, 12.0)))
     last_sun, last_sun_t = None, 0.0
     note, note_until = "", 0.0
     fps_shown, fps_t = 0.0, time.time()
@@ -4993,6 +5047,9 @@ def main(argv=None) -> int:
                 if time.time() - last_sun_t > 0.5:
                     az, el = scenario_sun(clock.seconds_of_day, lat, lon)
                     if last_sun is None or abs(el - last_sun[1]) > 0.3 or abs(az - last_sun[0]) > 0.5:
+                        if args.look != "old":  # the sky, haze and clouds of this sun (cosim/look.py)
+                            for k_, v_ in look_mod.weather_fields(el, clock.seconds_of_day / 3600.0).items():
+                                setattr(weather, k_, v_)
                         weather.sun_altitude_angle = el
                         weather.sun_azimuth_angle = carla_sun_azimuth(az)
                         world.set_weather(weather)

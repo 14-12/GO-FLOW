@@ -27,6 +27,7 @@ import math
 
 import pygame
 
+from cosim import ui
 from cosim.hud import FONTS
 from cosim.place_icons import Painter, occupancy_colour
 from cosim.place_icons import colour as kind_colour
@@ -760,7 +761,7 @@ class MiniMap:
             m = self._map(None, free, t, 1.0)
             h = head.get_height() + m.get_height() + foot.get_height()
             out = pygame.Surface((W + 2, h + 2))
-            out.fill(EDGE)
+            out.fill(BG if ui.ALPHA else EDGE)
             inner = pygame.Surface((W, h))
             inner.fill(BG)
             inner.blit(head, (0, 0))
@@ -768,7 +769,7 @@ class MiniMap:
             inner.blit(foot, (0, head.get_height() + m.get_height()))
             out.blit(inner, (1, 1))
             self._info_key = None
-            return out
+            return ui.glass_fast(out, radius=14, body_alpha=226)
         self.ease_to(self.trip_box(snap, MAP_H), MAP_H, t)
         park = None
         live = free.get("places") or {}
@@ -790,7 +791,7 @@ class MiniMap:
         shown = round((info.get_height() + PAD) * ChaseEase.ease(intro))   # the text unfolds under the map
         h = head.get_height() + m.get_height() + shown
         s = pygame.Surface((W + 2, h + 2))
-        s.fill(EDGE)
+        s.fill(BG if ui.ALPHA else EDGE)
         inner = pygame.Surface((W, h))
         inner.fill(BG)
         inner.blit(head, (0, 0))
@@ -798,7 +799,7 @@ class MiniMap:
         if shown > 0:
             inner.blit(info, (PAD, head.get_height() + m.get_height()), pygame.Rect(0, 0, W - 2 * PAD, shown))
         s.blit(inner, (1, 1))
-        return s
+        return ui.glass_fast(s, radius=14, body_alpha=234)
 
 
 class ChaseEase:

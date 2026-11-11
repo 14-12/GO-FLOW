@@ -20,6 +20,7 @@ import math
 
 import pygame
 
+from cosim import ui
 from cosim.hud import FONTS
 
 COLOURS = {"crash": (232, 64, 56), "police en route": (64, 132, 255), "secured": (64, 132, 255),
@@ -63,8 +64,24 @@ class MarkerHud:
             return w / 2.0 + cy / cx * fpx, h / 2.0 - cz / cx * fpx, True
         return w / 2.0 + cy * 1e3, h / 2.0 - cz * 1e3, False  # behind: only the direction counts
 
+    _signs: dict = {}
+
+    @classmethod
+    def _triangle(cls, surf, cx, cy, s, colour):
+        if ui.ALPHA:  # smooth edges: drawn 4x once per size and colour, scaled down
+            key = (round(s), colour)
+            sign = cls._signs.get(key)
+            if sign is None:
+                n = 2 * (round(s) + 8)
+                big = pygame.Surface((n * 4, n * 4), pygame.SRCALPHA)
+                cls._triangle_shape(big, n * 2, n * 2, round(s) * 4, colour)
+                sign = cls._signs[key] = pygame.transform.smoothscale(big, (n, n))
+            surf.blit(sign, (int(cx) - sign.get_width() // 2, int(cy) - sign.get_height() // 2))
+            return
+        cls._triangle_shape(surf, cx, cy, s, colour)
+
     @staticmethod
-    def _triangle(surf, cx, cy, s, colour):
+    def _triangle_shape(surf, cx, cy, s, colour):
         pts = [(cx, cy - s), (cx + s * 0.95, cy + s * 0.68), (cx - s * 0.95, cy + s * 0.68)]
         pygame.draw.polygon(surf, (16, 17, 20), [(px + (px - cx) * 0.22, py + (py - cy) * 0.22) for px, py in pts])
         pygame.draw.polygon(surf, colour, pts)
@@ -82,7 +99,7 @@ class MarkerHud:
         surf.blit(t, (13, 4))
         if b:
             surf.blit(b, (13, 4 + t.get_height()))
-        return surf
+        return ui.glassify(surf)
 
     def draw(self, screen, size, view_tf, markers: list[dict], now: float, plates: dict | None = None) -> list:
         """Draws the markers; returns the rectangles drawn (the overlay sends only those)."""

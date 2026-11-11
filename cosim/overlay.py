@@ -2,7 +2,8 @@
 
 CARLA's packaged server cannot be given a widget of our own: a HUD inside Unreal needs the editor
 and a rebuild. So the clock is a borderless window laid exactly over the top-left corner of the
-CARLA picture: everything but the card is see-through (a colour key), mouse clicks go through it
+CARLA picture: everything but the card is see-through (since 11 Nov every pixel has its own transparency,
+AlphaPresenter below; before, and as the fallback, one see-through colour key), mouse clicks go through it
 to CARLA, it never takes the keyboard focus, it follows the CARLA window when that moves, and it
 hides itself when another application is in front.
 
@@ -94,16 +95,21 @@ class Overlay:
         if hwnd:  # 0: keys only (cosim/arrow_proc.py has no window of its own)
             self.restyle(hwnd)
 
-    def restyle(self, hwnd: int) -> None:
-        """See-through, click-through, never focused, on top (again after the window was resized)."""
+    def restyle(self, hwnd: int, alpha: bool = False) -> None:
+        """See-through, click-through, never focused, on top (again after the window was resized).
+        alpha: the picture comes from AlphaPresenter (every pixel its own transparency), not the colour key."""
         if not self.ok:
             return
         self.hwnd = hwnd
         u = self.u
         style = u.GetWindowLongPtrW(hwnd, _GWL_EXSTYLE)
-        u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, style | _WS_EX)
-        r, g, b = KEY_COLOUR
-        u.SetLayeredWindowAttributes(hwnd, r | (g << 8) | (b << 16), 0, _LWA_COLORKEY)
+        if alpha:  # a window given a colour key cannot take UpdateLayeredWindow until the layered bit is set anew
+            u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, (style | _WS_EX) & ~0x00080000)
+            u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, style | _WS_EX)
+        else:
+            u.SetWindowLongPtrW(hwnd, _GWL_EXSTYLE, style | _WS_EX)
+            r, g, b = KEY_COLOUR
+            u.SetLayeredWindowAttributes(hwnd, r | (g << 8) | (b << 16), 0, _LWA_COLORKEY)
         self.shown = None
 
     def fullscreen_carla(self) -> bool:
@@ -269,3 +275,142 @@ class Overlay:
         new = (now - self._down) | (tapped - self._down)
         self._down = now
         return new
+
+
+def premultiplied(surface, rect):
+    """The pixels of `rect` (x, y, w, h) of a pygame surface with per-pixel alpha, as Windows wants them for a
+    layered window: an array (h, w, 4) of B, G, R, A with the colours multiplied by their alpha."""
+    import numpy as np
+
+    x, y, w, h = rect
+    if hasattr(surface, "premul_alpha"):
+        # pygame's own multiply (C): several times faster than numpy's on the clock card and the mini-map. Of a
+        # copy: premul_alpha on a subsurface itself reads the wrong rows (pygame 2.6.1; seen as stripes over the
+        # whole picture, 11 Nov; tests/test_overlay_alpha.py)
+        sub = surface.subsurface((x, y, w, h)).copy().premul_alpha()
+        return np.frombuffer(sub.get_view("0"), dtype=np.uint8).reshape(h, sub.get_pitch() // 4, 4)[:, :w]
+    src = np.frombuffer(surface.get_view("0"), dtype=np.uint8).reshape(surface.get_height(), surface.get_pitch() // 4, 4)
+    s = src[y:y + h, x:x + w]
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    out[:, :, :3] = ((s[:, :, :3].astype(np.uint16) * s[:, :, 3:4].astype(np.uint16) + 127) // 255).astype(np.uint8)
+    out[:, :, 3] = s[:, :, 3]
+    return out
+
+
+class AlphaPresenter:
+    """The overlay's picture with a transparency of its own in every pixel (11 Nov): smooth edges, glass, soft
+    shadows over CARLA's picture, where the colour key gave see-through or solid and nothing between.
+
+    The viewer draws on a pygame surface with per-pixel alpha (straight alpha, as pygame blends); `present`
+    copies the changed rectangles into a 32-bit bitmap, colours multiplied by their alpha as Windows wants them,
+    and gives the window that bitmap (UpdateLayeredWindowIndirect, only the changed part)."""
+
+    def __init__(self, hwnd: int, size: tuple[int, int]):
+        import numpy as np
+
+        self.np = np
+        self.hwnd, self.size = hwnd, (int(size[0]), int(size[1]))
+        self.ok = False
+        self.error = ""
+        g, u = ctypes.windll.gdi32, ctypes.windll.user32
+        self.g, self.u = g, u
+        w, h = self.size
+
+        class BITMAPINFOHEADER(ctypes.Structure):
+            _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
+                        ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+                        ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+                        ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+                        ("biClrImportant", wintypes.DWORD)]
+
+        class BLENDFUNCTION(ctypes.Structure):
+            _fields_ = [("BlendOp", ctypes.c_byte), ("BlendFlags", ctypes.c_byte),
+                        ("SourceConstantAlpha", ctypes.c_ubyte), ("AlphaFormat", ctypes.c_byte)]
+
+        class ULWINFO(ctypes.Structure):
+            _fields_ = [("cbSize", wintypes.DWORD), ("hdcDst", wintypes.HDC), ("pptDst", ctypes.POINTER(wintypes.POINT)),
+                        ("psize", ctypes.POINTER(wintypes.SIZE)), ("hdcSrc", wintypes.HDC),
+                        ("pptSrc", ctypes.POINTER(wintypes.POINT)), ("crKey", wintypes.COLORREF),
+                        ("pblend", ctypes.POINTER(BLENDFUNCTION)), ("dwFlags", wintypes.DWORD),
+                        ("prcDirty", ctypes.POINTER(wintypes.RECT))]
+
+        self._ULWINFO = ULWINFO
+        g.CreateCompatibleDC.argtypes = [wintypes.HDC]
+        g.CreateCompatibleDC.restype = wintypes.HDC
+        g.CreateDIBSection.argtypes = [wintypes.HDC, ctypes.c_void_p, ctypes.c_uint, ctypes.POINTER(ctypes.c_void_p),
+                                       wintypes.HANDLE, wintypes.DWORD]
+        g.CreateDIBSection.restype = wintypes.HBITMAP
+        g.SelectObject.argtypes = [wintypes.HDC, wintypes.HGDIOBJ]
+        g.SelectObject.restype = wintypes.HGDIOBJ
+        g.DeleteObject.argtypes = [wintypes.HGDIOBJ]
+        g.DeleteDC.argtypes = [wintypes.HDC]
+        u.UpdateLayeredWindowIndirect.argtypes = [wintypes.HWND, ctypes.POINTER(ULWINFO)]
+        u.UpdateLayeredWindowIndirect.restype = wintypes.BOOL
+        bi = BITMAPINFOHEADER()
+        bi.biSize = ctypes.sizeof(BITMAPINFOHEADER)
+        bi.biWidth, bi.biHeight, bi.biPlanes, bi.biBitCount = w, -h, 1, 32  # top-down, BGRA
+        self.dc = g.CreateCompatibleDC(None)
+        bits = ctypes.c_void_p()
+        self.bmp = g.CreateDIBSection(self.dc, ctypes.byref(bi), 0, ctypes.byref(bits), None, 0)
+        if not self.dc or not self.bmp or not bits.value:
+            self.error = "no bitmap for the overlay"
+            return
+        self.old = g.SelectObject(self.dc, self.bmp)
+        self.px = np.ctypeslib.as_array((ctypes.c_ubyte * (w * h * 4)).from_address(bits.value)).reshape(h, w, 4)
+        self.px[:] = 0
+        self.blend = BLENDFUNCTION(0, 0, 255, 1)  # AC_SRC_OVER, the bitmap's own alpha (AC_SRC_ALPHA)
+        self.sz = wintypes.SIZE(w, h)
+        self.src = wintypes.POINT(0, 0)
+        self.ok = True
+        self.failed = 0
+
+    def close(self) -> None:
+        if getattr(self, "bmp", None):
+            self.g.SelectObject(self.dc, self.old)
+            self.g.DeleteObject(self.bmp)
+            self.g.DeleteDC(self.dc)
+            self.bmp = None
+        self.ok = False
+
+    def present(self, surface, rects, full: bool = False) -> None:
+        """Send `rects` of the per-pixel-alpha `surface` (everything when `full`) to the window."""
+        if not self.ok:
+            return
+        w, h = self.size
+        if full:
+            rects = [(0, 0, w, h)]
+        rects = {(int(r[0]), int(r[1]), int(r[2]), int(r[3])) for r in rects}  # (the clock's is in both lists)
+        x0 = y0 = 1 << 30
+        x1 = y1 = -1
+        sent, area = [], 0
+        for r in rects:
+            rx, ry, rw, rh = r
+            ax, ay, bx, by = max(0, rx), max(0, ry), min(w, rx + rw), min(h, ry + rh)
+            if bx <= ax or by <= ay:
+                continue
+            self.px[ay:by, ax:bx] = premultiplied(surface, (ax, ay, bx - ax, by - ay))
+            x0, y0, x1, y1 = min(x0, ax), min(y0, ay), max(x1, bx), max(y1, by)
+            sent.append((ax, ay, bx, by))
+            area += (bx - ax) * (by - ay)
+        if x1 < 0:
+            return
+        # far-apart parts (the clock top left, the mini-map bottom right): each on its own, not the screen between
+        if len(sent) <= 8 and (x1 - x0) * (y1 - y0) > 2 * area:
+            for q in sent:
+                self._send(*q)
+        else:
+            self._send(x0, y0, x1, y1)
+
+    def _send(self, x0: int, y0: int, x1: int, y1: int) -> None:
+        info = self._ULWINFO()
+        info.cbSize = ctypes.sizeof(self._ULWINFO)
+        info.psize = ctypes.pointer(self.sz)
+        info.hdcSrc = self.dc
+        info.pptSrc = ctypes.pointer(self.src)
+        info.pblend = ctypes.pointer(self.blend)
+        info.dwFlags = 0x2  # ULW_ALPHA
+        dirty = wintypes.RECT(x0, y0, x1, y1)
+        info.prcDirty = ctypes.pointer(dirty)
+        if not self.u.UpdateLayeredWindowIndirect(self.hwnd, ctypes.byref(info)):
+            self.failed += 1
+            self.error = f"UpdateLayeredWindowIndirect failed ({ctypes.GetLastError()})"

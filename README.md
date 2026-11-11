@@ -189,7 +189,10 @@ town05_freefly.bat
 ```
 
 `town05_freefly.bat epic` uses CARLA's full Epic quality instead of the lighter default profile
-(`tools\fps_test\engine_medium*.ini`).
+(`tools\fps_test\engine_medium_fs.ini`: 80 % resolution upscaled, reflections on glass). `set FREEFLY_INI=name`
+before the launcher starts with another profile of `tools\fps_test`: `medium_fs_10nov` is the one used until 11 Nov
+(58 % resolution), `medium_fs_night` draws the street lights' shadows only where they are large on screen (about
+half more pictures a second at night, but the traffic cameras then miss more emergency vehicles at night).
 
 | Viewer option | Default | What it does |
 | --- | --- | --- |
@@ -216,6 +219,8 @@ town05_freefly.bat
 | `--enforce-record SECONDS` | 0 | With `--enforce`: record both cameras for that long, then quit |
 | `--seed` | 42 | SUMO's random seed |
 | `--windowed` | | Keep CARLA in a window (set by `CARLA_RES`) |
+| `--look town\|old` | town | The sky: `town` follows the time of day (more clouds and a deeper blue by day, an orange sky at sunrise and sunset; `cosim/look.py`), `old` is one clear weather all day |
+| `--overlay alpha\|key` | alpha | How the overlay window is see-through: `alpha` gives every pixel its own transparency (glass panels, soft shadows, smooth edges; `cosim/overlay.AlphaPresenter`, `cosim/ui.py`), `key` is the colour key used until 11 Nov (also the fallback if alpha fails) |
 | `--goflow-prediction` / `--goflow-traffic` | off | The GO-FLOW team's forecasters in their own processes (`agents/`, their own venvs: `tools\setup_goflow_prediction.bat`, `setup_goflow_traffic.bat`): DSO4's queue forecasts and its "long queue likely within 3 min" alerts (a classifier, `agents/goflow_prediction/goflow_prediction/congestion.py`), with GO-FLOW's occupancy forecast and traffic state as its input (`cosim/goflow_prediction.py`). The town never waits for them |
 | `--goflow-hud` | off | With `--goflow-prediction`: on the roads near you, a chip over each approach GO-FLOW calls congested or severe, or DSO4 forecasts at least half full; DSO4's alert pills over the junctions. The forecast panel (bottom right: the three roads most likely to get a long queue within 3 minutes, the last alert) shows whenever the forecasters run; F10 flies to the road most at risk (`cosim/goflow_prediction_hud.py`) |
 | `--route-guide / --no-route-guide` | on | The route agent and its mini-map: F follows a car (section 5.9) |
@@ -333,7 +338,7 @@ Three ideas shape the design.
 | Plate process | process | `cosim/plate_proc.py` | Gives every car its own number plates, front and back |
 | Ground process | process | `cosim/ground_proc.py` | Answers road-height queries, so the main loop never waits for the server |
 | Detector process | process (on H) | `cosim/inspector.py` | Loads PyTorch and Ultralytics, then runs `models/carla-yolo26n-t05.pt` on the camera's pictures |
-| Overlay | window in the viewer | `cosim/overlay.py`, `hud.py`, `incident_hud.py` | A see-through, click-through window laid over CARLA: clock, prompts, markers, inspector |
+| Overlay | window in the viewer | `cosim/overlay.py`, `ui.py`, `hud.py`, `incident_hud.py` | A see-through, click-through window laid over CARLA (per-pixel alpha): clock, prompts, markers, inspector |
 | Loading screen | process (from the .bat) | `cosim/splash.py` | Shown until the town is ready |
 
 ### 5.3 From a SUMO step to a CARLA picture
@@ -549,7 +554,8 @@ Urban Traffic CARLA/
 │  ├─ sumo_side.py           SUMO half: TraCI, controllers, walk phases, cycle keeper
 │  ├─ carla_side.py          CARLA half: actors, lights, road heights
 │  ├─ pose_proc.py  fly_proc.py  plate_proc.py  ground_proc.py   helper processes
-│  ├─ overlay.py  hud.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
+│  ├─ overlay.py  ui.py  hud.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
+│  ├─ look.py                                    the sky for the time of day
 │  ├─ controllers.py  coordination.py  signal_plan.py  signal_heads.py  ped_lights.py  signal_audit.py
 │  ├─ agents_actuated.py  agents.py  camera_reports.py  perception.py  inspector.py  cctv.py
 │  ├─ incidents.py  incident_scene.py  towing.py  depots.py  highway.py  drivers.py  extras.py

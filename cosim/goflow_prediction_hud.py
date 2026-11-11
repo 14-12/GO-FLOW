@@ -19,6 +19,7 @@ import math
 
 import pygame
 
+from cosim import ui
 from cosim.agent_hud import BG, EDGE, NEAR_M, AgentHud
 from cosim.hud import FONTS
 
@@ -123,7 +124,7 @@ class ForecastHud(AgentHud):
         surf.fill(BG)
         pygame.draw.rect(surf, colour, (0, 0, 5, surf.get_height()))
         surf.blit(t, (12, 3))
-        return surf
+        return ui.glassify(surf, radius=6)
 
     def draw_chips(self, screen, size, view_tf, anchors: dict, rows: list) -> list:
         """anchors: approach -> CARLA (x, y, z) on its lanes before the stop line; rows: GoflowPrediction.at_risk for
@@ -205,7 +206,7 @@ class ForecastHud(AgentHud):
                 x = 31
             surf.blit(s, (x, yy))
             yy += s.get_height() + 3
-        return surf
+        return ui.glassify(surf, radius=12)
 
     def draw(self, screen, size, view_tf, centres: dict, anchors: dict, fc, now: float, pills: bool,
              panel: bool = True, bottom: int = 16) -> list:
@@ -230,5 +231,5 @@ class ForecastHud(AgentHud):
         if key != self._panel_key:          # rebuilt only when what it says changes
             self._panel_key, self._panel = key, self.panel(status, warm, top, last, now, n_recent)
         p = self._panel
-        rects.append(screen.blit(p, (w - p.get_width() - 16, h - p.get_height() - bottom)))
+        rects.append(screen.blit(p, (w - p.get_width() - (8 if ui.ALPHA else 16), h - p.get_height() - bottom)))
         return rects

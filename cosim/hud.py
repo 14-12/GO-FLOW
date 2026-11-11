@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pygame
 
-from cosim import daily
+from cosim import daily, ui
 
 FONTS = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 SS = 3  # supersampling of the shapes
@@ -371,6 +371,8 @@ class Hud:
         return s
 
     def draw(self, screen: pygame.Surface, st: HudState, margin: int = 22) -> None:
+        if ui.ALPHA:  # the card's soft shadow on the town
+            screen.blit(ui._shadow(self.W, self.H, 20, 130), (margin - ui.MARGIN, margin - ui.MARGIN))
         screen.blit(self.card(st), (margin, margin))
         screen.blit(self.strip(st), (margin, margin + self.H + 10))
         hp = self.help(st.help_alpha)

@@ -18,7 +18,10 @@ set FULL=1
 if not "%CARLA_RES%"=="" set FULL=0
 if "%CARLA_RES%"=="" set CARLA_RES=1280x720
 if "%FULL%"=="0" set FREEFLY_ARGS=--windowed %FREEFLY_ARGS%
-if "%FULL%"=="1" if /i "%INI%"=="medium" set INI=medium_fs
+rem the viewer's own profile, in a window too since 11 Nov ("medium" itself stays as the datasets and films were made)
+if /i "%INI%"=="medium" set INI=medium_fs
+rem another profile of tools\fps_test for this start (measuring one against another): set FREEFLY_INI=name
+if not "%FREEFLY_INI%"=="" set INI=%FREEFLY_INI%
 for /f "tokens=1,2 delims=x" %%a in ("%CARLA_RES%") do (set RX=%%a& set RY=%%b)
 "%PY%" -c "import pygame" >nul 2>&1 || "%PY%" -m pip install pygame==2.6.1
 

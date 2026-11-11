@@ -181,3 +181,16 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
   run: 0 ring cars vanished, 2 vehicles in all. Dev seeds: ring trips 76 % within 20 %; the town about half the runs
   either way (taken off 16.2 -> 23.6 on the means). Next to look at: town cars going home ending at their door in
   view when their home stop cannot be set (road -20).
+
+## 11. 11 Nov (day): the viewer's picture and overlay
+
+* Overlay with per-pixel alpha (glass panels, `cosim/ui.py`, `overlay.AlphaPresenter`; `--overlay key` = before), the
+  sky by the time of day (`cosim/look.py`; `--look old` = before), render profile at 80 % resolution with reflections
+  (`engine_medium_fs.ini`; `set FREEFLY_INI=medium_fs_10nov` = before). Demo fps as before or a little above at 12:00,
+  17:30, 22:00; 358 tests pass; the detector finds the same share of objects (0.637 against 0.638).
+* Left out for the detector: sharpening (-8 % vehicles found). The user's decision: `medium_fs_night` (a third more
+  pictures a second at night, fewer emergency vehicles found by the cameras at night).
+* Any change to the picture: check it with `tools\look_detector_check.bat` before keeping it, and look at the
+  screenshots (a broken overlay did not show in the fps).
+* Above 450 vehicles in town (15 min at the evening peak in real time) the viewer is at 20 fps and under in some
+  10 s windows, before as now. The road's whiteness at midday: no exposure setting reaches the packaged build.

@@ -117,6 +117,11 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=11)
     ap.add_argument("--limit-cams", type=int, default=0, help="only the first N cameras (quick check)")
     ap.add_argument("--conditions", type=int, default=0, help="only the first N conditions (quick check)")
+    ap.add_argument("--look", choices=["old", "town"], default=None,
+                    help="the viewer's weather instead of the training conditions (cosim/look.py: old = one clear "
+                         "weather, town = by the time of day), at --hours: for checking the detector on the "
+                         "viewer's picture (tools/look_detector_check.py)")
+    ap.add_argument("--hours", default="8+12.5+17.75+20.75+21.75+23.5", help="--look: the hours, '+' between")
     a = ap.parse_args(argv)
     W, H = RES
     out = ROOT / a.out
@@ -191,10 +196,17 @@ def main(argv=None) -> int:
         cam_xy = np.array([[c.x, c.y] for c in cams])
         weather = carla.WeatherParameters()
         conditions = CONDITIONS[:a.conditions] if a.conditions else CONDITIONS
+        if a.look:
+            from cosim import look as look_mod
+
+            conditions = [(float(h), a.look) for h in a.hours.split("+")]
         for hour, wname in conditions:
-            for k, v in WEATHER[wname].items():
-                setattr(weather, k, v)
             az, el = scenario_sun(hour * 3600, scen.lat, scen.lon)
+            if a.look:
+                weather = carla.WeatherParameters(**look_mod.weather_fields(el, hour, look=a.look))
+            else:
+                for k, v in WEATHER[wname].items():
+                    setattr(weather, k, v)
             weather.sun_altitude_angle, weather.sun_azimuth_angle = el, carla_sun_azimuth(az)
             world.set_weather(weather)
             night = el < 3.0

@@ -3355,3 +3355,88 @@ on a live camera, a window out as soon as it closes), `serve.py` (his process, o
   and it changes between two cameras at the same pose. His process killed live: back in 10 s, one window lost.
 * `lap` added to our venv (ByteTrack; `tools/setup_ml.bat`). Clips from before the evening of 6 Nov have `sim_s` in
   0.5 s steps: time them by `carla_s` (`tools/incident_agent_rows.py` does).
+
+## 11 Nov (day): the viewer's picture and overlay (the user's request: make it look impressive, 20 fps kept)
+
+Rules of the job: fps before and after every change on the same flight (`--demo 70`, full screen, forecasts on; one
+run to the next differs by about 1 fps), screenshots of the running town, the detector checked on the new picture,
+`tools\test.bat` passing. Everything is in `Claude outputs\vq\` (base, lab, t).
+
+**Before** (`medium_fs` of 10 Nov, colour-key overlay), flying high / street level, fps (1 % low):
+
+| town time | before | shipped |
+|---|---|---|
+| 12:00 | 43.5 / 52.2 (34.8 / 36.2) | 43.3 / 53.5 (35.6 / 37.8) |
+| 17:30 | 34.1 / 39.1 (27.8 / 29.3) | 36.2 / 41.1 (30.4 / 32.8) |
+| 22:00 | 29.8 / 50.3 (21.4 / 26.8) | 29.6 / 45.6 (22.3 / 26.0) |
+
+Tests: 353 passed before, 358 after (5 new, `tests/test_overlay_alpha.py`).
+
+**What the frame rate depends on** (measured, not assumed):
+* With the town's traffic the viewer waits for the CPU, not the GPU: at 17:30 the same 34-35 / 39-40 fps at 58, 67,
+  75, 88 and 100 % resolution; GPU 40-77 % busy at 58 %, 50-85 % at 88 %, 3.0-3.3 GB of the 4. Without traffic the
+  same views give 100 / 160 fps (`tools/look_lab.py`).
+* At night the 302 street lights' shadows are the cost: no traffic, 23:30, flying high 44 fps, with shadows off 80;
+  their resolution changes nothing, their number does.
+
+**Kept:**
+* **Overlay with per-pixel alpha** (`cosim/overlay.AlphaPresenter`, `--overlay alpha`, the default; `key` = the
+  old colour key, also the fallback). The clock card, mini-map, forecast panel, markers, chips and place labels are
+  glass with rounded corners, a hairline border and a soft shadow (`cosim/ui.py`: `glassify` turns a panel drawn
+  the old way into glass, so each panel keeps its drawing code; `glass_fast` for the mini-map, redrawn every
+  picture). Same fps (35.6 / 40.0 against 34.7 / 40.0). Main loop: overlay 153-165 ms/s against 132-136 with the
+  key, 30 loops a second both. The first version cost 563 ms/s (numpy): now pygame's own multiply, and the mini-map
+  held 0.2 s while flying.
+* **A bug caught by its screenshot, not by its numbers:** pygame 2.6.1's `premul_alpha` on a subsurface reads the
+  wrong rows: stripes over the whole picture, the fps unchanged. A copy first; the test compares any rectangle with
+  the plain formula.
+* **Render profile** `tools/fps_test/engine_medium_fs.ini`: 80 % resolution instead of 58 % (1536x864 on this
+  screen), Catmull-Rom filter for the temporal anti-aliasing, screen-space reflections on (glass towers, cars: 35.4 /
+  40.2 with, 35.5-35.9 / 40.6-41.1 without), anisotropy 8. The viewer in a window uses it too; `medium` itself is
+  unchanged (the datasets and films were made with it). `set FREEFLY_INI=name` starts with another profile.
+* **The sky by the time of day** (`cosim/look.py`, `--look town`, the default; `old` = one clear weather): 28 %
+  clouds and less Rayleigh scattering by day (a deeper blue), more scattering and fewer clouds at a low sun (orange),
+  12 % clouds at night; CARLA's defaults for the fields the old weather left at 0. No cost (lab, 18 weathers, +-5 of
+  100-160 fps).
+* The prompt ("H Inspect ...", "F Follow ...") sits above the accident markers that covered it.
+* An unattended job (`FREEFLY_NOPAUSE`) quits when loading fails (it waited for Esc and held the job runner).
+
+**The detector on the new picture** (`tools/look_detector_check.bat` and `.py`: `make_dataset_town05.py --look`,
+seed 11, 12 cameras, 6 hours from 08:00 to 23:30, 286 pictures, the same traffic in every set, labels from the
+instance camera; `carla-yolo26n-t05` at the inspector's 0.35):
+
+| set | objects found | vehicles | siren ON | siren off | false boxes / 100 pictures |
+|---|---|---|---|---|---|
+| before (twice) | 0.638, 0.638 | 2572, 2577 of 3854 | 62, 61 of 159 | 16 of 90 | 27.3, 26.6 |
+| old profile + new sky | 0.643 | 2599 | 61 | 16 | 30.4 |
+| with `r.Tonemapper.Sharpen=1.6` | 0.585 | 2365 | 45 | 15 | 36.8 |
+| with the street lights' small shadows culled (twice) | 0.640, 0.638 | 2589, 2578 | 54, 56 | 18, 17 | 28.8, 28.8 |
+| **shipped** | **0.637** | **2575** | **58** | **19 of 91** | **29.7** |
+
+* Sharpening looked best and cost nothing, and it is out: it sharpens the cameras' pictures too and the detector
+  loses 8 % of the vehicles.
+* Culling the street lights' small shadows (`r.Shadow.TexelsPerPixelSpotlight/Pointlight=0.5`, `FadeResolution=256`,
+  `MinResolution=128`) gives 44.9 / 55.7 fps at 22:00 (1 % low 32.0) and the same picture to the eye, but at night
+  the cameras find fewer emergency vehicles with their lights on: 18-19 -> 12-13 of 60 at 21:45 and 23:30 (by day
+  the same). Not the default; kept as `engine_medium_fs_night.ini` (`set FREEFLY_INI=medium_fs_night`): the user's
+  decision.
+* What is left against before: siren ON 58 against 61-62 of 159 (80 % resolution alone 58, reflections alone 58),
+  7 more false boxes in 286 pictures, 3 more siren-off found. One run each; two runs of the same set differ by 1-2.
+
+**Evening peak** (`--set-time 17:30 --clock-speed 1 --demo 900`, full screen, no forecasters; measured with the
+profile of that hour, which also had the sharpening and the shadow culling: by day the lab gives the same fps with
+and without them): 10 s windows by vehicles in town, new / before: 150-250: 35.7 / 34.5; 250-350: 28.9 / 27.8;
+350-450: 25.6 / 23.6; 450-600: 20.7 / 20.1 (lowest window 18.1 / 17.5). **Above 450 vehicles the viewer is at the
+20 fps limit and under it in some windows, before as now**; in the 70 s demo at 17:30 the town holds 216. GPU
+3.63 GB against 3.57, 48 % busy against 43 %.
+
+**Tried, not kept:** exposure (the road is almost white at midday): `r.ExposureOffset`, `r.TonemapperGamma`,
+`r.Color.Mid`, `r.DefaultFeature.AutoExposure.Bias`, `r.EyeAdaptation.LensAttenuation` change nothing in the packaged
+build and `r.EyeAdaptationQuality=0` whites the picture out; fog, wetness, dust, Mie scattering (nothing worth
+having); the map's 82 "building" lights at night (no visible change); 3 shadow cascades at 2048 (-10 % without
+traffic, little to see); view distance, LOD and foliage back to 1.0 (nothing to see in the flight); ambient
+occlusion off (+10 % without traffic, not needed).
+
+**Not done, and why:** cars, people, roads and buildings are CARLA's packaged meshes and materials: changing them
+needs the Unreal Editor (and the vehicles' look feeds the detector). The CARLA window cannot be seen through
+computer use (masked): every picture is the viewer's own window grab.

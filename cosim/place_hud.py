@@ -12,6 +12,7 @@ import math
 
 import pygame
 
+from cosim import ui
 from cosim.agent_hud import EDGE, AgentHud
 from cosim.hud import FONTS
 from cosim.place_icons import Painter, colour, occupancy_colour
@@ -73,7 +74,7 @@ class PlaceHud(AgentHud):
         h = 44 if full else 34
         w = icon + 22 + max(name.get_width(), info.get_width() if info else 0) + 22
         surf = pygame.Surface((w, h))
-        surf.fill((1, 0, 1))                                   # (the overlay's colour key: see-through corners)
+        surf.fill(BG if ui.ALPHA else (1, 0, 1))               # (the overlay's colour key: see-through corners)
         kc = colour(p["kind"])
         pygame.draw.rect(surf, kc, surf.get_rect(), border_radius=h // 2)
         pygame.draw.rect(surf, BG, surf.get_rect().inflate(-4, -4), border_radius=h // 2 - 2)
@@ -85,6 +86,8 @@ class PlaceHud(AgentHud):
             surf.blit(info, (x + 11, 25))
         else:
             surf.blit(name, (x, (h - name.get_height()) // 2))
+        if ui.ALPHA:  # smooth round ends and a soft shadow; r.midbottom in draw() allows for the margin
+            surf = ui.glassify(surf, radius=h // 2, body_alpha=232, border=0, shadow=110, bg=BG)
         if len(self._cache) > 400:
             self._cache.clear()
         self._cache[key] = surf
@@ -116,12 +119,12 @@ class PlaceHud(AgentHud):
             full = d <= FULL_M
             line, col = info_line(p, hour, live) if full else ("", None)
             lab = self._label(p, line, col, full)
-            r = lab.get_rect(midbottom=(int(tip[0]), int(tip[1])))
+            r = lab.get_rect(midbottom=(int(tip[0]), int(tip[1]) + (ui.MARGIN if ui.ALPHA else 0)))
             r.clamp_ip(pygame.Rect(8, 8, w - 16, h - 16))          # (whole on screen; its stem still to its place)
             if any(r.colliderect(t) for t in taken) or any(r.colliderect(a) for a in avoid):
                 continue
             taken.append(r.inflate(8, 6))
-            shown.append((p, lab, r, (r.centerx, r.bottom), (int(base[0]), int(base[1]))))
+            shown.append((p, lab, r, (r.centerx, r.bottom - (ui.MARGIN if ui.ALPHA else 0)), (int(base[0]), int(base[1]))))
         for p, _lab, _r, tip, (bx, by) in shown:        # the stems under every label
             if 0 <= bx < w and 0 <= by < h:
                 kc = colour(p["kind"])

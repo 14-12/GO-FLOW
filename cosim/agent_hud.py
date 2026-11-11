@@ -20,6 +20,7 @@ import math
 
 import pygame
 
+from cosim import ui
 from cosim.hud import FONTS
 
 COLOURS = {"skip": (96, 165, 250), "walk": (148, 163, 184), "spill": (239, 68, 68), "noflow": (249, 115, 22),
@@ -64,7 +65,7 @@ class AgentHud:
         pygame.draw.rect(surf, colour, (0, 0, 5, h))
         surf.blit(t, (13, 4))
         surf.blit(b, (13, 4 + t.get_height()))
-        return surf
+        return ui.glassify(surf)
 
     @staticmethod
     def _chevron(screen, tf, project, size, x, y, z, yaw_deg, colour) -> pygame.Rect | None:
@@ -162,4 +163,5 @@ class AgentHud:
             pygame.draw.rect(surf, colour, (12, yy + t.get_height() // 2 - 4, 8, 8))
             surf.blit(t, (28, yy))
             yy += t.get_height() + 3
-        return [screen.blit(surf, (w - pw - 16, 16))]
+        surf = ui.glassify(surf, radius=10)
+        return [screen.blit(surf, (w - surf.get_width() - 16 + (ui.MARGIN if ui.ALPHA else 0), 16))]
