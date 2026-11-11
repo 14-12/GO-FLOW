@@ -138,11 +138,13 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
 
     def hook(sumo, im) -> None:
         pol = sumo.policy
-        reads = pol is not None and "forecast" in getattr(pol, "on", ())
+        reads = pol is not None and bool({"forecast", "gate"} & set(getattr(pol, "on", ())))
         fc = LocalForecast(sumo.conn, models, GAME_SPEED, scale, run=reads)
         state.update(sumo=sumo, im=im, fc=fc, t0=sumo.time)
         if reads:
             pol.forecast = lambda: fc.risk(sumo.time)
+        if pol is not None and "accgate" in getattr(pol, "on", ()):   # the roads the drivers' navigation counts as slow
+            pol.incident_roads = lambda: {e for inc in im.incidents for e in getattr(inc, "diverted", ())}
 
     def probe(cur, conn, sod) -> None:
         state["fc"].on_step(cur, conn, sod)

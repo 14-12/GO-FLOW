@@ -59,6 +59,17 @@ its approaches and steps in only with commands that keep the program's own state
          - at the green's maximum, an approach with risk `forecast_extend_p` or more, above every other phase's
            risk, its exits free and nobody waiting to walk elsewhere, gets 5 s more at a time, to 90 s at most.
          Off by default; switched on with the forecasters running (tools/eval_agents_forecast.py measures it).
+* gate   (optional, "+gate", 11 Nov) Forecast-driven gating, with the forecasters running. A green that feeds a road
+         where DSO4 forecasts a long queue within 3 minutes (risk `gate_p` or more on the approaches at the next
+         signal that at least `gate_share` of the green's movements lead to) is ended after `gate_min_s`, when
+         another phase has demand, its own approach is under `gate_own_max` full and is not itself forecast to
+         queue: the cars wait where there is room, before the short road ahead fills and blocks its junction. The
+         spill rule does this once the exit is full; the gate a few minutes before. Off by default until measured.
+* accgate (optional, "+accgate", 12 Nov) The same gate for accidents: a road with an open accident on it (the roads
+         the drivers' navigation already counts as slow, cosim/incidents._divert, read through `incident_roads`)
+         counts as a road at risk 1 for the greens that feed it. Fewer cars are sent into the queue behind the
+         wreck; those held at the junction before it take another way after 45 s (incidents._relieve). Needs no
+         forecaster. Off by default until measured.
 * batch  (optional, "+batch") The walk is served once `batch_n` people wait at its crossings or the
          first has waited `batch_s`, instead of for the first person: fewer 15 s walks, more
          car green, at a cost in pedestrian delay.
@@ -89,7 +100,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COVERAGE = ROOT / "out" / "town05_cameras" / "coverage.json"
 VEH_M = 7.5
 FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall", "camback")
-OPTIONAL = ("batch", "extend", "noflow", "forecast")  # off unless named: "agents+batch"
+OPTIONAL = ("batch", "extend", "noflow", "forecast", "gate", "accgate")  # off unless named: "agents+batch"
 # camback (cameras as a back-up for lost emergency requests, agents_observed only): on since 10 Nov (the user's
 # decision), "agents_observed-camback" without it; measured in docs/WORKLOG.md (10 Nov, afternoon)
 DEFAULT_OFF = ("trickle",)  # off unless named ("agents+trickle") since 25 Oct: with two greens a cycle
@@ -179,6 +190,11 @@ class ActuatedAgents:
     min_coverage = 0.70
     forecast_w = 0.5               # +forecast: fill counted this much more per unit of risk (balance)
     forecast_extend_p = 0.8        # +forecast: risk from which a green at its maximum is extended
+    gate_p = 0.7                   # +gate: risk on the road ahead from which the feeding green is shortened
+    gate_share = 0.5               # +gate: share of the green's movements that lead to roads at that risk
+    gate_min_s = 10.0              # +gate: the green it still gets
+    gate_own_max = 0.6             # +gate: not when its own approach is this full (the queue would only move back)
+    gate_reach_m = 400.0           # +gate: how far past the junction the next signal's approach is looked for
     # Requests that never arrive (10 Nov): the share of (emergency vehicle, junction) requests lost on the way, for
     # measuring camback; 0 in normal runs. Which ones is fixed per pair (a hash), so paired runs lose the same ones.
     request_loss = 0.0
@@ -203,6 +219,9 @@ class ActuatedAgents:
         self.forecast = None            # +forecast: callable -> {approach node: risk 0-1} (GoflowPrediction.risk)
         self.forecast_nodes: list[dict] | None = None  # the approaches (nodes.json); default models/goflow/graph
         self._risk: dict[str, float] = {}
+        self.incident_roads = None      # +accgate: callable -> the roads (edges) with an open accident
+        self._gate_risk: dict[str, float] = {}   # what the gate reads: the forecast (+gate), accidents (+accgate)
+        self._acc_nodes: dict[str, tuple[str, ...]] = {}
         self.junctions: dict[str, _Agent] = {}
         self.obs: dict[str, tuple[int, int]] = {}
         self.visible: dict[str, list] | None = None  # camera mode: lane -> visible stretches (Layout.visible)
@@ -212,7 +231,7 @@ class ActuatedAgents:
                       "ev_patience": 0, "ev_starved": 0,
                       "ev_exit_full": 0, "ev_queued": 0,
                       "forecast_steps": 0, "forecast_balance_cuts": 0, "forecast_balance_kept": 0,
-                      "forecast_extensions": 0, "ev_lost": 0, "cam_requests": 0, "cam_patience": 0,
+                      "forecast_extensions": 0, "gate_cuts": 0, "gate_at_risk_steps": 0, "ev_lost": 0, "cam_requests": 0, "cam_patience": 0,
                       "cam_queued": 0}
         self._cam_ems: dict[str, set[str]] = {}         # junction -> lanes with a siren its cameras confirmed
         self._cam_first: dict[tuple[str, str], float] = {}
@@ -336,7 +355,8 @@ class ActuatedAgents:
     def _map_forecast(self) -> None:
         """Each car green -> the forecasters' approaches it serves (an approach's lanes among the green's in-lanes)."""
         self.served: dict[tuple[str, int], list[str]] = {}
-        if "forecast" not in self.on:
+        self.fed: dict[tuple[str, int], dict[str, float]] = {}
+        if not {"forecast", "gate", "accgate"} & self.on:
             return
         nodes = self.forecast_nodes
         if nodes is None:
@@ -350,6 +370,53 @@ class ActuatedAgents:
                 if set(n["lanes"]) & {i for i, _ in prs}:
                     self.served.setdefault((a.tls, k), []).append(n["node"])
         self.stats["forecast_phases_served"] = len(self.served)
+        self._node_of = {ln: n["node"] for n in nodes for ln in n["lanes"]}
+        self._nodes_on = {}
+        for n in nodes:
+            self._nodes_on.setdefault(n["edge"], []).append(n["node"])
+        if {"gate", "accgate"} & self.on:  # each car green -> the next signals' approaches its movements lead to, with their share
+            node_of = {ln: n["node"] for n in nodes for ln in n["lanes"]}
+            for a in self.junctions.values():
+                for k, prs in a.pairs.items():
+                    if a.kind[k] != "car" or not prs:
+                        continue
+                    hit: dict[str, int] = {}
+                    for _, o in prs:
+                        for n in self._reach_down(o, node_of):
+                            if not n.startswith(a.tls + "-"):
+                                hit[n] = hit.get(n, 0) + 1
+                    if hit:
+                        self.fed[(a.tls, k)] = {n: c / len(prs) for n, c in hit.items()}
+            self.stats["gate_phases_feeding"] = len(self.fed)
+
+    def _nodes_of_road(self, edge: str) -> tuple[str, ...]:
+        """The forecasters' approaches a road is: the approach on that road, else the next ones its lanes lead to."""
+        got = self._acc_nodes.get(edge)
+        if got is None:
+            found = set(self._nodes_on.get(edge, ()))
+            if not found:
+                for ln in [x for x in self._len if x.rsplit("_", 1)[0] == edge]:
+                    found |= self._reach_down(ln, self._node_of)
+            got = self._acc_nodes[edge] = tuple(sorted(found))
+        return got
+
+    def _reach_down(self, lane: str, node_of: dict[str, str]) -> set[str]:
+        """The forecasters' approaches reached from `lane` going on with the traffic, within gate_reach_m, the first
+        on each way."""
+        out, seen, frontier = set(), {lane}, [(lane, 0.0)]
+        while frontier:
+            cur, gone = frontier.pop()
+            if cur in node_of:
+                out.add(node_of[cur])
+                continue
+            gone += self._len.get(cur, 0.0)
+            if gone >= self.gate_reach_m:
+                continue
+            for nxt in self._succ.get(cur, ()):
+                if nxt not in seen:
+                    seen.add(nxt)
+                    frontier.append((nxt, gone))
+        return out
 
     def _risk_of(self, a: _Agent, k: int) -> float:
         return max((self._risk.get(n, 0.0) for n in self.served.get((a.tls, k), ())), default=0.0)
@@ -358,6 +425,7 @@ class ActuatedAgents:
     def _graph(self, tc) -> None:
         self._len: dict[str, float] = {}
         self._pred: dict[str, list[str]] = {}
+        self._succ: dict[str, list[str]] = {}
         for lane in tc.lane.getIDList():
             self._len[lane] = tc.lane.getLength(lane)
             for link in tc.lane.getLinks(lane):
@@ -365,6 +433,7 @@ class ActuatedAgents:
                 chain = [lane, via, nxt] if via else [lane, nxt]
                 for x, y in zip(chain, chain[1:], strict=False):
                     self._pred.setdefault(y, []).append(x)
+                    self._succ.setdefault(x, []).append(y)
         self._up: dict[str, tuple[str, ...]] = {}
 
     def _reach_up(self, lane: str) -> tuple[str, ...]:
@@ -496,13 +565,25 @@ class ActuatedAgents:
         self._cache: dict[str, tuple[int, int]] = {}
         self._pedestrians(tc)
         self._requests(tc, now)
-        if "forecast" in self.on and self.forecast is not None:
+        if ("forecast" in self.on or "gate" in self.on) and self.forecast is not None:
             try:
                 self._risk = self.forecast() or {}
             except Exception:  # noqa: BLE001 - the signals never wait for, or fail with, the forecasters
                 self._risk = {}
             if self._risk:
                 self.stats["forecast_steps"] += 1
+        if {"gate", "accgate"} & self.on:
+            self._gate_risk = dict(self._risk) if "gate" in self.on else {}
+            if "accgate" in self.on and self.incident_roads is not None:
+                try:
+                    roads = self.incident_roads() or ()
+                except Exception:  # noqa: BLE001 - the signals never fail with the incidents' side
+                    roads = ()
+                for e in roads:
+                    for n in self._nodes_of_road(e):
+                        self._gate_risk[n] = 1.0
+                if roads:
+                    self.stats["accgate_steps"] = self.stats.get("accgate_steps", 0) + 1
         for a in self.junctions.values():
             self._decide(tc, a, now)
 
@@ -894,6 +975,30 @@ class ActuatedAgents:
                     return
             else:
                 a.blocked_since = None
+        if {"gate", "accgate"} & self.on and self._gate_risk:
+            fed = self.fed.get((a.tls, ph))
+            share = sum(sh for n, sh in fed.items() if self._gate_risk.get(n, 0.0) >= self.gate_p) if fed else 0.0
+            if share >= self.gate_share:
+                self.stats["gate_at_risk_steps"] += 1
+                why = None
+                if spent < max(min_d, self.gate_min_s):
+                    why = "early"
+                elif self._fill(tc, a, ph) >= self.gate_own_max:
+                    why = "own_full"
+                elif self._risk_of(a, ph) >= self.gate_p:
+                    why = "own_risk"
+                elif not any(self._demand(tc, a, k, now) for k in others):
+                    why = "nobody_else"
+                if why is None:
+                    tc.trafficlight.setPhaseDuration(a.tls, 0)
+                    self.stats["gate_cuts"] += 1
+                    acc = any(self._gate_risk.get(n, 0.0) >= self.gate_p > self._risk.get(n, 0.0) for n in fed)
+                    if acc:
+                        self.stats["accgate_cuts"] = self.stats.get("accgate_cuts", 0) + 1
+                    self._event(a, "gate", [ph], "green shortened: an accident on the road ahead" if acc
+                                else "green shortened: a long queue forecast on the road ahead")
+                    return
+                self.stats[f"gate_not_{why}"] = self.stats.get(f"gate_not_{why}", 0) + 1
         if "trickle" in self.on and spent >= self.trickle_min_s:
             n, q = self._approach(tc, a, ph)
             if q == 0 and n <= self.trickle_cur:
@@ -904,7 +1009,7 @@ class ActuatedAgents:
                     self._event(a, "trickle", [ph], "green ended: only a trickle, a queue elsewhere")
                     return
         if "balance" in self.on and spent >= self.balance_min_s:
-            w = self.forecast_w if self._risk else 0.0
+            w = self.forecast_w if self._risk and "forecast" in self.on else 0.0
             if self._fill(tc, a, ph) + w * self._risk_of(a, ph) < self.balance_low:
                 full = [k for k in others if a.kind[k] == "car" and self._fill(tc, a, k) >= self.balance_high
                         and not self._blocked(tc, a, k)]
@@ -923,8 +1028,8 @@ class ActuatedAgents:
                     a.kind[k] == "car" and self._fill(tc, a, k) >= self.balance_high and not self._blocked(tc, a, k)
                     for k in others):
                 self.stats["forecast_balance_kept"] += 1  # (cut without the forecast: kept, its road is to queue)
-        if self._risk and spent >= max_d - 1.0 and spent < self.extend_max_s - self.extend_step_s \
-                and remaining < 1.0:
+        if "forecast" in self.on and self._risk and spent >= max_d - 1.0 \
+                and spent < self.extend_max_s - self.extend_step_s and remaining < 1.0:
             r = self._risk_of(a, ph)
             self.stats["forecast_risk_at_max"] = max(self.stats.get("forecast_risk_at_max", 0.0), round(r, 3))
             why = None

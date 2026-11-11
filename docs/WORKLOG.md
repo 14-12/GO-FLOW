@@ -3440,3 +3440,80 @@ occlusion off (+10 % without traffic, not needed).
 **Not done, and why:** cars, people, roads and buildings are CARLA's packaged meshes and materials: changing them
 needs the Unreal Editor (and the vehicles' look feeds the detector). The CARLA window cannot be seen through
 computer use (masked): every picture is the viewer's own window grab.
+
+## 11-12 Nov: junction agents, forecast-driven gating (`+gate`): dev runs, and the bar written before the test
+
+The user's order for the agents (11 Nov): 1 gating from the forecasts, 2 traffic management round accidents,
+3 parking guidance; nothing on by default before it is tested.
+
+**The rule** (`cosim/agents_actuated.py`, optional `+gate`, off by default): a green whose movements lead to an
+approach at the next signal where DSO4 gives a long queue within 3 minutes a chance of `gate_p` or more (at least
+`gate_share` of the green's movements lead there; `fed`, the approaches within 400 m going on with the traffic: 54
+greens) is ended after `gate_min_s`, when another phase has demand, its own approach is under 60 % full and is not
+itself forecast to queue. The spill rule does this once the exit is full; the gate before. Unit test:
+`tests/test_town05_agents.py::test_gate_...`.
+
+**Dev** (`tools/eval_agents_forecast.py`, seeds 11-20, the forecasters' recipe: 30 min after 5 min warm-up from
+06:00 at clock 30, crashes, buses, ring road; v7 in the loop; `out/gate/dev`, 120 runs in `out\eval_venv` on the
+PC). Paired against `agents_observed`, mean difference (seeds better of 10):
+
+| Traffic | Setting | Greens cut a run | Waiting /trip | Time loss /trip | Throughput /h | Ambulance time loss | Long-queue approach-min |
+|---|---|---|---|---|---|---|---|
+| x1 | p 0.7, share 0.5, 10 s | 1.6 | +0.8 s (3) | -1.4 s (3) | +1 (2) | -1.0 s (4) | -1.5 (3) |
+| x1 | **p 0.5, share 0.34, 5 s** | 16 | -3.3 s (6) | -3.9 s (8) | +10 (7) | -3.3 s (8) | -1.9 (7) |
+| x1 | p 0.3, share 0.34, 5 s | 24 | -3.7 s (6) | -6.8 s (8) | +24 (8) | +1.5 s (8) | +1.5 (7) |
+| x1.15 | p 0.7, share 0.5, 10 s | 2.2 | +1.9 s (4) | +1.8 s (3) | -4 (2) | +1.8 s (3) | +2.2 (2) |
+| x1.15 | **p 0.5, share 0.34, 5 s** | 12 | +0.2 s (4) | -0.4 s (5) | -1 (4) | +2.1 s (3) | -3.3 (6) |
+| x1.15 | p 0.3, share 0.34, 5 s | 28 | +6.8 s (6) | +10.5 s (2) | -16 (4) | +2.7 s (5) | +1.0 (4) |
+| x1.3 | p 0.7, share 0.5, 10 s | 3.7 | +3.7 s (4) | +2.4 s (4) | -20 (2) | -5.8 s (5) | -1.0 (4) |
+| x1.3 | **p 0.5, share 0.34, 5 s** | 41 | -2.1 s (4) | +2.9 s (5) | -4 (3) | +2.5 s (6) | -8.8 (7) |
+| x1.3 | p 0.3, share 0.34, 5 s | 63 | -3.2 s (5) | -3.7 s (5) | -32 (2) | -6.8 s (4) | -9.8 (6) |
+
+Reference: waiting 109.0 / 115.5 / 167.7 s, time loss 139.9 / 144.9 / 194.8 s. A seed's waiting changes by 8-16 s
+(sd of the paired difference) at x1 and x1.15 and by 15-47 s at x1.3, also when the gate cut only 2 greens: the runs
+are chaotic (accidents), so no row above is more than about one standard error from zero. The strict setting acts
+too rarely (the strong warnings are rare: 1-9 minutes of green a run); the loose one hurts at x1.15. The middle
+setting is the candidate: better at x1 on 8 of 10 seeds for time loss and ambulances, nothing at x1.15, fewer
+long-queue minutes at all three.
+
+**The bar, written before the test (12 Nov).** One setting only: `agents_observed+gate@gate_p=0.5@gate_share=0.34@
+gate_min_s=5` against `agents_observed`. New seeds 91-120 (30, because of the spread), x1, x1.15 and x1.3, opened
+once. The gate goes on by default only if all hold:
+1. at x1 (the town's own traffic): waiting and time loss per trip lower on the mean and on at least 18 of 30 seeds;
+2. at x1: ambulance time loss not higher on the mean by more than 2 s;
+3. at x1.15 and x1.3: time loss per trip not higher on the mean by more than 5 %.
+Otherwise it stays an option, off, with these numbers. Test seeds used after this: 21-120.
+
+**The test (12 Nov, opened once, seeds 91-120, `out/gate/test`, 180 runs): the gate fails its bar and stays off.**
+Paired against `agents_observed`, mean difference +- standard error (seeds where it was lower, of 30):
+
+| Traffic | Waiting /trip | Time loss /trip | Throughput /h | Ambulance time loss | Long-queue approach-min | Greens cut a run |
+|---|---|---|---|---|---|---|
+| x1 | +1.1 +- 2.5 s (13) | +1.1 +- 2.3 s (13) | -4 +- 5 | +0.5 +- 3.4 s | +0.3 | 12 |
+| x1.15 | +1.1 +- 6.1 s (15) | +2.8 +- 6.1 s (13) | -1 +- 8 | +2.1 +- 4.3 s | +3.8 | 21 |
+| x1.3 | +3.0 +- 4.8 s (15) | +1.4 +- 4.5 s (14) | -4 +- 8 | +2.1 +- 5.8 s | +1.6 | 35 |
+
+Reference: waiting 111.6 / 128.4 / 154.4 s. Bar 1 asked for lower means on 18 of 30 seeds at x1: 13 of 30 and a
+mean slightly higher. No measurable effect anywhere, and no sign of one: what the dev seeds showed at x1 (8 of 10)
+was their spread. Cars taken off (accidents, knots): 11.4 -> 13.2, 12.6 -> 10.9, 14.9 -> 17.8 a run. Reading: a
+warning right about half the time, on 12-35 greens in 35 minutes, moves less than an accident does by chance. `+gate`
+is left in as an option, off. Test seeds used: 21-120; anything new: 121 and above.
+
+**The same gate for accidents (`+accgate`, 12 Nov): dev only, nothing to test.** A road with an open accident (the
+roads the drivers' navigation counts as slow, `incidents._divert`) counts as a road at risk 1 for the greens that feed
+it; no forecaster needed. Dev seeds 11-20 (`out/gate/dev_acc`), against `agents_observed`, mean +- standard error:
+
+| Traffic | Setting | Greens cut a run | Waiting /trip | Time loss /trip | Throughput /h | Cars taken off (accidents, knots) |
+|---|---|---|---|---|---|---|
+| x1 | share 0.5, 10 s | 3 | -0.2 +- 1.3 s | -0.8 +- 2.1 s | -6 +- 6 | 11.2 -> 10.3 |
+| x1 | share 0.34, 5 s | 23 | -2.7 +- 7.9 s | -5.2 +- 7.3 s | +24 +- 18 | 11.2 -> 11.1 |
+| x1.15 | share 0.5, 10 s | 4 | +1.2 +- 4.0 s | 0.0 +- 3.8 s | -6 +- 9 | 4.2 -> 4.9 |
+| x1.15 | share 0.34, 5 s | 44 | +5.0 +- 4.3 s | +5.4 +- 5.4 s | -13 +- 14 | 4.2 -> 7.4 |
+| x1.3 | share 0.5, 10 s | 7 | -9.0 +- 14.4 s | -12.3 +- 13.8 s | -27 +- 9 | 23.3 -> 16.3 |
+| x1.3 | share 0.34, 5 s | 46 | -6.1 +- 14.7 s | -5.7 +- 16.4 s | -29 +- 20 | 23.3 -> 18.5 |
+
+Nothing beyond one standard error, signs mixed, throughput down more often than up. Not taken to a test (no seeds
+spent). Left in as an option, off. Both gates say the same: the drivers are already sent round an accident and a
+full exit already ends a green (spill); holding the feeding green earlier adds nothing that shows through the runs'
+spread. **Parking guidance** (third on the list) is already what the town does: a full car park is not driven to,
+the nearest other one with room is (`purposes.area_for`, counted as `redirected_full`).

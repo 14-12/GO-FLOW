@@ -25,7 +25,7 @@ from cosim.hud import FONTS
 
 COLOURS = {"skip": (96, 165, 250), "walk": (148, 163, 184), "spill": (239, 68, 68), "noflow": (249, 115, 22),
            "trickle": (234, 179, 8), "balance": (192, 132, 252), "ambulance": (52, 211, 153),
-           "corridor": (45, 212, 191), "extend": (148, 163, 184)}
+           "corridor": (45, 212, 191), "extend": (148, 163, 184), "gate": (251, 146, 60), "forecast": (251, 146, 60)}
 SHOW_S = 10.0        # a decision stays over its junction this long (simulated seconds)
 NEAR_M = 400.0       # junction pills within this distance
 CHEVRON_M = 250.0    # stop-line chevrons within this distance

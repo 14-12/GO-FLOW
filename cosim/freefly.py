@@ -2492,7 +2492,7 @@ class FreeFly:
                                              demand_scale=a.demand_scale)
             log.info("goflow forecast: %s%s -> %s", models, f" + GO-FLOW {gf}" if gf else "", self.forecast.out)
             self.forecast_anchors, self.forecast_dirs = self._approach_anchors(self.forecast.nodes)
-            if self.agents is not None and "forecast" in getattr(self.agents, "on", ()):
+            if self.agents is not None and {"forecast", "gate"} & set(getattr(self.agents, "on", ())):
                 fc, sumo = self.forecast, self.sumo   # --controller agents_observed+forecast: the agents read it
                 self.agents.forecast = lambda: fc.risk(sumo.time)
                 log.info("junction agents: reading the forecasters' long-queue warnings (+forecast)")

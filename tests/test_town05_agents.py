@@ -585,6 +585,67 @@ def test_forecast_weighs_balance_and_extends_a_green_about_to_queue():
     assert long_queue_risk(fc, 140.0) == {} and long_queue_risk(dict(fc, long_queue_s=None), 100.0) == {}
 
 
+def test_gate_shortens_the_green_that_feeds_a_road_forecast_to_queue():
+    """+gate (cosim/agents_actuated.py): a green whose movements lead to an approach with a long queue forecast is
+    ended after gate_min_s, when someone else waits, its own road has room and is not itself forecast to queue."""
+    from types import SimpleNamespace as NS
+
+    from cosim.agents_actuated import ActuatedAgents, _Agent
+
+    calls = []
+    tc = NS(trafficlight=NS(getNextSwitch=lambda tls: 130.0, setPhaseDuration=lambda tls, d: calls.append(d)),
+            inductionloop=NS(getTimeSinceDetection=lambda d: 1e9))
+    ag = ActuatedAgents(fallback=set(), extra={"gate"})
+    assert "gate" in ag.on and "gate" not in ActuatedAgents(fallback=set()).on
+    ag._len = {"in0": 75.0, "in2": 75.0, "out0": 40.0, "out2": 75.0, "mid": 60.0, "k1": 50.0, "far": 500.0, "k2": 50.0}
+    ag._pred, ag._up, ag._waiting = {}, {}, {}
+    # the lanes going on: out0 -> mid -> k1 (approach K-1, 100 m on); out2 -> far (500 m) -> k2: too far to count
+    ag._succ = {"out0": ["mid"], "mid": ["k1"], "out2": ["far"], "far": ["k2"]}
+    node_of = {"k1": "K-1", "k2": "K-2", "in0": "J-1"}
+    assert ag._reach_down("out0", node_of) == {"K-1"} and ag._reach_down("out2", node_of) == set()
+    a = _Agent("J", ["GGrr", "yyrr", "rrrr", "rrGG", "rryy", "rrrr"], ["car", "yellow", "red", "car", "yellow", "red"],
+               [5.0, 3.0, 2.0, 5.0, 3.0, 2.0], [45.0, 3.0, 2.0, 45.0, 3.0, 2.0], [0, 3], {0: 5, 3: 2},
+               {0: [("in0", "out0")], 3: [("in2", "out2")]}, {}, {})
+    ag.served = {("J", 0): ["J-1"], ("J", 3): ["J-2"]}
+    ag.fed = {("J", 0): {"K-1": 1.0}}
+
+    def go(counts, risk, spent=12.0):
+        calls.clear()
+        a.green_since, ag._now = 100.0 - spent, 100.0
+        ag._cache = {"in0": counts[0], "in2": counts[1], "out0": (0, 0), "out2": (0, 0)}
+        ag._risk = ag._gate_risk = risk
+        ag._green(tc, a, 0, 100.0)
+        return list(calls)
+
+    assert go([(3, 3), (2, 2)], {"K-1": 0.8}) == [0] and ag.stats["gate_cuts"] == 1   # the road ahead is to queue
+    assert go([(3, 3), (2, 2)], {"K-1": 0.5}) == []                 # under gate_p
+    assert go([(3, 3), (2, 2)], {}) == []                           # no fresh forecast
+    assert go([(3, 3), (2, 2)], {"K-1": 0.8}, spent=7.0) == []      # its 10 s first
+    assert go([(3, 3), (0, 0)], {"K-1": 0.8}) == []                 # nobody else waiting: nothing gained
+    assert go([(8, 8), (2, 2)], {"K-1": 0.8}) == []                 # its own road 8 of 10 full: the queue would move back
+    assert go([(3, 3), (2, 2)], {"K-1": 0.8, "J-1": 0.9}) == []     # its own road forecast to queue too
+    assert ag.stats["gate_cuts"] == 1 and ag.events[-1]["kind"] == "gate"
+    # +accgate: an accident on the road ahead counts as that risk, with no forecast at all
+    ag3 = ActuatedAgents(fallback=set(), extra={"accgate"})
+    ag3._len, ag3._pred, ag3._up, ag3._waiting, ag3.served, ag3.fed = ag._len, {}, {}, {}, ag.served, ag.fed
+    ag3._succ, ag3._node_of, ag3._nodes_on = ag._succ, node_of, {"kroad": ["K-1"]}
+    assert ag3._nodes_of_road("kroad") == ("K-1",) and ag3._nodes_of_road("mid") == ("K-1",)
+    ag3._now, ag3._gate_risk = 100.0, {"K-1": 1.0}
+    ag3._cache = {"in0": (3, 3), "in2": (2, 2), "out0": (0, 0), "out2": (0, 0)}
+    calls.clear()
+    a.green_since = 88.0
+    ag3._green(tc, a, 0, 100.0)
+    assert calls == [0] and ag3.stats["accgate_cuts"] == 1 and "accident" in ag3.events[-1]["text"]
+    # without +gate the same forecast changes nothing
+    ag2 = ActuatedAgents(fallback=set())
+    ag2._len, ag2._pred, ag2._up, ag2._waiting, ag2.served, ag2.fed = ag._len, {}, {}, {}, ag.served, ag.fed
+    ag2._now, ag2._risk = 100.0, {"K-1": 0.8}
+    ag2._cache = {"in0": (3, 3), "in2": (2, 2), "out0": (0, 0), "out2": (0, 0)}
+    calls.clear()
+    ag2._green(tc, a, 0, 100.0)
+    assert calls == []
+
+
 def test_camera_backup_gives_green_to_a_siren_without_a_request():
     """camback (10 Nov, on by default): a siren the cameras confirm on an approach with no request at the junction gets that
     approach's links, within the same limits as a request; request_loss drops a fixed share of requests."""
