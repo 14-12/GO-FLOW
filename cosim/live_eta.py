@@ -166,6 +166,22 @@ def time_left(te, probes: ProbeTraffic | None, roads: list[str], pos: float, end
             "known": known / (left + tail) if left + tail > 0 else 0.0}
 
 
+def roads_ahead(te, c, vid: str, leg) -> list[str] | None:
+    """The roads from the one car vid is on to its trip's end, on its route in SUMO now. A ring car's route goes round
+    200 times (cosim/highway.py): its trip's roads left come from its plan, not from where its last road next shows up
+    in the route (that took the nearest lap: the time left 83 s short, 11 Nov). None: its end is off its way."""
+    route, idx = list(c.vehicle.getRoute(vid)), max(c.vehicle.getRouteIndex(vid), 0)
+    end = te._end(vid) if getattr(leg, "end_v", None) is not None else None
+    if end is not None:
+        roads = route[idx:idx + max(1, end[2])]
+        return roads if roads and roads[-1] == leg.dest_edge else None
+    try:
+        j = route.index(leg.dest_edge, idx)
+    except ValueError:
+        return None
+    return route[idx:j + 1]
+
+
 def for_car(te, probes: ProbeTraffic | None, c, vid: str, now: float, subs: dict | None = None,
             blend_s: float = BLEND_S, shrink: float = SHRINK) -> dict | None:
     """The time left of car vid's trip (TripEstimates te, its active leg) from where it is now, the app's live times
@@ -181,11 +197,9 @@ def for_car(te, probes: ProbeTraffic | None, c, vid: str, now: float, subs: dict
             road, pos = c.vehicle.getRoadID(vid), c.vehicle.getLanePosition(vid)
         if not road or road.startswith(":"):
             return None
-        route, idx = list(c.vehicle.getRoute(vid)), c.vehicle.getRouteIndex(vid)
-        j = route.index(leg.dest_edge, max(idx, 0))
-    except Exception:  # noqa: BLE001 - gone, or its end is off its way
+        roads = roads_ahead(te, c, vid, leg)
+    except Exception:  # noqa: BLE001 - gone
         return None
-    roads = route[idx:j + 1]
     if not roads or roads[0] != road:
         return None
     out = time_left(te, probes, roads, pos, leg.dest_pos, now, blend_s, shrink)

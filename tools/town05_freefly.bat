@@ -48,8 +48,8 @@ echo.
 "%PY%" -m cosim.freefly %FREEFLY_ARGS%
 set FRC=%errorlevel%
 echo free-fly ended with %FRC%  (log: tools\logs\freefly_town05.log)
-rem on an error, keep this window open to read it (CARLA is stopped after)
-if not "%FRC%"=="0" pause
+rem on an error, keep this window open to read it (CARLA is stopped after); not for unattended jobs (FREEFLY_NOPAUSE=1)
+if not "%FRC%"=="0" if not defined FREEFLY_NOPAUSE pause
 call :stopcarla
 rem CARLA writes its Engine.ini back when its window is closed: take the profile out again
 call :restore

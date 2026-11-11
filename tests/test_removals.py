@@ -93,3 +93,15 @@ def test_movements_past_a_wreck_in_a_junction_are_blocked():
     inc = NS2(wrecks=[wreck])
     junction, blocked = im._blocked_links(inc)
     assert junction == "J" and blocked == {("a_0", "b")}
+
+
+def test_ring_cars_are_not_sent_another_way():
+    """(11 Nov) The ring road's own cars have no other way than the ring: sent "another way" to the end of their
+    route, a ring road close by, they ended their trip at once, in view. They keep their route (and pass on the lane
+    left open)."""
+    im, veh = _manager({"hw3": "crash_road", "a": "crash_road"})
+    inc = NS(diverted=["crash_road"])
+    standing = {"hw3": NS(speed=0.0, x=0.0, y=0.0), "a": NS(speed=0.0, x=0.0, y=0.0)}
+    im._relieve(inc, 0.0, standing)
+    im._relieve(inc, RELIEVE_REROUTE_S + 1, standing)
+    assert veh.rerouted == ["a"]

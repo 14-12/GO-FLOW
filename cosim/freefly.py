@@ -2043,7 +2043,7 @@ class FreeFly:
             except Exception as e:  # noqa: BLE001 - gone meanwhile
                 log.debug("keep walking %s: %s", pid, e)
 
-    def live_eta_step(self, cur) -> None:
+    def live_eta_step(self, cur, ended=()) -> None:
         """(10 Nov) The navigation app's live view (cosim/live_eta.py: its users' phones), and the followed car's time
         left from where it is, once a second, for the panel."""
         from cosim.live_eta import ProbeTraffic, for_car
@@ -2051,7 +2051,7 @@ class FreeFly:
         if getattr(self, "probes", None) is None:
             self.probes = ProbeTraffic()
         c, subs = self.sumo.conn, self.sumo.vehicle_subs
-        self.probes.step(c, cur.time, cur.arrived, subs)
+        self.probes.step(c, cur.time, list(cur.arrived) + list(ended), subs)
         t = self.route_guide.trip if self.route_guide is not None else None
         live = self.estimates.live
         if t is None:
@@ -2140,8 +2140,9 @@ class FreeFly:
         self.sim_now = cur.time
         if self.estimates is not None:
             try:
-                self.estimates.step(self.sumo.conn, cur.time, cur.arrived)
-                self.live_eta_step(cur)
+                ended = self.highway.take_ended() if self.highway is not None else []   # ring trips that ended
+                self.estimates.step(self.sumo.conn, cur.time, list(cur.arrived) + ended)
+                self.live_eta_step(cur, ended)
             except Exception:  # noqa: BLE001 - never the town's
                 log.exception("trip estimates")
                 self.estimates = None
@@ -2194,6 +2195,8 @@ class FreeFly:
         if self.highway is not None and self._k % 4 == 0:  # every 2 s: the ring road's own cars
             self.highway.step(cur.vehicles, self.clock.seconds_of_day,
                               set(self.sumo.conn.simulation.getPendingVehicles()))
+        elif self.highway is not None:   # (11 Nov) every step: ring trips near their end, still out of sight? routes?
+            self.highway.check_ends(self.sumo.vehicle_subs)
         lap("pop.step")
         im = self.incidents
         if self.red_runners is not None:
@@ -2243,6 +2246,12 @@ class FreeFly:
                 p = self.prev.vehicles.get(vid)
                 if p is not None and vid in drawn and self.in_view(*frame.to_carla_xy(p.x, p.y)):
                     self.vanished_in_view += 1
+                    if vid.startswith("hw"):   # (10 Nov) of them the ring road's (planned trips: one more lap in sight)
+                        self.vanished_ring_in_view = getattr(self, "vanished_ring_in_view", 0) + 1
+                        hw = self.highway
+                        if hw is not None:
+                            log.info("ring car %s vanished in view: last check %s, near its end %s, extended so far %d",
+                                     vid, hw.last_check.get(vid), vid in hw.near_end, hw.extended)
                     if self.vanished_in_view <= 20:
                         log.info("vanished in view: %s at SUMO (%.0f, %.0f)", vid, p.x, p.y)
         arrived = list(cur.arrived)
@@ -4056,6 +4065,21 @@ def demo_incident(ff, shooter, scenario: str, st: dict, t_el: float, limit_s: fl
     return False
 
 
+def map_gap_summary(gaps: list[dict]) -> dict:
+    """(10 Nov) The mini-map's car against the town's (metres, --demo-follow): now (the pose the picture shows) and before
+    (SUMO's newest step), median and 95th percentile, all and while the car moves (over 2 m/s)."""
+    def q(xs, f):
+        xs = sorted(xs)
+        return round(xs[min(len(xs) - 1, int(f * len(xs)))], 2) if xs else None
+    out = {}
+    for name, sel in (("all", gaps), ("moving", [g for g in gaps if g["speed"] > 2.0])):
+        out[name] = {"n": len(sel), "now_median_m": q([g["now_m"] for g in sel], 0.5),
+                     "now_p95_m": q([g["now_m"] for g in sel], 0.95),
+                     "before_median_m": q([g["before_m"] for g in sel], 0.5),
+                     "before_p95_m": q([g["before_m"] for g in sel], 0.95)}
+    return out
+
+
 def pose_figures(ff, wait_s: float = 2.0) -> dict | None:
     """The pose process's figures since the last call: asks it to report now, and merges that report with the
     regular ones (every 10 s) that came in between (None without a pose process)."""
@@ -4738,6 +4762,15 @@ def main(argv=None) -> int:
                                   (cam.location.x, cam.location.y, cam.location.z))
                     st["cam"].append({"view": fol["view"], "d": round(d, 2), "want": round(math.hypot(back, up), 2),
                                       "speed": round((snap or {}).get("speed") or 0.0, 1)})
+                    # (10 Nov) the mini-map's car against the town's: where it is drawn now (the pose shown, shared by
+                    # the pose process) and where it was drawn before (SUMO's newest step), metres from the CARLA car
+                    sh = getattr(ff, "shown_follow", None)
+                    if snap and snap.get("xy") and sh is not None and time.time() - sh[0] < 0.5:
+                        ox, oy = ff.scen.frame.to_carla_xy(*snap["xy"])
+                        st.setdefault("map_gap", []).append(
+                            {"now_m": round(math.hypot(sh[1] - car.location.x, sh[2] - car.location.y), 2),
+                             "before_m": round(math.hypot(ox - car.location.x, oy - car.location.y), 2),
+                             "speed": round(snap.get("speed") or 0.0, 1)})
             except Exception as e:  # noqa: BLE001 - measured only
                 log.debug("demo follow camera: %s", e)
         if st.get("phase") == "follow":
@@ -4793,7 +4826,8 @@ def main(argv=None) -> int:
             res = {"vehicle": st.get("vid"), "status": fin.get("status"), "est_free_s": fin.get("est_free_s"),
                    "est_typical_s": fin.get("est_typical_s"), "real_s": fin.get("real_s"),
                    "events": fin.get("events"), "staged_breakdown": rg.staged, "staged": True,
-                   "camera_vs_car": by_view, "shots": st["shots"], "clock": clock.hhmm(), "args": sys.argv[1:]}
+                   "camera_vs_car": by_view, "shots": st["shots"], "clock": clock.hhmm(), "args": sys.argv[1:],
+                   "minimap_vs_car": map_gap_summary(st.get("map_gap") or [])}
             (ROOT / "out" / f"{args.scenario}_freefly_follow.json").write_text(json.dumps(res, indent=2),
                                                                              encoding="utf-8")
             follow_stop("demo done")
@@ -5202,8 +5236,10 @@ def main(argv=None) -> int:
                     log.info("destroyed %d surplus parked vehicles", trimmed)
                 hw = getattr(ff, "highway", None)
                 if hw is not None:
-                    log.info("ring road: %s cars on its loops (target %d each), %d started, %d taken off",
-                             [len(m) for m in hw.cars], hw.target(ff.clock.seconds_of_day), hw.added, hw.removed)
+                    log.info("ring road: %s cars on its loops (target %d each), %d started, %d taken off, %d one more "
+                             "lap (their trip's end in sight), %d vanished in view", [len(m) for m in hw.cars],
+                             hw.target(ff.clock.seconds_of_day), hw.added, hw.removed, getattr(hw, "extended", 0),
+                             getattr(ff, "vanished_ring_in_view", 0))
                 if ff.incidents is not None:
                     log.info("accidents: %s; now %s", ff.incidents.stats,
                              [(i.id, i.kind, i.label, i.phase) for i in ff.incidents.incidents])
@@ -5287,6 +5323,9 @@ def main(argv=None) -> int:
             g = sorted(mover.gaps[60:]) or [0.0]
             res = {"scenario": args.scenario, "seconds": args.demo, "rate": args.rate, "steep_poses": mover.steep,
                    "turn_reversals": mover.reversals, "vanished_in_view": ff.vanished_in_view,
+                   "ring_vanished_in_view": getattr(ff, "vanished_ring_in_view", 0),
+                   "ring_one_more_lap": getattr(getattr(ff, "highway", None), "extended", None),
+                   "ring_trips_started": getattr(getattr(ff, "highway", None), "added", None),
                    "update_gap_ms_median": round(1000 * g[len(g) // 2], 1),
                    "update_gap_ms_p99": round(1000 * g[min(len(g) - 1, int(0.99 * len(g)))], 1),
                    "sumo_late": mover.held, "pedestrians_drawn_max": ff.walkers_max, "walks_extended": ff.walks_extended, "walk_phases": [ff.sumo.walk.served, ff.sumo.walk.skipped] if ff.sumo.walk else None, "preemptions": ff.preempted,

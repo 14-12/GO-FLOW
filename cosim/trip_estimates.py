@@ -66,7 +66,8 @@ class Leg:
     t1: float | None = None
     how: str | None = None        # parked | arrived | stopped | extended (another destination) | gone (taken off)
     last_road: str = ""
-    end_v: int | None = None      # a ring car's planned end, its version (cosim/highway.HighwayTraffic.end_of)
+    end_v: int | None = None      # a ring car's planned end, its version (cosim/highway.HighwayTraffic.end_of:
+                                  # (m along its last road, version, roads left))
 
     @property
     def real_s(self) -> float | None:
@@ -105,7 +106,7 @@ class TripEstimates:
                     self.typical[(a, b)] = float(v[stat])
         self.area_names = area_names or {}
         self.place_name = place_name
-        self.end_of = end_of      # vid -> (m along its last road, version) for ring cars' planned trips, else None
+        self.end_of = end_of      # vid -> (m along its last road, version, roads left) for ring cars, else None
         self.live: dict[str, dict] = {}   # vid -> its time left now, the app's live traffic in (cosim/live_eta.for_car)
         self.active: dict[str, Leg] = {}
         self.done: list[Leg] = []
@@ -223,8 +224,9 @@ class TripEstimates:
                 dest_edge, dest_pos = se, float(s.endPos)
                 dest_name = self.name(vid, s.stoppingPlaceID) if s.stoppingPlaceID else None
         end = self._end(vid) if not stops else None
-        if end is not None:       # (10 Nov) a ring car's planned trip: it leaves part way along its last road
-            dest_pos = end[0]
+        if end is not None:       # (10 Nov) a ring car's planned trip: this many roads, it leaves part way along the last
+            edges = edges[:max(1, end[2])]
+            dest_edge, dest_pos = edges[-1], end[0]
         est, free, share = self.estimate(edges, pos, dest_pos)
         leg = Leg(vid, now, edges[0], pos, start_name, dest_edge, dest_pos, dest_name, round(est, 1), round(free, 1),
                   round(share, 2), rid, edges)
@@ -254,6 +256,13 @@ class TripEstimates:
         subs = c.vehicle.getAllSubscriptionResults()
         renew = []
         for vid, leg in self.active.items():
+            if leg.end_v is not None:   # (11 Nov) a ring car whose trip's end moved on (it was in sight): a new trip
+                e = self._end(vid)
+                if e is not None and e[1] != leg.end_v:
+                    leg.changes.append((round(now - leg.t0, 1), "new destination"))
+                    leg.dest_changed = True
+                    renew.append(vid)
+                    continue
             r = subs.get(vid)
             if r is None:
                 continue

@@ -3267,3 +3267,72 @@ appearing mid-road (a trip each 1-3 laps instead of 200 laps). Kept (the user's 
 
 Tests on the PC: 66 passed (test_highway, test_trip_estimates, test_route_delay_table, test_route_guidance with its
 SUMO and CARLA tests, test_town05_agents, test_pose_proc).
+
+## 11 Nov (night): the open points checked in the viewer
+
+**The mini-map's car against the town's (measured).** `--demo-follow` now logs every half second, during the follow,
+the distance from the CARLA car (its actor's transform) to where the mini-map draws it, and to where it drew it before
+(SUMO's newest step): `minimap_vs_car` in out/town05_freefly_follow.json (`map_gap_summary`). 08:00, 463 samples:
+
+| | Median | 95 % |
+|---|---|---|
+| now, all | 0.0 m | 0.53 m |
+| now, car moving (over 2 m/s, 102 samples) | 0.34 m | 0.75 m |
+| before, car moving | 20.9 m | 30.4 m |
+
+The 20 m the user saw is gone. Screenshots: out/freefly/town05_follow_0*.png (11 Nov 00:3x).
+
+**The viewer at the evening peak with the app's live view** (`--set-time 17:30 --clock-speed 1 --demo 900`, SUMO thread
+ms in every 10 s, against the two runs of 10 Nov with the same settings):
+
+| Vehicles in town | 10 Nov (two runs) | 11 Nov | CARLA fps |
+|---|---|---|---|
+| 200-300 | 2709 / 2727 | 2647 | 31.7 |
+| 300-400 | 3533 / 3373 | 3315 | 24.7 |
+| 400-600 | 5106 / 4619 | 4468 | 21.0 |
+
+No cost to see (`sumo.step`, which now holds the estimates and the app's view, 1804 ms against 1956-1997); SUMO never
+late.
+
+**Ring cars vanishing in view.** That peak run: 255 ring trips given one more lap (their end in sight), but 11 ring
+cars vanished in view (none with 200 laps; 19 vehicles in all against 1-3 on 10 Nov). Three causes, found with a log
+line for each ring car that vanished (its last check) and runs on both SUMO builds:
+* One more lap was a new route given in SUMO (`setRoute`, a route with a loop in it, the car's `arrivalPos`): on the
+  PC's SUMO (1.27.1, .venv) the car then left within 1-2 s, in view; on SUMO 1.28 it drove the lap (175-240 s,
+  checked). Checking every SUMO step instead of every 2 s did not help (9 vanished). Now SUMO keeps every ring car's
+  200 laps; the ring counts the roads each car drives (`passed`) and, on the last road of its trip past its end, takes
+  it off if it is out of sight (as the ring's surplus always was) or moves its end one lap on (`HighwayTraffic._at_end`;
+  in the viewer every step near the end, `check_ends`). The estimates read the roads left from `end_of`, see a moved
+  end as a new trip, and get the trips that ended from `take_ended` (SUMO lists a car taken off by TraCI in no arrived
+  list, whatever the reason given: the first dev re-run graded 1 ring trip).
+* An accident on the ring (the same one each run: incident 2, 110 s, a rear-end crash on -38): the accident code sends
+  the cars heading for it another way, to the last road of their route (`_divert`, and `_relieve` after 45 s): for a
+  ring car a ring road close by; those standing at the end of -36 ended their trip in the same step, in view (7, then
+  3 with the viewer putting them back on their laps every step). Ring cars have no other way than the ring: they are
+  no longer sent another way (cosim/incidents.py; they pass on the lane left open, as before);
+  tests/test_removals.py.
+* The time left from where a ring car is took the nearest lap's copy of its last road (its route goes round 200
+  times): 83 s short on the dev seeds. Now the roads ahead come from its plan (`live_eta.roads_ahead`).
+
+Evening peak, all fixes (`--set-time 17:30 --clock-speed 1 --demo 900`): 99 ring trips, 72 one more lap, 0 ring cars
+vanished in view (the ring accident happened again), 2 vehicles in all (a town car and a recovery truck), as on 10 Nov;
+SUMO thread 4448 ms in every 10 s at 400-600 vehicles, CARLA 20.7 fps.
+
+Dev seeds 11-20 from 07:00, 12:00, 17:00, final code (out/trip_estimates/dev_ringtrips4), against the same runs with
+200 laps: 
+| | 200 laps | Planned trips | Runs better |
+|---|---|---|---|
+| cars on the ring | 21.4 | 21.2 | |
+| town cars standing (share) | 0.620 | 0.634 | 15 of 30 |
+| trips parked | 396.0 | 392.7 | 16 of 30 |
+| cars taken off (accidents, knots) | 16.2 | 23.6 | 15 of 30 |
+
+Half the runs either way; the means a little worse (cars taken off: a few runs). Ring trips: 3790, median error
+22.4 s on 202 s trips, 76 % within 20 %, 91 % within 60 s, no bias. Their time left (every 30 s, 22 424 checkpoints):
+from the start estimate 32.9 s mean error, from where the car is 20.1 s, with live traffic 19.7 s (63 % within 20 %).
+The town's trips are unchanged by these fixes (time left: start 64.3 s, usual 48.5 s, live 47.9 s, 58 462
+checkpoints). Tests on the PC: 107 passed (with tests/test_live_eta.py, test_removals.py, the incident tests).
+**Job runner.** Tried `< nul` so that a viewer stopping at "Press any key" could not hold the queue: the viewer then
+quit after a minute (it reads keys from the console, nul ends at once) and `timeout` refused it. Instead
+tools/town05_freefly.bat skips its pause on an error when FREEFLY_NOPAUSE is set (the jobs set it; a double-click keeps
+the pause).

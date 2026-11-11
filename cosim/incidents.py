@@ -2018,7 +2018,10 @@ class IncidentManager:
         inc.diverted = sorted(edges)
         n = 0
         for vid in c.vehicle.getIDList():
-            if vid in self.role or vid.startswith("pt_"):
+            # (11 Nov) not the ring road's own cars (cosim/highway.py, ids "hw"): their only other way is through the
+            # town, and their route's end is a ring road close by: sent there, those standing at a road's end ended
+            # their trip at once, in view (3-7 at the evening peak); they pass on the lane left open, as others do
+            if vid in self.role or vid.startswith(("pt_", "hw")):
                 continue
             try:
                 route = c.vehicle.getRoute(vid)
@@ -2196,11 +2199,12 @@ class IncidentManager:
                 continue
             if vid not in rerouted:
                 rerouted.add(vid)
-                try:
-                    c.vehicle.rerouteTraveltime(vid, currentTravelTimes=False)
-                    self.stats["relieve_rerouted"] = self.stats.get("relieve_rerouted", 0) + 1
-                except Exception:  # noqa: BLE001
-                    pass
+                if not vid.startswith("hw"):   # (11 Nov) not a ring car: no other way but the ring (see _divert)
+                    try:
+                        c.vehicle.rerouteTraveltime(vid, currentTravelTimes=False)
+                        self.stats["relieve_rerouted"] = self.stats.get("relieve_rerouted", 0) + 1
+                    except Exception:  # noqa: BLE001
+                        pass
                 self._keep_lane(vid, near_end=12.0)
                 continue
             if road not in edges or now - t0 < RELIEVE_REMOVE_S:

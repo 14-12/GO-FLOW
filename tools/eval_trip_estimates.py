@@ -29,7 +29,7 @@ def run_one(seed: int, start: float, args: dict, port: int) -> dict:
 
     from cosim.daily import GAME_SPEED
     from cosim.highway import HIGHWAY_SPEED, find_loops
-    from cosim.live_eta import ProbeTraffic, time_left
+    from cosim.live_eta import ProbeTraffic, roads_ahead, time_left
     from cosim.trip_estimates import TripEstimates, area_names, plan_names
 
     work = Path(args["out"]) / f"h{start:g}_seed{seed}"
@@ -57,17 +57,20 @@ def run_one(seed: int, start: float, args: dict, port: int) -> dict:
         st_["t0"] = sumo.time
         st_["pop"] = pop
         st_["probes"] = {sh: ProbeTraffic(sh) for sh in SHARES}
+        st_["sumo"] = sumo
 
     hours = {}
     town = {"ring_cars": [], "standing_share": [], "town_cars": []}
 
     def probe(cur, c, sod) -> None:
         te = st_["te"]
-        te.step(c, cur.time, cur.arrived)
+        ring_ = getattr(st_.get("sumo"), "ring", None)
+        arrived = list(cur.arrived) + (ring_.take_ended() if ring_ is not None else [])   # ring trips that ended
+        te.step(c, cur.time, arrived)
         hours[round(cur.time, 1)] = sod / 3600.0
         subs = c.vehicle.getAllSubscriptionResults()
         for pr in st_["probes"].values():
-            pr.step(c, cur.time, cur.arrived, subs)
+            pr.step(c, cur.time, arrived, subs)
         checkpoints(te, c, cur.time, subs)
         st_["k"] = k = st_.get("k", 0) + 1
         if k % 120 or cur.time < st_["t0"] + 60.0 * args["warmup"]:
@@ -96,12 +99,12 @@ def run_one(seed: int, start: float, args: dict, port: int) -> dict:
             if not road or road.startswith(":") or pos is None:
                 continue   # on a junction: at the next step
             try:
-                route, idx = list(c.vehicle.getRoute(vid)), c.vehicle.getRouteIndex(vid)
-                j = route.index(lg.dest_edge, max(idx, 0))
-            except Exception:  # noqa: BLE001 - its end no longer on its way: no checkpoint
+                roads = roads_ahead(te, c, vid, lg)
+            except Exception:  # noqa: BLE001 - gone
+                roads = None
+            if roads is None:   # its end no longer on its way: no checkpoint
                 lg.next_cp = nxt + CHECK_S
                 continue
-            roads = route[idx:j + 1]
             if not roads or roads[0] != road:
                 continue
             lg.next_cp = nxt + CHECK_S

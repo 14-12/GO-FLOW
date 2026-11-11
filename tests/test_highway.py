@@ -27,7 +27,7 @@ class _Conn:
     def __init__(self):
         self.added, self.removed, self.routes, self.speeds = [], [], {}, {}
         self.road = {}
-        self.vehicle = NS(add=self._add, remove=lambda v: self.removed.append(v),
+        self.vehicle = NS(add=self._add, remove=lambda v, reason=3: self.removed.append(v),
                           getRoadID=lambda v: self.road.get(v, ("a", 5.0))[0],
                           getLanePosition=lambda v: self.road.get(v, ("a", 5.0))[1])
         self.route = NS(add=lambda rid, edges: self.routes.__setitem__(rid, edges))
@@ -118,43 +118,72 @@ def _planned(free=lambda e, p: True):
     hw.setup()
     hw.step({}, 0.0)
     vid, rid, kw = c.added[0]
-    routes = {vid: tuple(c.routes[rid])}
-    c.vehicle.getRoute = lambda v: routes[v]
-    c.vehicle.setRoute = lambda v, edges: routes.__setitem__(v, tuple(edges))
-    return c, hw, vid, kw, routes
+    c.road[vid] = (c.routes[rid][0], 20.0)
+    return c, hw, vid, kw
+
+
+def _drive(c, hw, vid, roads, pos):
+    """The car on each of `roads` in turn (one ring step each), then at pos on the last."""
+    for r in roads:
+        c.road[vid] = (r, 5.0)
+        hw.step({vid: NS()}, 0.0)
+    c.road[vid] = (roads[-1], pos)
+    hw.step({vid: NS()}, 0.0)
 
 
 def test_a_ring_car_has_a_planned_trip_with_an_end():
-    """(10 Nov) 1-3 laps from where it appears, leaving part way along its last road: a start, an end, an estimate."""
-    c, hw, vid, kw, routes = _planned()
-    edges = routes[vid]
-    assert 3 <= len(edges) <= 7 and all(a != b for a, b in zip(edges, edges[1:]))   # along the loop
-    assert 150.0 <= float(kw["arrivalPos"]) <= 440.0 and hw.end_of(vid) == (float(kw["arrivalPos"]), 0)
+    """(10 Nov) 1-3 laps from where it appears, leaving part way along its last road: a start, an end, an estimate.
+    (11 Nov) SUMO keeps its 200 laps: a looping route given again with an end position, SUMO 1.27 took the car off."""
+    c, hw, vid, kw = _planned()
+    rid = c.added[0][1]
+    assert len(c.routes[rid]) > 100 and "arrivalPos" not in kw
+    end, v, n = hw.end_of(vid)
+    assert 150.0 <= end <= 440.0 and v == 0 and 3 <= n <= 7
     assert hw.end_of("live1") is None
 
 
-def test_a_ring_car_whose_end_is_in_sight_drives_one_more_lap():
-    seen = {"end": False}                                         # it appears out of sight
-    c, hw, vid, kw, routes = _planned(free=lambda e, p: not seen["end"])
-    seen["end"] = True
-    edges = routes[vid]
-    c.vehicle.getRouteIndex = lambda v: len(edges) - 3          # not yet near its end: left alone
-    hw.step({vid: NS()}, 0.0)
-    assert routes[vid] == edges and hw.extended == 0
-    c.vehicle.getRouteIndex = lambda v: len(edges) - 2          # the road before its last, its end in sight
-    hw.step({vid: NS()}, 0.0)
-    assert len(routes[vid]) == 2 + 2 and routes[vid][:2] == edges[-2:] and hw.extended == 1
-    assert hw.end_of(vid)[1] == 1                                # its end moved: a new destination for its estimate
-    seen["end"] = False                                          # out of sight: it ends there
-    c.vehicle.getRouteIndex = lambda v: len(routes[v]) - 1
-    hw.step({vid: NS()}, 0.0)
-    assert hw.extended == 1
+def test_a_ring_car_leaves_at_its_end_out_of_sight_and_drives_on_in_sight():
+    seen = {"car": False}
+    c, hw, vid, kw = _planned(free=lambda e, p: not seen["car"])
+    end, _, n = hw.end_of(vid)
+    first = c.road[vid][0]
+    roads = [("b" if first == "a" else "a") if j % 2 else first for j in range(1, n)]   # the next n-1 roads
+    seen["car"] = True                                           # its end in sight: one more lap, not taken off
+    _drive(c, hw, vid, roads, end + 5.0)
+    assert hw.extended == 1 and vid not in c.removed and hw.end_of(vid) == (end, 1, 3)   # the road it is on + a lap
+    seen["car"] = False                                          # a lap later, out of sight: it leaves there
+    nxt = "b" if roads[-1] == "a" else "a"
+    _drive(c, hw, vid, [nxt, roads[-1]], end + 1.0)
+    assert vid in c.removed and hw.arrived == 1 and hw.end_of(vid) is None
+    assert hw.take_ended() == [vid] and hw.take_ended() == []   # for the trip estimates: SUMO lists it nowhere
 
 
-def test_a_planned_ring_car_given_another_way_goes_round_to_a_trip_end():
-    c, hw, vid, kw, routes = _planned()
-    routes[vid] = ("b", "a")                                     # an accident's detour: to the last road, the short way
+def test_a_ring_car_near_its_end_is_watched_every_step():
+    """(11 Nov) The ring's step comes every 2 s (44 m at 80 km/h): near its end, check_ends looks every step."""
+    c, hw, vid, kw = _planned()
+    end, _, n = hw.end_of(vid)
+    first = c.road[vid][0]
+    roads = [("b" if first == "a" else "a") if j % 2 else first for j in range(1, n)]
+    _drive(c, hw, vid, roads, end - 30.0)                        # on its last road, short of its end
+    assert vid in hw.near_end and vid not in c.removed
+    c.road[vid] = (roads[-1], end + 2.0)
+    hw.check_ends()
+    assert vid in c.removed
+
+
+def test_a_ring_car_sent_the_short_way_goes_round_again_at_the_next_step():
+    """(11 Nov) An accident on the ring re-routes the cars heading for it to the last road of their route, close by:
+    check_ends sees the route id change and puts the car back on its laps at once (it ended in sight, 7 at once)."""
+    c, hw, vid, kw = _planned()
+    rid = c.added[0][1]
+    routes = {vid: tuple(c.routes[rid])}
+    ids = {vid: rid}
+    c.vehicle.getRoute = lambda v: routes[v]
     c.vehicle.getRouteIndex = lambda v: 0
-    c.vehicle.getRoadID = lambda v: "b"
-    hw.step({vid: NS()}, 0.0)
-    assert routes[vid] == ("b", "a", "b") and hw.rerouted == 1
+    c.vehicle.getRouteID = lambda v: ids[v]
+    c.vehicle.setRoute = lambda v, edges: (routes.__setitem__(v, tuple(edges)), ids.__setitem__(v, "!" + v + "#2"))
+    hw.check_ends({vid: {0x53: rid}})                     # its route id seen once
+    routes[vid], ids[vid] = ("b", "a"), "!" + vid + "#1"  # the accident's detour: two roads left
+    c.road[vid] = ("b", 30.0)
+    hw.check_ends({vid: {0x53: ids[vid]}})
+    assert len(routes[vid]) > 100 and routes[vid][0] == "b" and hw.rerouted == 1 and vid not in hw.round_again

@@ -173,3 +173,11 @@ With the junction agents now: about 10-11 km/h over the day, 260 s waiting a km,
   runs: slightly worse on the means (standing 0.625 -> 0.642, trips parked 374 -> 365, taken off 16.9 -> 21.5), about
   half the runs either way. Kept (the user's request); next to try: longer ring trips (fewer cars appearing).
 * Job runner: CARLA jobs run with `< nul` (the viewer's .bat pauses on an error and held the queue).
+* (11 Nov, night) Checked in the viewer: the mini-map's car now sits where the picture shows it (0.34 m median while
+  moving; 20.9 m ahead before); the app's live view costs nothing seen at the evening peak (SUMO thread 4.4 s in 10 s
+  at 400-600 vehicles). Ring cars vanishing in view (11 in one peak run) fixed: SUMO keeps their 200 laps and the
+  ring ends each trip itself, out of sight (SUMO 1.27 took a car given a looping route off at once); ring cars are no
+  longer sent "another way" by accidents (they ended in view); their time left counts the planned roads. Last peak
+  run: 0 ring cars vanished, 2 vehicles in all. Dev seeds: ring trips 76 % within 20 %; the town about half the runs
+  either way (taken off 16.2 -> 23.6 on the means). Next to look at: town cars going home ending at their door in
+  view when their home stop cannot be set (road -20).
