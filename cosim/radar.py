@@ -30,7 +30,8 @@ ROAD_LINE = (88, 101, 130)
 TEXT = (238, 242, 250)
 DIM = (150, 160, 182)
 FLOW = {0: (52, 211, 153), 1: (251, 191, 36), 2: (248, 82, 82)}   # moving, slow, standing
-LEVELS = (2.0, 0.75)    # the base map's scales (px per metre)
+LEVELS = (2.0, 1.0, 0.75)    # the base map's scales (px per metre)
+CHIPS_W = 500           # the chips' room above the radar: the picture keeps one size whatever their numbers
 CELL_M = 20.0
 
 
@@ -155,69 +156,110 @@ class Radar:
         return s
 
     # ---------------------------------------------------------------- each picture
+    # ---------------------------------------------------------------- the moving part, 5 times a second
+    WORLD_S = 0.2    # the traffic layer's age at most (s)
+
+    def _world(self, cx: float, cy: float, R: float, cars, t: float) -> None:
+        """The town round the camera, north up, with the traffic on it (the roads coloured by their cars' speed, the
+        cars): drawn 5 times a second, a margin wide enough for the camera to move and the zoom to change before the
+        next. Each picture only turns, scales and shifts it (render)."""
+        s = (D / 2) / R
+        k = min((lv for lv in LEVELS if lv >= s), default=LEVELS[0])   # the base map just sharper than the screen
+        half = 1.6 * R                      # metres each side of the camera
+        Lk = int(2 * half * k)
+        wx0, wy1 = cx - half, cy + half
+        bx, by = self._px(k, wx0, wy1)
+        src = pygame.Surface((Lk, Lk))
+        src.fill(LAND)
+        src.blit(self.bases[k], (0, 0), pygame.Rect(int(round(bx)), int(round(by)), Lk, Lk))
+        wx0 = self.x0 + int(round(bx)) / k   # (the pixel grid's own corner)
+        wy1 = self.y1 - int(round(by)) / k
+        # the layer at the screen's scale now: each picture then only turns it (and scales it by the zoom eased since)
+        L = int(Lk * s / k)
+        w = pygame.transform.smoothscale(src, (L, L)) if L != Lk else src
+        k = L / Lk * k
+        g = 1.0                              # layer pixels per screen pixel
+
+        def W(x, y):
+            return (x - wx0) * k, (wy1 - y) * k
+
+        per: dict = {}
+        for _vid, x, y, v in cars:
+            if abs(x - cx) > half or abs(y - cy) > half:
+                continue
+            rid = self.road_of(x, y)
+            if rid is not None:
+                per.setdefault(rid, []).append(v)
+        flow = pygame.Surface((L, L), pygame.SRCALPHA)
+        lw = max(2, int(max(3, int(4.5 * s)) * g))
+        for rid, vs in per.items():
+            rd = self.r.roads.get(rid)
+            if rd is None:
+                continue
+            ref = max(getattr(rd, "speed", 13.9) or 13.9, 5.0)
+            m = sum(vs) / len(vs)
+            lev = 2 if m < 1.0 else 1 if m < 0.45 * ref else 0
+            pygame.draw.lines(flow, (*FLOW[lev], (95, 165, 185)[lev]), False, [W(*p) for p in rd.shape],
+                              lw + (int(g) if lev > 0 else 0))
+        for _vid, x, y, v in cars:
+            if abs(x - cx) > half or abs(y - cy) > half:
+                continue
+            q = W(x, y)
+            col = FLOW[2] if v < 1.0 else FLOW[1] if v < 5.0 else (214, 224, 240)
+            pygame.draw.circle(flow, (0, 0, 0, 110), (q[0] + 0.6 * g, q[1] + 1.0 * g), 2.8 * g)
+            pygame.draw.circle(flow, col, q, 2.3 * g)
+        w.blit(flow, (0, 0))
+        self._w = {"surf": w, "k": k, "R": R, "x0": wx0, "y1": wy1, "cx": cx, "cy": cy, "t": t}
+
     def render(self, free: dict, t: float) -> pygame.Surface:
+        """One picture: the traffic layer (redrawn 5 times a second) turned heading-up, scaled and shifted to where
+        the camera is now, then what must stay upright or move every picture (icons, alerts, the camera's marker)."""
+        self._count(t)
         cx, cy, heading = free.get("cam") or ((self.x0 + self.x1) / 2, (self.y0 + self.y1) / 2, 0.0)
         z = free.get("z", 60.0)
         want = min(max(110.0 + 1.5 * max(z, 0.0), 120.0), 330.0)
-        self.R += (want - self.R) * 0.25
+        dt = min(max(t - getattr(self, "_t", t - 0.2), 0.0), 0.5)
+        self._t = t
+        self.R += (want - self.R) * (1.0 - math.exp(-dt * 5.0))   # eased by time, not by pictures
         R = self.R
         s = (D / 2) / R
         h = heading % 360.0
-        # the town round the camera, turned heading-up and scaled, in one step
-        k = LEVELS[0] if R < 190 else LEVELS[1]
-        base = self.bases[k]
+        wl = getattr(self, "_w", None)
+        if (wl is None or t - wl["t"] > self.WORLD_S or t < wl["t"] or abs(R / wl["R"] - 1.0) > 0.12
+                or math.hypot(cx - wl["cx"], cy - wl["cy"]) > 0.3 * wl["R"]):
+            self._world(cx, cy, R, free.get("cars") or (), t)
+            wl = self._w
+        k = wl["k"]
+        bx, by = (cx - wl["x0"]) * k, (wl["y1"] - cy) * k
         L = int(2 * R * 1.04 * k) + 4   # the disc only: whatever the turn, the rest is masked off
-        bx, by = self._px(k, cx, cy)
-        crop = pygame.Surface((L, L))
-        crop.fill(LAND)
-        crop.blit(base, (0, 0), pygame.Rect(int(bx - L / 2), int(by - L / 2), L, L))
-        rot = pygame.transform.rotozoom(crop, h, s / k)
-        disc = pygame.Surface((D, D), pygame.SRCALPHA)
-        disc.blit(rot, (D / 2 - rot.get_width() / 2, D / 2 - rot.get_height() / 2))
+        ox, oy = int(bx - L / 2), int(by - L / 2)
+        crop = wl["surf"].subsurface(pygame.Rect(ox, oy, L, L).clip(wl["surf"].get_rect()))
+        if crop.get_size() != (L, L):   # (at the layer's edge: never with its margin, but safe)
+            full = pygame.Surface((L, L))
+            full.fill(LAND)
+            full.blit(wl["surf"], (0, 0), pygame.Rect(ox, oy, L, L))
+            crop = full
+        g = s / k
+        rot = pygame.transform.rotozoom(crop, h, g)
+        # the camera is (fx, fy) layer pixels off the crop's centre: that offset, turned and scaled, is taken off
+        fx, fy = bx - (ox + L / 2), by - (oy + L / 2)
         sh, ch = math.sin(math.radians(h)), math.cos(math.radians(h))
+        ux, uy = (fx * ch + fy * sh) * g, (-fx * sh + fy * ch) * g
+        disc = pygame.Surface((D, D), pygame.SRCALPHA)
+        disc.blit(rot, (D / 2 - rot.get_width() / 2 - ux, D / 2 - rot.get_height() / 2 - uy))
         c = D / 2
 
         def P(x, y):
             dx, dy = x - cx, y - cy
             return c + s * (dx * ch - dy * sh), c - s * (dx * sh + dy * ch)
 
-        # live traffic: the roads with cars on them, by how fast those cars go
-        cars = free.get("cars") or ()
-        per: dict = {}
-        for _vid, x, y, v in cars:
-            if abs(x - cx) > 1.5 * R or abs(y - cy) > 1.5 * R:
-                continue
-            rid = self.road_of(x, y)
-            if rid is not None:
-                per.setdefault(rid, []).append(v)
-        flow = pygame.Surface((D, D), pygame.SRCALPHA)
-        lw = max(3, int(4.5 * s))
-        for rid, vs in per.items():
-            rd = self.r.roads.get(rid)
-            if rd is None or len(vs) < 1:
-                continue
-            ref = max(getattr(rd, "speed", 13.9) or 13.9, 5.0)
-            m = sum(vs) / len(vs)
-            lev = 2 if m < 1.0 else 1 if m < 0.45 * ref else 0
-            pts = [P(*p) for p in rd.shape]
-            pygame.draw.lines(flow, (*FLOW[lev], (95, 165, 185)[lev]), False, pts, lw + (lev > 0))
-        disc.blit(flow, (0, 0))
         # the places: their icons, upright
         isz = 18 if R < 200 else 14
         for p in self.places:
-            x, y = p["label"]
-            q = P(x, y)
+            q = P(*p["label"])
             if math.dist(q, (c, c)) < c - 14:
                 ic = self._icon(p["kind"], isz)
                 disc.blit(ic, (q[0] - ic.get_width() / 2, q[1] - ic.get_height() / 2))
-        # the cars
-        for vid, x, y, v in cars:
-            q = P(x, y)
-            if math.dist(q, (c, c)) > c - 3:
-                continue
-            col = FLOW[2] if v < 1.0 else FLOW[1] if v < 5.0 else (214, 224, 240)
-            pygame.draw.circle(disc, (0, 0, 0, 110), (q[0] + 0.6, q[1] + 1.0), 2.8)
-            pygame.draw.circle(disc, col, q, 2.3)
         pulse = 0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.2)
         blips = []
         for a in free.get("alerts") or ():
@@ -237,20 +279,44 @@ class Radar:
         if cand is not None:
             q = P(cand[1], cand[2])
             if math.dist(q, (c, c)) < c - 10:
-                g = (52, 211, 153)
-                pygame.draw.circle(disc, (*g, int(120 + 100 * pulse)), q, 8 + 3 * pulse, 2)
-                pygame.draw.circle(disc, g, q, 3.5)
+                gr = (52, 211, 153)
+                pygame.draw.circle(disc, (*gr, int(120 + 100 * pulse)), q, 8 + 3 * pulse, 2)
+                pygame.draw.circle(disc, gr, q, 3.5)
         # where the camera looks, and the camera
-        disc.blit(self._cone, (0, 0))
-        arrow = [(c, c - 11), (c + 8, c + 8), (c, c + 3), (c - 8, c + 8)]
-        pygame.draw.polygon(disc, (0, 0, 0, 120), [(x + 1, y + 2) for x, y in arrow])
-        pygame.draw.polygon(disc, (255, 255, 255), arrow)
-        pygame.draw.polygon(disc, (96, 165, 250), arrow, 2)
-        # inner shading towards the edge (a lens)
-        disc.blit(self._vignette(), (0, 0))
+        disc.blit(self._lens(), (0, 0))   # where the camera looks, the camera, the shading towards the edge
         disc.blit(self._mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         self.disc = disc   # (for the tests)
         return self._frame(disc, h, R, s, blips, free, t)
+
+    def _count(self, t: float) -> None:
+        """How many pictures a second (the viewer's log, every 10 s): how smooth it turns."""
+        n, t0 = getattr(self, "_n", (0, t))
+        if t - t0 >= 10.0:
+            import logging
+
+            logging.getLogger("freefly").info("radar: %.1f pictures a second", n / (t - t0))
+            n, t0 = 0, t
+        self._n = (n + 1, t0)
+
+    def _lens(self) -> pygame.Surface:
+        ln = getattr(self, "_ln", None)
+        if ln is None:
+            ln = self._ln = self._cone.copy()
+            c = D / 2
+            ln.blit(self._marker(), (c - 12, c - 14))
+            ln.blit(self._vignette(), (0, 0))
+        return ln
+
+    def _marker(self) -> pygame.Surface:
+        m = getattr(self, "_mk", None)
+        if m is None:
+            m = self._mk = pygame.Surface((24, 26), pygame.SRCALPHA)
+            c, cy = 12, 14
+            arrow = [(c, cy - 11), (c + 8, cy + 8), (c, cy + 3), (c - 8, cy + 8)]
+            pygame.draw.polygon(m, (0, 0, 0, 120), [(x + 1, y + 2) for x, y in arrow])
+            pygame.draw.polygon(m, (255, 255, 255), arrow)
+            pygame.draw.polygon(m, (96, 165, 250), arrow, 2)
+        return m
 
     def _vignette(self) -> pygame.Surface:
         v = getattr(self, "_vig", None)
@@ -268,16 +334,16 @@ class Radar:
         full = D + 2 * BEZEL
         head = hudkit.chips(self._stats(free))
         hint = None   # (the F prompt is the viewer's own, bottom middle)
-        W = max(full, head.get_width()) + 2 * m + 8
+        W = max(full, head.get_width(), CHIPS_W) + 2 * m + 8   # (one size: the viewer redraws the ring alone)
         H = head.get_height() + 34 + full + (hint.get_height() - 2 * m + 6 if hint else 0) + 2 * m + 6
         out = pygame.Surface((W, H), pygame.SRCALPHA)
         ox = W - m - full - 4
         oy = m + head.get_height() + 34
         C = (ox + full / 2, oy + full / 2)
-        if ui.ALPHA:   # a soft round shadow
-            sh = self._shadow(full)
-            out.blit(sh, (C[0] - sh.get_width() / 2, C[1] - sh.get_height() / 2 + 4))
-        out.blit(self._ring(full, h), (ox, oy))
+        # the part that changes with every picture (the ring, its heading and scale), for the viewer to send alone
+        self.ring_box = pygame.Rect(ox - 22, oy - 30, full + 44, full + 52).clip(out.get_rect())
+        rg = self._ring(full, h)   # (with its soft round shadow)
+        out.blit(rg, (ox - (rg.get_width() - full) // 2, oy - (rg.get_height() - full) // 2))
         out.blit(disc, (ox + BEZEL, oy + BEZEL))
         return self._frame_rest(out, C, full, oy, h, s, blips, head, hint, W, m)
 
@@ -293,10 +359,10 @@ class Radar:
         """The bezel: dark glass ring, ticks every 15 degrees, all one weight (N, E, S and W have their letters), so the
         ring repeats every 15 degrees: 15 turns a degree apart are drawn once and kept."""
         rings = self.__dict__.setdefault("_rings", {})
-        key = int(round(h)) % 15
+        key = (int(round(h)) % 15, ui.ALPHA)
         if key in rings:
             return rings[key]
-        h = float(key)
+        h = float(key[0])
         ring = pygame.Surface((full * 2, full * 2), pygame.SRCALPHA)
         rc = full
         pygame.draw.circle(ring, (*hudkit.INK, 236), (rc, rc), rc)
@@ -310,8 +376,15 @@ class Radar:
             col = (255, 255, 255, 170 if major else 70)
             pygame.draw.line(ring, col, (rc + r0 * math.sin(a), rc - r0 * math.cos(a)),
                              (rc + r1 * math.sin(a), rc - r1 * math.cos(a)), 3 if major else 2)
-        rings[key] = pygame.transform.smoothscale(ring, (full, full))
-        return rings[key]
+        ring = pygame.transform.smoothscale(ring, (full, full))
+        if ui.ALPHA:   # the soft round shadow under it
+            sh = self._shadow(full)
+            both = pygame.Surface(sh.get_size(), pygame.SRCALPHA)
+            both.blit(sh, (0, 4))
+            both.blit(ring, ((sh.get_width() - full) // 2, (sh.get_height() - full) // 2))
+            ring = both
+        rings[key] = ring
+        return ring
 
     def _frame_rest(self, out, C, full: int, oy: float, h: float, s: float, blips, head, hint, W: int, m: int):
         for b, name in ((0, "N"), (90, "E"), (180, "S"), (270, "W")):

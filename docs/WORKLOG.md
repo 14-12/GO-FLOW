@@ -3749,3 +3749,36 @@ present traffic colour, a glowing point at now. Redrawn once a game minute (3-6 
 
 **Limits.** Accidents on the radar are the route agent's alerts (the ones it plans round), not every accident marker
 on screen. The radar's per-frame cost is still about 4 ms, 5 times a second (about 20 ms a second of the main loop).
+
+### 12 Nov, later: the radar made smooth (the user: "laggy, not smooth at all, like the one you replaced")
+
+Why: the radar was drawn 5 times a second, as the old mini-map. The old one is north up: between its pictures only
+the camera's small arrow jumped. The radar turns the whole map with the camera: every turn jumped 5 times a second.
+
+What changed:
+* `cosim/radar.py`: the traffic (roads coloured by their cars, the cars) is drawn 5 times a second on a layer
+  north up, at the screen's scale, 1.6 times wider than the radar's view; each picture only crops it round the camera
+  (to the sub-pixel), turns it heading-up and scales it by the zoom eased since (one `rotozoom` of ~350 px). The zoom
+  eases by time, not by picture. The bezel with its shadow is drawn once for each of its 15 turns; the cone, the
+  camera's marker and the shading are one picture. The radar keeps one size (500 px of room for the chips), so it
+  can be redrawn alone.
+* `cosim/freefly.py` (`radar_tick`): between the overlay's pictures, while the camera moves or the zoom eases, the
+  radar's ring alone is drawn again on what lay under it and sent alone (its 398 x 408 px of the window). The radar
+  is drawn with every overlay picture too (no more 0.2 s hold for it). The log says how many radar pictures a second
+  ("radar: 24.2 pictures a second") and the ticks' cost ("radar 101 (12/s)").
+* Cost of one radar picture: 2.9 ms drawing + 0.8 ms sending on the PC alone (`Claude outputs/vq/radar/prof_pc.py`);
+  ~8 ms in the running town (the CPU shared with SUMO and the poses).
+* A first try of the tick reached 11 pictures a second only: the radar's size changed with its chips' numbers (the
+  tick then gave up) and the tick waited 1/30 s after itself in a loop run at 30 a second (every other loop skipped).
+
+Measured (70 s demo, flying high / street fps; radar pictures a second while flying):
+
+| | old mini-map | radar 5 / s | radar smooth |
+|---|---|---|---|
+| 17:30 | 35.7-37.1 / 41.0-42.2 | 35.9 / 39.8 | 33.7 / 38.8, radar 22-30 / s |
+| 22:00 | 29.4-30.0 / 45.6-46.1 | 29.5 / 45.0 | 28.7 / 44.3, radar 17-27 / s |
+| 12:00 | 43.6 / 53.9 | 42.1 / 51.5 | 41.0 / 49.9, radar 18-26 / s |
+
+1 % lows: 28.4 / 31.6 (17:30), 21.9 / 25.5 (22:00), 34.4 / 36.1 (12:00). The smooth radar costs 1-2 fps against the
+5-a-second one, 2-4 against the old mini-map. Tests: 376 passed (`tests/test_radar.py`: the shifted layer puts the
+roads where a freshly drawn one does, within a pixel).

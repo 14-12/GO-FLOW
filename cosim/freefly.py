@@ -4455,6 +4455,7 @@ def main(argv=None) -> int:
     def markers_draw():
         """The accident markers, the junction agents' decisions (cosim/agent_hud.py) and DSO4's spill-back alerts
         (cosim/goflow_prediction_hud.py), or None when none."""
+        fol["radar_spot"] = None   # (set again below when this picture has the radar)
         scene = getattr(ff, "scene", None)
         ms = list(scene.markers) if scene is not None and scene.markers else []
         evs = ff.agent_events() if args.agent_hud and getattr(ff, "agents", None) is not None else []
@@ -4502,16 +4503,18 @@ def main(argv=None) -> int:
                     # step or two ahead of the picture: the mini-map's car was ahead of the town's)
                     msnap = dict(msnap, xy=ff.scen.frame.to_sumo_xy(sh[1], sh[2]), angle=sh[3] + 90.0)
                 held = fol.get("mm_held")
-                if msnap is None and fol["vid"] is None and held is not None and time.time() - held[0] < 0.2:
-                    mm = held[1]  # flying: the town's map 5 times a second, also while a marker redraws 30 times
-                elif msnap is None and fol["vid"] is None and ui_kit.ALPHA:
-                    # (12 Nov) flying: the round, heading-up radar (cosim/radar.py); following keeps the trip's map
+                radar = msnap is None and fol["vid"] is None and ui_kit.ALPHA
+                if radar:
+                    # (12 Nov) flying: the round, heading-up radar (cosim/radar.py); following keeps the trip's map.
+                    # Drawn with every picture (its traffic layer 5 times a second inside it), and between pictures
+                    # by radar_tick: it turns with the camera, so 5 pictures a second jumped
                     if fol.get("radar") is None:
                         from cosim.radar import Radar
 
                         fol["radar"] = Radar(rg.router, place_cards())
                     mm = fol["radar"].render(free, time.time())
-                    fol["mm_held"] = (time.time(), mm)
+                elif msnap is None and fol["vid"] is None and held is not None and time.time() - held[0] < 0.2:
+                    mm = held[1]  # flying: the town's map 5 times a second, also while a marker redraws 30 times
                 else:
                     mm = fol["map"].render(msnap, time.time(), fol["view"], free=free, intro=intro)
                     fol["mm_held"] = (time.time(), mm)
@@ -4530,6 +4533,9 @@ def main(argv=None) -> int:
                 rects += marker_hud.draw(scr, tuple(size), tf, ms, time.time(), plates)
             mm_h = 0
             if mm is not None:
+                if radar and alpha["on"]:   # what lies under the radar's ring, for radar_tick to draw it on again
+                    box = fol["radar"].ring_box.move(mm_xy).clip(scr.get_rect())
+                    fol["radar_spot"] = (box, scr.subsurface(box).copy(), mm.get_size(), mm_xy)
                 rects.append(scr.blit(mm, mm_xy))
                 mm_h = mm.get_height() + 10
             if fc is not None:  # chips and pills only with --goflow-hud; the panel above the mini-map, unless following
@@ -4543,6 +4549,30 @@ def main(argv=None) -> int:
             return rects
 
         return paint
+
+    def radar_tick() -> bool:
+        """(12 Nov) Between the overlay's pictures: the radar's ring drawn again where the camera is now and sent alone
+        (its part of the window), up to 30 times a second while the camera moves or the zoom eases."""
+        spot = fol.get("radar_spot")
+        if spot is None or not alpha["on"] or fol.get("radar") is None:
+            return False
+        box, under, msize, mm_xy = spot
+        free = free_view()
+        pose = (*free["cam"], free.get("z", 0.0))
+        last = fol.get("radar_pose")
+        rd = fol["radar"]
+        if (last is not None and max(abs(a - b) for a, b in zip(pose, last)) < 0.05
+                and abs(rd.R - min(max(110.0 + 1.5 * max(pose[3], 0.0), 120.0), 330.0)) < 1.0):
+            return False   # still: nothing to turn
+        fol["radar_pose"] = pose
+        mm = rd.render(free, time.time())
+        if mm.get_size() != msize:   # (the chips above changed width: the next picture redraws it all)
+            return False
+        screen.fill(alpha["key"], box)
+        screen.blit(under, box.topleft, special_flags=pygame.BLEND_RGBA_ADD)   # (onto clear pixels: a copy)
+        screen.blit(mm, box.topleft, area=pygame.Rect(box.x - mm_xy[0], box.y - mm_xy[1], box.w, box.h))
+        alpha["pres"].present(screen, [box])
+        return True
 
     def draw(st: HudState, keys_help: bool = False, prompt: str | None = None, panel=None, native=None) -> None:
         """The overlay. Only the parts drawn now and the parts drawn last time are sent to the window:
@@ -4657,9 +4687,9 @@ def main(argv=None) -> int:
     last_sun, last_sun_t = None, 0.0
     note, note_until = "", 0.0
     fps_shown, fps_t = 0.0, time.time()
-    last_save = last_hud = last_log = time.time()
+    last_save = last_hud = last_log = last_radar = time.time()
     loops = 0
-    timing = {"overlay": 0.0}
+    timing = {"overlay": 0.0, "radar": 0.0, "radar_n": 0}
     sampler = None
     if args.profile:
         from cosim.sampler import StackSampler
@@ -5349,6 +5379,12 @@ def main(argv=None) -> int:
                      keys_help=time.time() - t0 < 25.0 or clock.paused, prompt=prompt, panel=panel, native=native)
                 timing["overlay"] += time.perf_counter() - tm
                 last_hud = time.time()
+            elif time.time() - last_radar >= 1 / 45:   # (the loop itself runs at UI_RATE: 1 / 30 skipped every other)
+                tm = time.perf_counter()
+                if radar_tick():
+                    timing["radar"] += time.perf_counter() - tm
+                    timing["radar_n"] += 1
+                last_radar = time.time()
             if time.time() - last_save > 2.0:
                 clock.save()
                 last_save = time.time()
@@ -5378,10 +5414,12 @@ def main(argv=None) -> int:
                     if frame_mode and pose_stats:
                         updates = pose_stats[-1]["posed_per_s"] * span
                 log.info("%s  CARLA %.1f fps  updates %.0f/s  vehicles %d in town, %d drawn, %d pedestrians, "
-                         "SUMO late %d; ms/s: move %.0f, apply %.0f (pose thread), overlay %.0f (main loop, %.0f/s)",
+                         "SUMO late %d; ms/s: move %.0f, apply %.0f (pose thread), overlay %.0f (main loop, %.0f/s), "
+                         "radar %.0f (%.0f/s)",
                          clock.hhmm(), fps_shown, updates / span, ff.city_vehicles, len(cs.actors), len(cs.walkers),
                          mover.held, 1000 * mt["move"] / span, 1000 * mt["apply"] / span,
-                         1000 * timing["overlay"] / span, loops / span)
+                         1000 * timing["overlay"] / span, loops / span, 1000 * timing["radar"] / span,
+                         timing["radar_n"] / span)
                 with mover.lock:
                     trimmed = cs.trim()
                 if trimmed:
@@ -5418,7 +5456,7 @@ def main(argv=None) -> int:
                         log.info("profile %s: on stack %s", name,
                                  ", ".join(f"{w} {100 * f:.0f}%" for w, f in r["inclusive"]))
                 loops, last_log = 0, time.time()
-                timing = {"overlay": 0.0}
+                timing = {"overlay": 0.0, "radar": 0.0, "radar_n": 0}
             ticker.tick(UI_RATE)
     finally:
         if clip_st.get("rec") is not None:  # --record-clips stopped early (Esc, an error): the MP4s closed properly
