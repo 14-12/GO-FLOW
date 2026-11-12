@@ -160,8 +160,8 @@ class Radar:
     WORLD_S = 0.2    # the traffic layer's age at most (s)
 
     def _world(self, cx: float, cy: float, R: float, cars, t: float) -> None:
-        """The town round the camera, north up, with the traffic on it (the roads coloured by their cars' speed, the
-        cars): drawn 5 times a second, a margin wide enough for the camera to move and the zoom to change before the
+        """The town round the camera, north up, with the traffic on it (the roads coloured by their cars' speed):
+        drawn 5 times a second, a margin wide enough for the camera to move and the zoom to change before the
         next. Each picture only turns, scales and shifts it (render)."""
         s = (D / 2) / R
         k = min((lv for lv in LEVELS if lv >= s), default=LEVELS[0])   # the base map just sharper than the screen
@@ -201,14 +201,7 @@ class Radar:
             lev = 2 if m < 1.0 else 1 if m < 0.45 * ref else 0
             pygame.draw.lines(flow, (*FLOW[lev], (95, 165, 185)[lev]), False, [W(*p) for p in rd.shape],
                               lw + (int(g) if lev > 0 else 0))
-        for _vid, x, y, v in cars:
-            if abs(x - cx) > half or abs(y - cy) > half:
-                continue
-            q = W(x, y)
-            col = FLOW[2] if v < 1.0 else FLOW[1] if v < 5.0 else (214, 224, 240)
-            pygame.draw.circle(flow, (0, 0, 0, 110), (q[0] + 0.6 * g, q[1] + 1.0 * g), 2.8 * g)
-            pygame.draw.circle(flow, col, q, 2.3 * g)
-        w.blit(flow, (0, 0))
+        w.blit(flow, (0, 0))      # (the cars themselves: every picture, render)
         self._w = {"surf": w, "k": k, "R": R, "x0": wx0, "y1": wy1, "cx": cx, "cy": cy, "t": t}
 
     def render(self, free: dict, t: float) -> pygame.Surface:
@@ -253,6 +246,16 @@ class Radar:
             dx, dy = x - cx, y - cy
             return c + s * (dx * ch - dy * sh), c - s * (dx * sh + dy * ch)
 
+        # the cars, where the town's picture shows them now (every picture: in the 5-a-second layer they jumped)
+        lim = (c - 3) ** 2
+        for _vid, x, y, v in free.get("cars") or ():
+            dx, dy = x - cx, y - cy
+            qx, qy = s * (dx * ch - dy * sh), -s * (dx * sh + dy * ch)
+            if qx * qx + qy * qy > lim:
+                continue
+            col = FLOW[2] if v < 1.0 else FLOW[1] if v < 5.0 else (214, 224, 240)
+            pygame.draw.circle(disc, (0, 0, 0, 110), (c + qx + 0.6, c + qy + 1.0), 2.8)
+            pygame.draw.circle(disc, col, (c + qx, c + qy), 2.3)
         # the places: their icons, upright
         isz = 18 if R < 200 else 14
         for p in self.places:

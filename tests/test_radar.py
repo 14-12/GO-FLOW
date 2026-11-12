@@ -123,3 +123,20 @@ def test_sky_clock_windows_light_up_at_night():
     night = warm(h.card(HudState(game_s=21.5 * 3600, sun_elevation=-15.0)).copy())
     day = warm(h.card(HudState(game_s=12.0 * 3600, sun_elevation=55.0)).copy())
     assert night > 20 and day == 0
+
+
+def test_the_maps_show_the_cars_at_the_time_the_picture_shows():
+    """(12 Nov) The town's picture runs a step or two (0.5 s each) behind SUMO: the maps take every car between the
+    two steps around the time the picture shows, not SUMO's newest."""
+    from cosim.freefly import cars_at
+
+    hist = [(10.0, {"a": (0.0, 0.0, 10.0)}), (10.5, {"a": (5.0, 0.0, 10.0), "b": (1.0, 1.0, 0.0)}),
+            (11.0, {"a": (10.0, 0.0, 12.0), "b": (1.0, 1.0, 0.0)})]
+    assert cars_at(hist, None)["a"] == (10.0, 0.0, 12.0)          # (nothing shown yet: the newest)
+    a = cars_at(hist, 10.25)["a"]
+    assert abs(a[0] - 2.5) < 1e-9 and a[1] == 0.0
+    a = cars_at(hist, 10.75)
+    assert abs(a["a"][0] - 7.5) < 1e-9 and abs(a["a"][2] - 11.0) < 1e-9 and a["b"] == (1.0, 1.0, 0.0)
+    assert cars_at(hist, 9.0)["a"] == (0.0, 0.0, 10.0)
+    assert "b" in cars_at(hist, 10.2)                              # (new in the later step: where it has it)
+    assert cars_at([], 10.0) == {}

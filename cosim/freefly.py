@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import collections
 import dataclasses
+import itertools
 import json
 import queue
 import re
@@ -974,7 +975,7 @@ class FrameFeeder(threading.Thread):
                 if pid in cs.walkers]
         park_v, park_w = cs.parked_v, cs.parked_w
         cs.parked_v, cs.parked_w = [], []
-        return {"start": start, "dt": self.ff.sumo.step_length, "veh": veh, "walk": walk,
+        return {"start": start, "dt": self.ff.sumo.step_length, "t_sumo": getattr(poser.cur, "time", None), "veh": veh, "walk": walk,
                 "park_v": park_v, "park_w": park_w, "empty": empty}
 
     LEAD_S = 0.2  # each step goes to the pose process this long before it starts
@@ -1077,6 +1078,8 @@ class FreeFly:
         self.target = 0.0
         self.night = False
         self.prev = None
+        self.hist = collections.deque(maxlen=8)   # (12 Nov) the last steps' vehicles (x, y, speed): the maps' cars at
+                                                  # the time the picture shows (shown_at)
         self.lights = {}
         self.carla_dt: list[float] = []     # every CARLA frame time (async: real seconds)
         self._dt_seen = 0
@@ -2344,6 +2347,7 @@ class FreeFly:
         self.emergency_seen.update(vid for vid, v in cur.vehicles.items() if v.vclass in ("emergency", "authority"))
         self.buses_seen.update(vid for vid in cur.vehicles if vid.startswith("pt_"))
         self.prev = cur
+        self.hist.append((cur.time, {vid: (v.x, v.y, v.speed) for vid, v in cur.vehicles.items()}))
         pk = Packet(cur, arrived, snap, lights, walk, snapshot)
         lap("rest")
         tt["steps"] = tt.get("steps", 0) + 1
@@ -2584,6 +2588,28 @@ class FreeFly:
 
 
 # ---------------------------------------------------------------- the clock window
+def cars_at(hist: list, t: float | None) -> dict:
+    """(12 Nov) Every car {vid: (x, y, speed)} at SUMO time t, between the two kept steps around it (hist: [(time,
+    {vid: (x, y, speed)})], oldest first); the newest step when t is None or past it, the oldest before it. A car only
+    in the later step is where that step has it."""
+    if not hist:
+        return {}
+    if t is None or t >= hist[-1][0]:
+        return hist[-1][1]
+    if t <= hist[0][0]:
+        return hist[0][1]
+    for (ta, va), (tb, vb) in itertools.pairwise(hist):
+        if ta <= t <= tb:
+            f = (t - ta) / (tb - ta) if tb > ta else 1.0
+            out = {}
+            for vid, (xb, yb, sb) in vb.items():
+                a = va.get(vid)
+                out[vid] = (xb, yb, sb) if a is None else (a[0] + (xb - a[0]) * f, a[1] + (yb - a[1]) * f,
+                                                           a[2] + (sb - a[2]) * f)
+            return out
+    return hist[-1][1]
+
+
 def compose_overlay(screen, size, dirty_prev, full: bool, key, hud=None, keys_pill=None, prompt=None, panel=None,
                     native=None, markers=None) -> list:
     """Draws the overlay's parts on `screen` (see-through `key` elsewhere) and returns the rectangles drawn,
@@ -2606,7 +2632,11 @@ def compose_overlay(screen, size, dirty_prev, full: bool, key, hud=None, keys_pi
         hud[0](screen)
         rects.append(pygame.Rect(0, 0, max(hud[1], 560) + 40, hud[2] + 70))
     if keys_pill is not None and not cctv_full:
-        rects.append(screen.blit(keys_pill, (16, h - 42)))
+        # (12 Nov) 16 px off the bottom as the other parts (the glass bar carries its shadow's margin: it touched it)
+        from cosim import ui as ui_kit
+
+        m = ui_kit.MARGIN if ui_kit.ALPHA else 0
+        rects.append(screen.blit(keys_pill, (16 - m, h - 16 - keys_pill.get_height() + m)))
     if panel is not None:
         if cctv_full:  # the sensor feed's full-screen picture
             rects.append(screen.blit(panel, (0, 0)))
@@ -4415,6 +4445,50 @@ def main(argv=None) -> int:
         except (OSError, ValueError, KeyError):
             return []
 
+    def shown_cars() -> dict:
+        """(12 Nov) Every car (x, y, speed in SUMO) where the town's picture shows it: between the two steps around
+        the SUMO time the picture shows (the pose process says which); SUMO's newest step without it. The maps drew
+        the newest: a step or two (0.5 s each) ahead of the picture."""
+        sh = getattr(ff, "shown_follow", None)
+        t = sh[4] if sh is not None and len(sh) >= 6 and sh[4] > 0.0 and time.time() - sh[5] < 0.5 else None
+        return cars_at(list(ff.hist), t)
+
+    map_gap = {"t": 0.0, "now": [], "newest": []}
+
+    def map_gap_sample() -> None:
+        """(12 Nov, --demo) The maps' cars against the town's: for up to 25 moving cars near the camera, metres from
+        the CARLA car's middle to where the maps put it now (cars_at, the time the picture shows) and before (SUMO's
+        newest step), both made into the car's middle the way the poses are (convert.vehicle_transform)."""
+        from cosim.convert import vehicle_transform
+
+        prev = getattr(ff, "prev", None)
+        if prev is None:
+            return
+        cam = ff.view_transform().location
+        shown, newest = shown_cars(), (ff.hist[-1][1] if ff.hist else {})
+        near = []
+        for vid, aid in list(ff.cs.actors.items()):
+            v = prev.vehicles.get(vid)
+            if v is None or v.speed < 2.0 or vid not in shown or vid not in newest:
+                continue
+            tf = vehicle_transform(ff.scen.frame, v.x, v.y, v.angle, v.length)
+            dd = math.hypot(tf.location.x - cam.x, tf.location.y - cam.y)
+            if dd < 150.0:
+                near.append((dd, vid, aid, v))
+        near = sorted(near, key=lambda n: n[0])[:25]
+        if not near:
+            return
+        acts = {a.id: a for a in ff.world.get_actors([n[2] for n in near])}
+        for _dd, vid, aid, v in near:
+            a = acts.get(aid)
+            if a is None:
+                continue
+            loc = a.get_transform().location
+            for key, src in (("now", shown), ("newest", newest)):
+                x, y = src[vid][:2]
+                tf = vehicle_transform(ff.scen.frame, x, y, v.angle, v.length)
+                map_gap[key].append(math.hypot(tf.location.x - loc.x, tf.location.y - loc.y))
+
     def free_view() -> dict:
         """What the free-fly mini-map shows: the camera (SUMO x, y, heading), the car F would follow, every car's
         place and speed, the alerts the route agent sees."""
@@ -4423,10 +4497,10 @@ def main(argv=None) -> int:
         x, y = frame.to_sumo_xy(tf.location.x, tf.location.y)
         prev = getattr(ff, "prev", None)
         vs = prev.vehicles if prev is not None else {}
+        shown = shown_cars()
         cand = None
-        if fol["cand"] is not None and fol["cand"] in vs:
-            v = vs[fol["cand"]]
-            cand = (fol["cand"], v.x, v.y)
+        if fol["cand"] is not None and fol["cand"] in shown:
+            cand = (fol["cand"], *shown[fol["cand"]][:2])
         pend = None
         if fol["vid"] is not None and fol["vid"] in vs:
             v = vs[fol["vid"]]
@@ -4434,7 +4508,7 @@ def main(argv=None) -> int:
         live = getattr(ff, "places_live", None)
         parked = live["parked"] if live else ()
         return {"cam": (x, y, tf.rotation.yaw + 90.0), "z": tf.location.z, "cand": cand, "cam0": fol["cam0"], "pending": pend,
-                "cars": [(vid, v.x, v.y, v.speed) for vid, v in list(vs.items()) if vid not in parked],
+                "cars": [(vid, x_, y_, sp) for vid, (x_, y_, sp) in shown.items() if vid not in parked],
                 "alerts": list(getattr(ff.route_guide, "live_alerts", [])), "places": live}
 
     def follow_snap():
@@ -4562,9 +4636,10 @@ def main(argv=None) -> int:
         last = fol.get("radar_pose")
         rd = fol["radar"]
         if (last is not None and max(abs(a - b) for a, b in zip(pose, last)) < 0.05
-                and abs(rd.R - min(max(110.0 + 1.5 * max(pose[3], 0.0), 120.0), 330.0)) < 1.0):
-            return False   # still: nothing to turn
-        fol["radar_pose"] = pose
+                and abs(rd.R - min(max(110.0 + 1.5 * max(pose[3], 0.0), 120.0), 330.0)) < 1.0
+                and time.time() - fol.get("radar_t", 0.0) < 1 / 15):
+            return False   # still: only the cars move (15 a second for them)
+        fol["radar_pose"], fol["radar_t"] = pose, time.time()
         mm = rd.render(free, time.time())
         if mm.get_size() != msize:   # (the chips above changed width: the next picture redraws it all)
             return False
@@ -4725,7 +4800,8 @@ def main(argv=None) -> int:
 
         ctx = mp.get_context("spawn")
         pose_q, stats_q = ctx.Queue(), ctx.Queue()
-        ff.shown_follow = ctx.Array("d", 4, lock=False)   # (10 Nov) the followed car where the picture shows it
+        # (10 Nov) the followed car where the picture shows it; (12 Nov) and the SUMO time the picture shows
+        ff.shown_follow = ctx.Array("d", 6, lock=False)
         pose_proc = ctx.Process(target=_pp.run, args=(args.host, args.port, pose_q, stats_q, ff.scen.frame.cx,
                                                       ff.scen.frame.cy, not frame_mode, ff.shown_follow), daemon=True)
         pose_proc.start()
@@ -5385,6 +5461,12 @@ def main(argv=None) -> int:
                     timing["radar"] += time.perf_counter() - tm
                     timing["radar_n"] += 1
                 last_radar = time.time()
+            if args.demo and time.time() - map_gap["t"] >= 1.0:
+                map_gap["t"] = time.time()
+                try:
+                    map_gap_sample()
+                except Exception as e:  # noqa: BLE001 - measured only
+                    log.debug("map gap: %s", e)
             if time.time() - last_save > 2.0:
                 clock.save()
                 last_save = time.time()
@@ -5546,7 +5628,12 @@ def main(argv=None) -> int:
                    "agent_stats": ({k: v for k, v in ff.agents.stats.items() if isinstance(v, (int, float))}
                                    if getattr(ff, "agents", None) is not None else None),
                    # (12 Nov) the notices and banners the run showed (cosim/hudkit.py)
-                   "notices": dict(feed.counts), "banners": getattr(banner, "shown", 0)}
+                   "notices": dict(feed.counts), "banners": getattr(banner, "shown", 0),
+                   # (12 Nov) the maps' cars against the town's (map_gap_sample): metres, median and 95th percentile
+                   "map_gap": {k: ({"n": len(xs), "median_m": round(sorted(xs)[len(xs) // 2], 2),
+                                    "p95_m": round(sorted(xs)[min(len(xs) - 1, int(0.95 * len(xs)))], 2)}
+                                   if xs else None) for k, xs in (("now", map_gap["now"]),
+                                                                  ("newest", map_gap["newest"]))}}
             out = ROOT / "out" / (f"{args.scenario}_freefly_flight.json" if args.demo_flight_only else f"{args.scenario}_freefly_demo.json")
             out.write_text(json.dumps(res, indent=2), encoding="utf-8")
             print(json.dumps(res), flush=True)

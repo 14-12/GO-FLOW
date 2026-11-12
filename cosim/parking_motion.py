@@ -77,6 +77,10 @@ OVERDUE_S = 3.0         # a drive out at the road this long after SUMO should ha
 # the first of a few ways that keeps CLEAR_M off all of them is taken (ParkingMotion._pick)
 CLEAR_M = 0.15
 BACK_STRAIGHT_M = 0.8   # backed out: this far straight along the aisle after the turn, before it stops
+JOIN_V = 2.2            # (12 Nov) a drive out reaches the road at this speed and SUMO takes the car over at it
+                        # (before: it stopped on the road and SUMO started it from standing: seen as a stop)
+ROLL_S = 1.05           # ... shown rolling on along the lane at most this long after its drive, waiting for SUMO to
+                        # put the car back (two steps); longer, it stands there as before
 MIN_R_M = 3.0           # a way turning tighter than this (a car cannot) is taken only if no other is clear
 # at a kerb: SUMO stops a car on its lane beside its space and puts it back there; the viewer shows it parked
 # KERB_SHIFT_M further on (kerb_fronts): the car stops behind its space and pulls into it forwards (an S, the cars
@@ -250,7 +254,7 @@ class Leg:
 
     BLEND_M = 10.0      # an end moved (end_offset): over this last stretch of the leg
 
-    def __init__(self, pts, v_max, reverse=False, signals=0, blink_until_m=None, pivot=0.0):
+    def __init__(self, pts, v_max, reverse=False, signals=0, blink_until_m=None, pivot=0.0, v_end=0.0):
         self.pts, self.reverse, self.signals = pts, reverse, signals
         self.pivot = pivot          # (9 Nov, 3rd) pts are of a point this far behind the middle (the rear axle)
         self.end_offset = None
@@ -272,8 +276,8 @@ class Leg:
         v = [0.0] * n
         for i in range(1, n):                       # speeding up from standing
             v[i] = min(cap[i], math.sqrt(v[i - 1] ** 2 + 2 * ACC * (cum[i] - cum[i - 1])))
-        v[-1] = 0.0
-        for i in range(n - 2, -1, -1):              # and down to standing at the end
+        v[-1] = min(v[-1], v_end)                   # (12 Nov) a drive out ends rolling onto the road (JOIN_V)
+        for i in range(n - 2, -1, -1):              # and down to standing (or v_end) at the end
             v[i] = min(v[i], math.sqrt(v[i + 1] ** 2 + 2 * DEC * (cum[i + 1] - cum[i])))
         t = [0.0]
         for i in range(1, n):
@@ -397,6 +401,7 @@ class ParkingMotion:
         self.followers: set[str] = set()           # SUMO's cars held behind a drive's car standing on their lane
         self.prev: dict[str, tuple] = {}           # vehicle -> (x, y, angle) at the step before (front bumper)
         self.seams: list[dict] = []                # each drive out: how far from SUMO's car it ended (the last 200)
+        self._ramp: dict[str, float] = {}          # (12 Nov) cars handed back rolling: SUMO's speed again next step
         self._k = 0
         self.stats = {"in": 0, "out": 0, "kerb_in": 0, "kerb_out": 0, "waited_at_road": 0, "held_sumo": 0,
                       "seam_max_m": 0.0, "skipped_hidden": 0, "failed": 0}
@@ -905,7 +910,7 @@ class ParkingMotion:
             pts = fillet(_dedupe(way))
             n_ = _unit(e["front"][0] - e0[0], e["front"][1] - e0[1])
             side = LEFT if (dr[0] * n_[1] - dr[1] * n_[0]) < 0 else RIGHT
-            leg = Leg(pts, V_DRIVE, signals=side)
+            leg = Leg(pts, V_DRIVE, signals=side, v_end=JOIN_V)
             self.stats["building_out"] = self.stats.get("building_out", 0) + 1
             return self._on_road(Drive(vid, "out", [leg], t0, L), aid, road_c, dr)
         if "spaces" in self.areas[aid]:
@@ -948,7 +953,7 @@ class ParkingMotion:
                           P[1] + dr[1] * ((e0[0] - P[0]) * dr[0] + (e0[1] - P[1]) * dr[1]))
                     fwd = keep_right([back_end, t2, e0, road_c], (1,), off=kr) if math.dist(back_end, t2) > 1.0 \
                         else [back_end, e0, road_c]
-                go = Leg(arcs(_dedupe(fwd), TURN_R_M, keep_end=1.0), V_DRIVE, signals=side)
+                go = Leg(arcs(_dedupe(fwd), TURN_R_M, keep_end=1.0), V_DRIVE, signals=side, v_end=JOIN_V)
                 return [back, go]
             cands = [(kr, 4.5), (kr, 5.0), (kr, 4.0), (kr / 2, 4.5), (kr / 2, 4.0), (0.0, 4.5), (0.0, 4.0), (kr, 3.5),
                      (0.0, 3.5), (kr, 3.0), (0.0, 3.0),
@@ -989,7 +994,7 @@ class ParkingMotion:
                 pts = s_curve(ra0, hk, ra1, sc)
                 if pts is None:
                     return None
-                legs.append(Leg(pts, 2.5, signals=side, pivot=off))
+                legs.append(Leg(pts, 2.5, signals=side, pivot=off, v_end=JOIN_V))
                 pauses.append(0.0)
                 made[(back_m, sc)] = (legs, pauses)
                 return legs
@@ -1010,7 +1015,7 @@ class ParkingMotion:
                 pauses.append(PAUSE_S)
             ra0 = (start[0] - hk[0] * off, start[1] - hk[1] * off)
             ra1 = (road_c[0] - dr[0] * off, road_c[1] - dr[1] * off)
-            legs.append(Leg(hermite(ra0, hk, ra1, dr, scale=sc), 2.5, signals=side, pivot=off))
+            legs.append(Leg(hermite(ra0, hk, ra1, dr, scale=sc), 2.5, signals=side, pivot=off, v_end=JOIN_V))
             pauses.append(0.0)
             made[(back_m, sc)] = (legs, pauses)
             return legs
@@ -1084,6 +1089,11 @@ class ParkingMotion:
         self._kerb.pop(vid, None)
         self._kerb_wait.pop(vid, None)
         self.reserve(dv, self._now)
+        end = self.release.get(vid, float("inf"))
+        if end < float("inf"):
+            # (12 Nov) it waits in its place so that it reaches its lane when SUMO puts the car back, rolling on (it
+            # started KERB_EARLY_S before and stood on the lane for SUMO: seen as a stop in the road)
+            dv.lag += max(0.0, end - self._now - dv.duration - dv.lag - EXIT_GUARD_S)
         self.drives[vid] = dv
         self.stats["kerb_out"] += 1
         self.stats["kerb_early"] = self.stats.get("kerb_early", 0) + 1
@@ -1388,6 +1398,13 @@ class ParkingMotion:
         c, d = self.c, self.d
         self._cur, self._now = vehicles, now
         self._k += 1
+        for vid, t in list(self._ramp.items()):     # (12 Nov) handed back rolling a step ago: SUMO drives it now
+            if now > t:
+                del self._ramp[vid]
+                try:
+                    c.vehicle.setSpeed(vid, -1.0)
+                except Exception:  # noqa: BLE001, S110 - it left meanwhile
+                    pass
         # (9 Nov, 4th) a car newly parked: its kerb place worked out afresh (a place kept from its stay before put it
         # where another car now stood: 0.37 m apart in CARLA)
         pk = set(d.parked)
@@ -1578,18 +1595,22 @@ class ParkingMotion:
                         # to where the drive ends (9 Nov, 6th: to its x, y: on its lane position only, 1.0 m off)
                         ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
                         eh = _dir(ef)
-                        c.vehicle.moveToXY(vid, self.areas[dv.area]["edge"], -1, ex + eh[0] * dv.length / 2,
-                                           ey + eh[1] * dv.length / 2, ef, keepRoute=1)
+                        on = self._roll_on(dv, now)     # (12 Nov: the drive over at this step: where it rolls to)
+                        c.vehicle.moveToXY(vid, self.areas[dv.area]["edge"], -1, ex + eh[0] * (dv.length / 2 + on),
+                                           ey + eh[1] * (dv.length / 2 + on), ef, keepRoute=1)
                         dv.legs[-1].end_offset = None
                         dv.end_fixed = (0.0, 0.0)
                         self.stats["ends_matched"] = self.stats.get("ends_matched", 0) + 1
                     elif "spaces" in self.areas.get(dv.area, {}) and getattr(dv, "end_fixed", None) is None:
                         # (9 Nov, 4th) SUMO puts a car back from a car park 1.3 m beside its lane's line (the
                         # Square: a 1.5 m step at the hand-over): its car moved to where the drive ends
+                        # (12 Nov) ... or, the drive over at this step, to where it will be at the next one, going on at
+                        # the drive's end speed (it stood a step there: seen as a stop on the road)
                         ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
                         eh = _dir(ef)
-                        c.vehicle.moveToXY(vid, "", -1, ex + eh[0] * dv.length / 2, ey + eh[1] * dv.length / 2, ef,
-                                           keepRoute=1)
+                        on = self._roll_on(dv, now)
+                        c.vehicle.moveToXY(vid, "", -1, ex + eh[0] * (dv.length / 2 + on),
+                                           ey + eh[1] * (dv.length / 2 + on), ef, keepRoute=1)
                         dv.legs[-1].end_offset = None
                         dv.end_fixed = (0.0, 0.0)
                         self.stats["ends_matched"] = self.stats.get("ends_matched", 0) + 1
@@ -1647,12 +1668,15 @@ class ParkingMotion:
                                            "sumo_speed": round(v.speed, 2), "late_s": round(dv.progress(now) - dv.duration, 1)})
                         del self.seams[:-200]
                     self.drives.pop(vid)
-                    self._release_hold(vid)
+                    rolling = self._late(dv, now) is not None
+                    if rolling and vid in self.held:
+                        self._roll(vid, dv, now, v)
+                    self._release_hold(vid, dv.legs[-1].v[-1] if rolling else 0.0)
                     if dv.kind == "in":
                         self._mark(v)
                     continue
-                elif not getattr(dv, "waited", False):  # its drive is over, SUMO has not put it back yet
-                    dv.waited = True
+                elif not getattr(dv, "waited", False) and self._late(dv, now) is None:
+                    dv.waited = True                    # its drive is over, SUMO has not put it back yet
                     self.stats["waited_at_road"] += 1
 
             if dv.kind == "out" and vid not in d.parked and vid not in self.held and not dv.done(now):
@@ -1663,6 +1687,10 @@ class ParkingMotion:
                 except Exception:  # noqa: BLE001, S110 - it left meanwhile
                     pass
             x, y, face, speed, sig = dv.at(now)
+            late = self._late(dv, now)
+            if late:                    # (12 Nov) just over, rolling: on along its end's heading until SUMO has it
+                hx, hy = _dir(face)
+                x, y = x + hx * speed * late, y + hy * speed * late
             if dv.rate < 0.999 and not dv.done(now):        # giving way: slower, braking
                 speed *= dv.rate
                 sig = (sig & ~BACK) | BRAKE if dv.rate < 0.05 else sig | BRAKE
@@ -2219,11 +2247,55 @@ class ParkingMotion:
         except Exception:  # noqa: BLE001, S110 - it left meanwhile
             pass
 
-    def _release_hold(self, vid):
+    def _roll(self, vid, dv, now, v) -> None:
+        """(12 Nov) A drive out ended between this step and the last, its end rolling: the car shown where it has
+        rolled to since, at the drive's end speed, and SUMO's car put where it will be at the next step (it waited at
+        the drive's end: a step standing on the road)."""
+        ex, ey, ef, _v, _g = dv.legs[-1].at(dv.legs[-1].duration)
+        eh = _dir(ef)
+        late = max(dv.progress(now) - dv.duration, 0.0)
+        ve = dv.legs[-1].v[-1]
+        v.x, v.y = ex + eh[0] * (dv.length / 2 + ve * late), ey + eh[1] * (dv.length / 2 + ve * late)
+        v.angle, v.speed = ef, ve
+        try:
+            on = ve * (late + self._dt())
+            self.c.vehicle.moveToXY(vid, "", -1, ex + eh[0] * (dv.length / 2 + on), ey + eh[1] * (dv.length / 2 + on),
+                                    ef, keepRoute=1)
+        except Exception:  # noqa: BLE001, S110 - it left meanwhile
+            pass
+
+    def _dt(self) -> float:
+        try:
+            return self.c.simulation.getDeltaT()
+        except Exception:  # noqa: BLE001
+            return 0.5
+
+    def _late(self, dv, now) -> float | None:
+        """(12 Nov) A drive out ending rolling (JOIN_V), over by now but not long ago (ROLL_S): the seconds since its
+        end, while it is shown rolling on. None otherwise (on its way, ending standing, or SUMO kept it waiting)."""
+        if dv.kind != "out" or dv.legs[-1].v[-1] <= 0.0 or getattr(dv, "waited", False):
+            return None
+        late = dv.progress(now) - dv.duration
+        return late if 0.0 <= late <= ROLL_S else None
+
+    def _roll_on(self, dv, now) -> float:
+        """(12 Nov) A drive out over at this step: how far on its car goes by the next step at its end speed (0
+        for one still on its way, or ending standing)."""
+        late = self._late(dv, now)
+        return 0.0 if late is None else dv.legs[-1].v[-1] * (self._dt() + late)
+
+    def _release_hold(self, vid, v_end=0.0):
+        """SUMO drives its car again; v_end: the speed the drive ended at (12 Nov: SUMO goes on at it, not from
+        standing)."""
         if vid in self.held:
             self.held.discard(vid)
             try:
-                self.c.vehicle.setSpeed(vid, -1.0)
+                if v_end > 0.0:      # at the drive's speed for a step (it is being put where it rolled to), then SUMO's
+                    self.c.vehicle.setPreviousSpeed(vid, v_end)
+                    self.c.vehicle.setSpeed(vid, v_end)
+                    self._ramp[vid] = self._now
+                else:
+                    self.c.vehicle.setSpeed(vid, -1.0)
                 if vid in self._lc:
                     self.c.vehicle.setLaneChangeMode(vid, self._lc.pop(vid))
             except Exception:  # noqa: BLE001 - it left meanwhile

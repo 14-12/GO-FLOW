@@ -467,6 +467,10 @@ class Driver:
         pv, pw = self.parks
         self.parks = ([], [])
         s = self.poser.s_at(t_show)
+        seg = self.poser.seg
+        # (12 Nov) the SUMO time this picture shows (its segment runs from the step before t_sumo to t_sumo), for the
+        # viewer's maps: they drew SUMO's newest step, a step or two ahead of the picture
+        self.shown_t = seg["t_sumo"] - seg["dt"] * (1.0 - s) if seg.get("t_sumo") is not None else None
         vs = [(a, tf) for a, tf in self.poser.vehicles(s, t_show) if a not in self.tows]
         ws = self.poser.walkers(s)
         # recovery trucks: backing in to load (their pose is the plan's, not SUMO's), their decks, the wrecks on them
@@ -983,7 +987,8 @@ class SceneOps:
 def run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: bool = False, shown=None) -> None:
     """The process: CARLA's tick callback poses the actors of the latest segment for the next picture. A failure
     goes to the viewer's log (as {"fatal": traceback}) instead of ending the process unseen. shown: a shared array
-    (time, x, y, yaw in CARLA) where the followed car is put for the next picture (the mini-map draws it there)."""
+    (time, x, y, yaw in CARLA) where the followed car is put for the next picture (the mini-map draws it there),
+    then (12 Nov) the SUMO time the next picture shows and when that was written (the maps put every car there)."""
     try:
         _run(host, port, q_in, q_out, cx, cy, measure_only, shown)
     except Exception:  # noqa: BLE001 - reported, then the process ends
@@ -1080,6 +1085,8 @@ def _run(host: str, port: int, q_in, q_out, cx: float, cy: float, measure_only: 
                     shown[0] = time.time()
             elif drv.follow is None:
                 chase.reset()
+            if shown is not None and len(shown) >= 6 and getattr(drv, "shown_t", None) is not None:
+                shown[4], shown[5] = drv.shown_t, time.time()   # (12 Nov) the SUMO time shown, and when written
             if batch:
                 client.apply_batch(batch)
             lag.sent_now(vs)

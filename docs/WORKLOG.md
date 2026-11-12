@@ -3782,3 +3782,46 @@ Measured (70 s demo, flying high / street fps; radar pictures a second while fly
 1 % lows: 28.4 / 31.6 (17:30), 21.9 / 25.5 (22:00), 34.4 / 36.1 (12:00). The smooth radar costs 1-2 fps against the
 5-a-second one, 2-4 against the old mini-map. Tests: 376 passed (`tests/test_radar.py`: the shifted layer puts the
 roads where a freshly drawn one does, within a pixel).
+
+## 12 Nov, evening: the key bar's margin, the maps' cars on time, cars leaving a parking place without stopping
+
+The user's three points.
+
+**The key bar** (F5 pause ... Esc quit) touched the bottom of the screen: it was put 42 px from the bottom, and its
+glass bar carries its shadow's margin (ui.MARGIN): its lower edge was on the screen's edge. Now 16 px off it, as the
+other parts (`compose_overlay`).
+
+**The maps' cars ahead of the town's.** SUMO steps every 0.5 s; the pose process shows each car between two steps
+(segments); the maps drew SUMO's newest step, which the SUMO thread has well before the picture shows it. Now: each
+segment carries its SUMO time (`t_sumo`), the pose process writes the SUMO time each picture shows (`shown_follow[4]`,
+with when, `[5]`), the viewer keeps the last 8 steps' cars (`FreeFly.hist`) and the maps take every car between the
+two steps around that time (`cars_at`). The radar draws the cars with every picture (they were in its 5-a-second
+layer). Measured in the demo (`map_gap`: every second, 25 moving cars within 150 m, metres from the CARLA car's middle
+to the map's car made into a middle the way the poses are):
+
+| | now (cars_at) median / p95 | before (SUMO's newest) median / p95 |
+|---|---|---|
+| 17:30 | 0.45 / 3.26 m (n 1128) | 23.79 / 51.83 m |
+| 22:00 | 0.69 / 3.46 m (n 417) | 26.05 / 54.67 m |
+| 12:00 | 0.54 / 3.25 m (n 901) | 22.46 / 53.80 m |
+
+(The newest step was 2-5 s ahead of the picture, not one or two steps: more than I had thought.)
+
+**A car leaving its space stopped in the road.** `cosim/parking_motion.py`: every leg of a drive slows to standing at
+its end, so the drive out stopped on the road; SUMO, holding the car there, then started it from standing (a step and
+more standing). A kerb's drive out started up to KERB_EARLY_S (8 s) before SUMO put the car back and stood on the
+lane for it (1.5 s here). Now:
+* a drive out's last leg ends at JOIN_V = 2.2 m/s (`Leg(v_end=...)`), and SUMO takes the car over at that speed
+  (`setPreviousSpeed`, held at it for one step, `_ramp`, then SUMO's own);
+* a drive just over is shown rolling on along its end's heading until SUMO has the car (up to ROLL_S = 1.05 s), and
+  SUMO's car is put where it will be by then (`_roll`, `_roll_on`); longer, it stands as before;
+* a kerb's drive out waits in its place so that it reaches its lane when SUMO puts the car back.
+Measured in SUMO alone, one car into and out of each car park and kerb area (`Claude outputs/vq/park/trace_out.py`,
+as tests/test_parking_motion.py): steps standing around the hand-over, before 1 (car parks) and 4 (kerbs), now 0 in
+all 11 areas; the moves around it 1.1-1.5 m a step (2.2-3 m/s). `tools/check_parking_motion.py --seed 101 --start
+7.5 --hours 1`: as before (no step over 2 m on a drive, no static or parked hit, 1 overlap with a road car at a kerb
+as before, seams 0.0 m). A kerb's car, once SUMO drives it, may change lane in one step (3.2 m sideways), as before.
+Tests: `test_a_car_leaving_rolls_onto_the_road_without_stopping` (a car park, a kerb), `test_the_maps_show...`.
+
+**Frame rate** (70 s demo, flying high / street): 17:30 34.4 / 39.0 (before 33.7 / 38.8; a first run 32.4 / 33.0,
+not seen again), 22:00 28.9 / 45.0 (28.7 / 44.3), 12:00 42.0 / 50.8 (41.0 / 49.9).

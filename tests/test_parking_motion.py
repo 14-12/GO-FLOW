@@ -1,6 +1,7 @@
 """The viewer drives a car into its space and out of it (cosim/parking_motion.py), on SUMO's own run: no jump on the
 way in or out (at most a car's step at walking-to-driving speed between two steps), it ends in its space, facing as
 SUMO has it, and it is back on the road where and when SUMO has it."""
+import itertools
 import math
 import random
 import sys
@@ -151,3 +152,70 @@ def test_cars_driving_in_and_out_of_the_same_car_park_at_once_keep_clear_of_each
     assert res["drives_in"] == 8 and res["drives_out"] == 8, res
     assert res["overlap_steps"] == 0, res["worst"]
     assert res["stats"].get("started_later", 0) >= 1         # some waited for their way to be clear
+
+
+def _drive_out_steps(area: str):
+    """One car to `area` and out again (SUMO alone, as the viewer): its shown middle's moves (m per 0.5 s step) from
+    four steps before its drive out ends to five after."""
+    import sumolib
+    import traci
+
+    from cosim.sumo_side import Vehicle
+
+    scen = ROOT / "scenarios" / "town05"
+    label = f"pm_join_{area}"
+    traci.start([sumolib.checkBinary("sumo"), "-n", str(scen / "town05.net.xml"), "-a", str(P.ADD), "--step-length",
+                 "0.5", "--no-step-log", "--no-warnings", "--time-to-teleport", "-1"], label=label)
+    c = traci.getConnection(label)
+    rows, ev = [], []
+    try:
+        d = P.PurposeDemand(c, clock_speed=240.0, seed=3)
+        d.rng = random.Random(2)
+        d.purpose_at = lambda hour, vclass: "shopping"
+        d.places.choose = lambda rng, what, hour, exclude=None: area
+        motion = pm.ParkingMotion(d, c)
+        assert d.launch("car", "DEFAULT_VEHTYPE", "passenger", 10.0, (), ())
+        for _ in range(2400):
+            c.simulationStep()
+            t = c.simulation.getTime()
+            vs = {}
+            for vid in c.vehicle.getIDList():
+                x, y = c.vehicle.getPosition(vid)
+                vs[vid] = Vehicle(vid, "passenger", "t", c.vehicle.getLength(vid), x, y, c.vehicle.getAngle(vid),
+                                  c.vehicle.getSpeed(vid), 0)
+            d.step([])
+            for vid, aid in d.parked.items():
+                v = vs.get(vid)
+                if v is not None and "spaces" in d.places.areas[aid]:
+                    a = math.radians(v.angle)
+                    v.x += math.sin(a) * v.length / 2
+                    v.y += math.cos(a) * v.length / 2
+            motion.step(t, vs)
+            v = vs.get("car")
+            if v is None:
+                continue
+            dv = motion.drives.get("car")
+            rows.append((v.x, v.y, v.angle, dv.kind if dv else None))
+            if dv is not None:
+                ev.append(dv.kind)
+            if "out" in ev and dv is None and len(rows) > 12 and all(r[3] is None for r in rows[-6:]):
+                break
+    finally:
+        c.close()
+
+    def mid(r):
+        h = math.radians(r[2])
+        return r[0] - math.sin(h) * 2.5, r[1] - math.cos(h) * 2.5
+    j = max(i for i, r in enumerate(rows) if r[3] == "out")
+    return [math.dist(mid(a), mid(b)) for a, b in itertools.pairwise(rows[j - 4:j + 6])]
+
+
+@pytest.mark.parametrize("area", ["marche", "cafe_coin"])
+def test_a_car_leaving_rolls_onto_the_road_without_stopping(area):
+    """(12 Nov) A car park's (marche) and a kerb's (cafe_coin): the drive out reaches the road rolling and SUMO takes
+    the car over at that speed. Before, it slowed to standing on the road, stood a step or more (SUMO took it over
+    from standing): seen as a stop in the middle of the road."""
+    moves = _drive_out_steps(area)
+    assert min(moves) > 0.5, moves                 # never standing (2.2 m/s: 1.1 m a step)
+    assert max(moves[:6]) < 2.0, moves             # nor a jump at the hand-over (after it, SUMO may change lane in a
+                                                   # step: the kerb's car, 3.2 m sideways, as before; drawn as a slide)
