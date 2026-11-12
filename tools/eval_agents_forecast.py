@@ -144,8 +144,6 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
         state.update(sumo=sumo, im=im, fc=fc, t0=sumo.time)
         if reads:
             pol.forecast = lambda: fc.risk(sumo.time)
-        if pol is not None and "bus" in getattr(pol, "on", ()):       # the line buses in service ask for themselves
-            pol.buses = lambda: [v for v in sumo.conn.vehicle.getIDList() if v.startswith("pt_")]
         if pol is not None and "accgate" in getattr(pol, "on", ()):   # the roads the drivers' navigation counts as slow
             pol.incident_roads = lambda: {e for inc in im.incidents for e in getattr(inc, "diverted", ())}
 

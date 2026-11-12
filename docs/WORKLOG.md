@@ -3632,3 +3632,45 @@ With 10 seeds a difference of 1 s a trip shows at x1 (it took 30 seeds to see 5 
 These are dev seeds: they say the instrument works and what to expect, not that a rule is accepted. Bus priority
 stays off (its test failed its bar). Judging a rule from now on: (1) the quiet evaluation on new seeds, for whether it
 does what it is for; (2) with accidents on new seeds, for harm, with a bar that the spread allows.
+
+**Bus priority backing off at a busy junction (12 Nov, quiet dev seeds, `out/quiet/dev`): no.** Two guards tried: no
+hold while another road is half full (`bus_hold_other_max=0.5`), no cut of a green whose own road is 30 % full
+(`bus_cut_fill=0.3`). At x1.15 the cars' cost stays (+7 to +10 s time loss a trip in every version, 1-3 seeds of 10
+better) and the buses' gain shrinks (-15.5 -> -9 s a km); the guards hardly ever act (greens held 66-78, cut 34-44 a
+run, as without). At x1 nothing changes (buses -17 to -18 s a km on 9-10 seeds of 10, cars within +-4 s). So the cost
+at x1.15 is not a few holds at full junctions: just past what the town carries, any green moved to the buses' roads
+is missed elsewhere. What stands: bus priority (hold + cut) is worth 10 % of the buses' lost time at the town's own
+traffic at no cost to the cars, and costs the cars about 5 % at x1.15. Whether to run it at x1 only is the user's
+decision; it would still need its tests on new seeds (151+).
+
+**Bus priority at the town's own traffic only (the user's decision, 12 Nov): the bar, written before the tests.**
+One setting, `agents_observed+bus@bus_cut=1` against `agents_observed`, at x1 only (with `busy`, x1.15, it would stay
+off). Two tests on new seeds, each opened once:
+* quiet (`--no-accidents`), seeds 151-180: (a) buses' time loss per km lower on the mean and on at least 20 of 30
+  seeds; (b) cars' time loss per trip not higher on the mean by more than 3 %; (c) trips completed an hour not lower
+  by more than 3 %;
+* with accidents, seeds 181-270 (90: with 30 the cars' mean is known to +-6 %, with 90 to about +-3.5 %): (d) cars'
+  time loss per trip not higher on the mean by more than 5 %; (e) trips completed an hour not lower by more than
+  3 %; (f) ambulances' time loss not higher on the mean by more than 8 s; (g) buses' time loss per km not higher on
+  the mean.
+All seven, or it stays off. Test seeds used after this: 21-270.
+
+**Quiet test (seeds 151-180, x1, `out/bus/test2_quiet`): passed.** Paired against `agents_observed`, mean +-
+standard error: buses' time loss -15.2 +- 4.6 s a km (-8.0 %, better on 25 of 30: (a) passed); cars' time loss per
+trip +1.6 +- 4.1 s (+1.3 %: (b) passed); trips an hour +0.3 +- 7.1 (0.0 %: (c) passed); waiting +1.4 +- 3.6 s;
+ambulances +1.8 +- 3.2 s. 69 greens held and 39 cut a run. The test with accidents (seeds 181-270) follows.
+
+**Test with accidents (seeds 181-270, x1, `out/bus/test2_acc`, 180 runs): passed.** Paired against `agents_observed`,
+mean +- standard error: cars' time loss per trip +2.9 +- 4.8 s (+2.0 %: (d) passed), trips an hour -0.4 +- 4.9
+(-0.1 %: (e) passed), ambulances +3.7 +- 4.8 s ((f) passed), buses' time loss -17.1 +- 5.9 s a km (-7.6 %, better on
+64 of 90: (g) passed). Not in the bar: the cars' waiting +5.1 +- 4.8 s (+4.4 %), cars taken off 14.7 -> 16.7 a run.
+**All seven held: bus priority is the viewer's default at the town's own traffic** (`cosim/freefly.parse_args`:
+`agents_observed+bus@bus_cut=1` when `--demand-scale` is 1; `busy` and a chosen `--controller` go without). The
+buses ask through `wire()` (cosim/agents_actuated.py), as the viewer and the tools connect the agents; the HUD strip
+says "junction agents + bus priority"; with `--agent-hud` the decisions show over the junctions ("green held for a
+bus", "green shortened: a bus is waiting", yellow). Test seeds used: 21-270; anything new: 271 and above.
+Seen in CARLA (12 Nov, `town05_freefly_forecast.bat` demo with `--agent-hud`): the HUD strip says "junction agents +
+bus priority"; the agents' panel lists "838 · green held for a bus"; in the 70 s demo at 17:30 the buses asked on 216
+steps, 3 greens were held and 1 cut (the demo report now has the agents' counts, `agent_stats`). Frame rate as
+before: 35.4-35.8 / 40.3-40.4 fps at 17:30 (before 36.2 / 41.1), 43.9 / 53.9 at 12:00 (43.3 / 53.5). Tests: 361
+passed. The two guards tried on the quiet dev seeds (`bus_hold_other_max`, `bus_cut_fill`) stay as settings, unused.

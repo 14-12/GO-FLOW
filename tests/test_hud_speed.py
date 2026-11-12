@@ -31,3 +31,4 @@ def test_the_strip_says_who_runs_the_signals_and_the_traffic_level():
     assert setup_text("agents_observed", 2.0) == "junction agents   ·   traffic x2"
     assert setup_text("agents_observed_goflow+forecast") == "junction agents + GO-FLOW priority + forecasts"
     assert setup_text("max_pressure") == "max_pressure"
+    assert setup_text("agents_observed+bus@bus_cut=1") == "junction agents + bus priority"

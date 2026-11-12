@@ -55,6 +55,9 @@ PREEMPT_MIN_GREEN_S = 5.0  # a car green cut for an emergency vehicle has had at
 PEDESTRIANS_DRAWN = 28  # and at most this many, the nearest (demo, full screen: 47 drawn 28 FPS, 32 drawn 29.6)
 
 
+BUS_PRIORITY = "+bus@bus_cut=1"   # the junction agents' bus priority (cosim/agents_actuated.py, +bus), default at x1
+
+
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--scenario", default="town05")
@@ -333,6 +336,11 @@ def parse_args(argv=None):
         # 07:00, SUMO alone: agents 11.3 km/h and 210 s waiting a km, actuated 11.9 km/h and 184 s (no clear
         # difference: 4-5 of 10 seeds), coordinated (fixed) 9.1 km/h and 283 s (worse on 8 of 10). docs/WORKLOG.md
         args.controller = "agents_observed" if args.scenario == "town05" else "actuated"
+        # (12 Nov) with bus priority at the town's own traffic only: tested on seeds 151-180 without accidents (buses
+        # -8 % time lost a km, 25 of 30 seeds; cars +1.3 %) and 181-270 with them (buses -7.6 %, 64 of 90; cars +2.0 %,
+        # trips -0.1 %, ambulances +3.7 s): all of the bar. At x1.15 the cars paid about 5 % (dev): "busy" goes without
+        if args.scenario == "town05" and args.demand_scale <= 1.0 + 1e-9:
+            args.controller += BUS_PRIORITY
     if args.goflow_priority:
         base = re.split(r"[-+@]", args.controller, maxsplit=1)[0]
         if base in ("agents", "agents_observed"):
@@ -5456,7 +5464,10 @@ def main(argv=None) -> int:
                                     if pose_stats else None),
                    "high": stats(demo["high"]), "street": stats(demo["street"]),
                    "all": stats(demo["high"] + demo["street"]), "screenshots": shots,
-                   "incident_agent": inc_agent_res}
+                   "incident_agent": inc_agent_res,
+                   # (12 Nov) what the junction agents did in the run (bus priority's holds and cuts among them)
+                   "agent_stats": ({k: v for k, v in ff.agents.stats.items() if isinstance(v, (int, float))}
+                                   if getattr(ff, "agents", None) is not None else None)}
             out = ROOT / "out" / (f"{args.scenario}_freefly_flight.json" if args.demo_flight_only else f"{args.scenario}_freefly_demo.json")
             out.write_text(json.dumps(res, indent=2), encoding="utf-8")
             print(json.dumps(res), flush=True)

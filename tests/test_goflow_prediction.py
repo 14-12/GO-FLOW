@@ -140,6 +140,21 @@ def test_flag_off_by_default():
     assert b.goflow_prediction and b.goflow_traffic
 
 
+def test_bus_priority_by_default_at_the_towns_own_traffic_only():
+    """(12 Nov) the junction agents give the line buses priority at x1; "busy" (x1.15) and a chosen controller go
+    without; the agent made from the default name has it on, with the cut."""
+    from cosim.agents_actuated import make
+    from cosim.freefly import parse_args
+
+    a = parse_args([])
+    assert a.controller == "agents_observed+bus@bus_cut=1"
+    ag = make(a.controller)
+    assert "bus" in ag.on and ag.bus_cut == 1 and ag.uses_cameras
+    assert parse_args(["--demand-scale", "1.15"]).controller == "agents_observed"
+    assert parse_args(["--controller", "agents_observed"]).controller == "agents_observed"
+    assert parse_args(["--goflow-priority"]).controller == "agents_observed_goflow+bus@bus_cut=1"
+
+
 FAKE_COUNTER = ("import sys, json, os\n"
                 "print(json.dumps({'type':'ready','v':1}), flush=True)\n"
                 "seen = 0\n"

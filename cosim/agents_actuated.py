@@ -204,6 +204,7 @@ class ActuatedAgents:
     bus_cut = 0                    # +bus: 1 = the other greens are also ended early while a bus waits
     bus_cut_min_s = 10.0           # +bus: the green another road still gets
     bus_cut_fill = 0.6             # +bus: a green whose own road is this full is not ended for a bus
+    bus_hold_other_max = 1.0       # +bus: no hold while another road is this full (1: always held)
     bus_queue_max = 6              # +bus: vehicles standing ahead of the bus beyond which it does not ask
     bus_patience_s = 60.0          # +bus: a bus still not through after this long asks no more at that junction
     gate_p = 0.7                   # +gate: risk on the road ahead from which the feeding green is shortened
@@ -1040,7 +1041,10 @@ class ActuatedAgents:
                 # vehicle standing ahead of it); until then the green runs under the agent's other rules. (The first
                 # version kept every other rule off a green with a bus anywhere in its queue: at x1.15 the cars'
                 # waiting rose by 48 s on the dev seeds, 24 more cars a run taken off.)
-                if remaining < 1.0 and spent < max_d + self.bus_extend_s and a.tls in self._bus_near:
+                if remaining < 1.0 and spent < max_d + self.bus_extend_s and a.tls in self._bus_near and (
+                        self.bus_hold_other_max >= 1.0 or max(
+                            (self._fill(tc, a, k) for k in a.cycle if k != ph and a.kind[k] == "car"),
+                            default=0.0) < self.bus_hold_other_max):
                     tc.trafficlight.setPhaseDuration(a.tls, 2.0)
                     self.stats["bus_holds"] = self.stats.get("bus_holds", 0) + 1
                     who = self.bus_by.get(a.tls)
@@ -1192,6 +1196,8 @@ def wire(pol, sumo, seed: int, more_on_run=None, cam_dir: Path | None = None) ->
         return out
 
     pol.emergency = on_run
+    if "bus" in getattr(pol, "on", ()):  # +bus: the line buses in service (cosim/freefly.BusLines, ids pt_*) ask for
+        pol.buses = lambda: [v for v in sumo.conn.vehicle.getIDList() if v.startswith("pt_")]  # themselves
     if getattr(pol, "uses_cameras", False):
         from cosim.camera_reports import Layout, SimulatedCameras
 

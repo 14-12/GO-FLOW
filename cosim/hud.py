@@ -124,6 +124,8 @@ def setup_text(controller: str, demand_scale: float = 1.0) -> str:
         text += " + GO-FLOW priority"
     if "+forecast" in controller:
         text += " + forecasts"
+    if "+bus" in controller:
+        text += " + bus priority"
     if abs(demand_scale - 1.0) > 1e-9:
         text += f"   ·   traffic x{demand_scale:g}"
     return text
