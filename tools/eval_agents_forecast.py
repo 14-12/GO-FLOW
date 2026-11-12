@@ -130,7 +130,8 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     trip = work / "tripinfo.xml"
     models = Path(args["models"])
     a = {"minutes": args["minutes"], "warmup": args["warmup"], "start_hour": args["start_hour"],
-         "clock_speed": GAME_SPEED, "dt": 30.0, "controller": variant, "scale": scale, "accidents": True,
+         "clock_speed": GAME_SPEED, "dt": 30.0, "controller": variant, "scale": scale,
+         "accidents": args.get("accidents", True),
          "careless_share": None, "buses": True, "ring": True, "junction_blocker": 60.0, "trips": "purpose",
          "sumo_extra": ["--tripinfo-output", str(trip), "--tripinfo-output.write-unfinished", "true"]}
     nodes = json.loads((models / "graph" / "nodes.json").read_text(encoding="utf-8"))
@@ -176,6 +177,7 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
 
     pol = state["sumo"].policy
     r = {"variant": variant, "scale": scale, "seed": seed, "minutes": args["minutes"], "models": str(models),
+         "accidents": args.get("accidents", True),
          "trips": len(cars), "completed": sum(float(x.get("arrival", -1)) >= 0 for x in cars),
          "waiting": mean(cars, "waitingTime"), "time_loss": mean(cars, "timeLoss"),
          "throughput": round(sum(float(x.get("arrival", -1)) >= 0 for x in cars) * 60.0 / args["minutes"], 1),
@@ -253,6 +255,12 @@ def main(argv=None) -> int:
     ap.add_argument("--jobs", type=int, default=2)
     ap.add_argument("--port", type=int, default=9700)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--accidents", action=argparse.BooleanOptionalAction, default=True,
+                    help="--no-accidents: the quiet evaluation (12 Nov): no crash, breakdown, pile-up or look-alike. "
+                         "With them a run's result moves by 8-50 s a trip with any change to the signals (which "
+                         "accidents happen changes), and a 5 %% effect does not show on 30 seeds; without them the "
+                         "two runs of a seed differ by what the signals did. A rule is then judged first here, "
+                         "and with accidents for harm")
     ap.add_argument("--skip-done", action="store_true")
     ap.add_argument("--summary-only", action="store_true", help="only the tables, from the runs written")
     a = ap.parse_args(argv)
@@ -260,7 +268,7 @@ def main(argv=None) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     args = {"out": str(out), "models": a.models, "minutes": a.minutes, "warmup": a.warmup,
-            "start_hour": a.start_hour, "skip_done": a.skip_done}
+            "start_hour": a.start_hour, "skip_done": a.skip_done, "accidents": a.accidents}
     jobs = [(v, float(sc), sd) for sc in a.scales.split(",") for sd in seeds_arg(a.seeds) for v in variants]
     if a.summary_only:
         runs = [out / "runs" / f"{v}_x{sc:g}_seed{sd}.json" for v, sc, sd in jobs]

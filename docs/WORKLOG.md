@@ -3589,3 +3589,46 @@ trip with any change to the signals, because accidents and the knots behind them
 changes which ones happen. Ten dev seeds cannot tell a 5 % effect from that; thirty can only just. Before another
 signal rule: either a much larger effect is expected, or the evaluation needs less noise (accidents off or the same
 accidents replayed in both runs).
+
+## 12 Nov: the quiet evaluation (`eval_agents_forecast.py --no-accidents`)
+
+The same town, traffic, buses, ring road and emergency runs, with no crash, breakdown, pile-up or look-alike: the
+two runs of a seed then differ by what the signals did, not by which accidents happened. Dev seeds 11-20, x1, x1.15,
+x1.3, five controllers, 150 runs (`out/quiet/dev`). Reference without accidents: cars wait 86.5 / 100.2 / 123.1 s a
+trip (with: 109.0 / 115.5 / 167.7), buses lose 185 / 193 / 202 s a km (with: 210 / 214 / 251).
+
+**How quiet.** The probe is the strict gate, which cuts about two greens a run. Spread between seeds (sd) of its
+paired difference in waiting per trip:
+
+| Traffic | With accidents | Quiet |
+|---|---|---|
+| x1 | 8.4 s | 0.8 s |
+| x1.15 | 11.9 s | 4.1 s |
+| x1.3 | 15.2 s | 10.1 s |
+
+Ten times quieter at the town's own traffic, three times at x1.15; at x1.3 the congestion itself makes runs diverge.
+With 10 seeds a difference of 1 s a trip shows at x1 (it took 30 seeds to see 5 s before).
+
+**What it shows of the rules** (paired against `agents_observed`, mean +- standard error, seeds better of 10):
+
+| Traffic | Rule | Bus time loss /km | Cars: waiting /trip | Cars: time loss /trip | Throughput /h |
+|---|---|---|---|---|---|
+| x1 | gate (p 0.5) | +0.5 +- 2.4 s (5) | +1.3 +- 1.5 s (4) | -0.3 +- 0.8 s (4) | +3 +- 6 |
+| x1 | bus: hold + cut | -18.2 +- 3.2 s (10) | -2.7 +- 3.6 s (6) | -1.4 +- 3.3 s (7) | +8 +- 7 |
+| x1 | bus: hold | -20.9 +- 3.9 s (9) | +2.0 +- 5.5 s (3) | +0.1 +- 4.3 s (4) | -7 +- 12 |
+| x1.15 | gate (p 0.5) | -0.4 +- 3.7 s (5) | +3.2 +- 1.9 s (3) | +3.0 +- 2.3 s (2) | -9 +- 7 |
+| x1.15 | bus: hold + cut | -15.5 +- 4.9 s (7) | +9.0 +- 4.8 s (2) | +5.9 +- 4.0 s (3) | -22 +- 10 |
+| x1.15 | bus: hold | -13.4 +- 4.9 s (8) | +9.0 +- 2.7 s (1) | +7.8 +- 4.1 s (2) | -20 +- 11 |
+| x1.3 | gate (p 0.5) | +1.4 +- 4.3 s (4) | +0.1 +- 2.4 s (5) | -0.4 +- 3.2 s (4) | +4 +- 7 |
+| x1.3 | bus: hold + cut | -12.4 +- 7.6 s (8) | +4.0 +- 5.6 s (4) | +5.0 +- 6.0 s (5) | -7 +- 12 |
+| x1.3 | bus: hold | -10.7 +- 7.1 s (7) | +4.6 +- 6.1 s (6) | +5.7 +- 7.1 s (5) | -3 +- 11 |
+
+* The gate does nothing, now known to about a second a trip at x1; a little worse at x1.15.
+* Bus priority is real for the buses: 10 % of their lost time at x1 (10 of 10 seeds with the cut), 8 % at x1.15, 6 %
+  at x1.3. For the cars it costs nothing at x1 and about 6 s a trip (5 %) and 2.5 % of the trips at x1.15.
+* With accidents the test (seeds 121-150) gave the buses -0.6 +- 9.8 s at x1 and the cars +10 +- 8 s: both within two
+  standard errors of what the quiet runs show, and neither could have shown it.
+
+These are dev seeds: they say the instrument works and what to expect, not that a rule is accepted. Bus priority
+stays off (its test failed its bar). Judging a rule from now on: (1) the quiet evaluation on new seeds, for whether it
+does what it is for; (2) with accidents on new seeds, for harm, with a bar that the spread allows.
