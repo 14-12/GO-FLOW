@@ -4358,10 +4358,11 @@ def main(argv=None) -> int:
         surf.blit(t, (pad, (h - t.get_height()) // 2))
         return surf
 
-    keys_pill = pill("F5 pause    F6 / F7  -1 h / +1 h    F8 next junction    F9 hide clock    H inspect a camera    "
-                     + ("F follow a car    M mini-map    " if args.route_guide else "")
-                     + ("L places    " if getattr(args, "trips", "") == "purpose" else "")
-                     + ("F10 forecast    " if args.goflow_prediction else "") + "Esc quit")
+    keys_spec = ("F5 pause    F6 / F7  -1 h / +1 h    F8 next junction    F9 hide clock    H inspect a camera    "
+                 + ("F follow a car    M mini-map    " if args.route_guide else "")
+                 + ("L places    " if getattr(args, "trips", "") == "purpose" else "")
+                 + ("F10 forecast    " if args.goflow_prediction else "") + "Esc quit")
+    keys_pill = pill(keys_spec)
     lat, lon = INGOLSTADT
     ticker = pygame.time.Clock()
     ui = {"show": True, "follow_t": 0.0, "front": False}  # front: hide when CARLA is not in front (once loaded)
@@ -4390,6 +4391,11 @@ def main(argv=None) -> int:
     from cosim.incident_hud import MarkerHud
 
     marker_hud = MarkerHud()
+    from cosim import hudkit
+    from cosim.incident_hud import describe as describe_incident
+
+    feed, banner = hudkit.Feed(), hudkit.Banner()   # (12 Nov) the notices top right and the banner (cosim/hudkit.py)
+    town_events = hudkit.Events(feed, banner)
 
     from cosim.agent_hud import AgentHud
 
@@ -4466,7 +4472,16 @@ def main(argv=None) -> int:
             from cosim.place_hud import PlaceHud
 
             place_hud["hud"] = PlaceHud(place_cards(), ff.scen.frame)
-        if not ms and not evs and fc is None and not mini and not labels:
+        if ui_kit.ALPHA:   # what is new in the town -> notices and the banner (cosim/hudkit.Events)
+            try:
+                tf0 = ff.view_transform()
+                town_events.update(tf0.location, ms, ff.agent_events(30.0) if getattr(ff, "agents", None) else [],
+                                   ff.centres, fc.recent_alerts(ff.sim_now) if fc is not None else [],
+                                   describe_incident, forecast_hud.title if forecast_hud is not None else None)
+            except Exception:  # noqa: BLE001 - the notices never stop the viewer
+                log.exception("town events")
+        animating = ui_kit.ALPHA and town_events.busy(time.time())
+        if not ms and not evs and fc is None and not mini and not labels and not animating:
             return None
         free = free_view() if mini else None
         tf = ff.view_transform()
@@ -4497,6 +4512,8 @@ def main(argv=None) -> int:
             rects = []
             if labels:  # the places' labels, kept off the clock and the mini-map
                 avoid = [pygame.Rect(0, 0, hud.W + 40, hud.H + 70)] if ui["show"] else []
+                if banner.busy(time.time()):   # (12 Nov) no label under the banner
+                    avoid.append(pygame.Rect(size[0] // 2 - 420, 80, 840, 150))
                 if mm is not None:
                     avoid.append(pygame.Rect(mm_xy, mm.get_size()).inflate(16, 16))
                 rects += place_hud["hud"].draw(scr, tuple(size), tf, live["hour"], live, avoid=avoid)
@@ -4511,6 +4528,10 @@ def main(argv=None) -> int:
                 rects += forecast_hud.draw(scr, tuple(size), tf, centres, getattr(ff, "forecast_anchors", {}), fc,
                                            now, args.goflow_hud, panel=fsnap is None,
                                            bottom=(8 if ui_kit.ALPHA else 16) + max(0, mm_h - (16 if ui_kit.ALPHA else 0)))
+            if animating or feed.items or banner.cur is not None:
+                tw = time.time()
+                rects += feed.draw(scr, size[0] - 16, 16, now=tw)
+                rects += banner.draw(scr, tuple(size), now=tw)
             return rects
 
         return paint
@@ -4526,10 +4547,14 @@ def main(argv=None) -> int:
             screen = canvas_for(pygame.display.set_mode(tuple(size), pygame.NOFRAME))
             ui["follow_t"] = 0.0
             full = True
+        kp = keys_pill
+        if keys_help and ui_kit.ALPHA:
+            kp = hudkit.keys(keys_spec)
         rects = compose_overlay(screen, tuple(size), dirty_prev, full, alpha["key"],
                                 hud=(lambda scr: hud.draw(scr, st, margin=16), hud.W, hud.H) if ui["show"] else None,
-                                keys_pill=keys_pill if keys_help else None,
-                                prompt=(pill(prompt, font_b, bg=(255, 196, 84), fg=(20, 20, 20), h=34, pad=18)
+                                keys_pill=kp if keys_help else None,
+                                prompt=((hudkit.prompt(prompt) if ui_kit.ALPHA else
+                                         pill(prompt, font_b, bg=(255, 196, 84), fg=(20, 20, 20), h=34, pad=18))
                                         if prompt else None),
                                 panel=panel, native=native, markers=markers_draw())
         if alpha["on"]:
@@ -5237,6 +5262,11 @@ def main(argv=None) -> int:
                     ff.spectator.set_transform(tf)
                     if getattr(ff, "calls", None) is not None:
                         ff.calls.count("spectator.set_transform (demo)")
+                if "notice" not in shots and el_s > DEMO_WARMUP_S and el_s < args.demo and feed.items \
+                        and time.time() - feed.items[0].t > 0.6:   # (12 Nov) one picture with a notice on screen
+                    demo_seg_ref[0] = None
+                    p = ROOT / "out" / "freefly" / f"{args.scenario}_demo_notice.png"
+                    shots["notice"] = p.name if shooter.grab_window(p) else None
                 for frac, name in ((0.5, "high"), (0.95, "street")):
                     if name not in shots and el_s >= frac * args.demo:
                         demo_seg_ref[0] = None  # the screenshot stalls the window: not measured
@@ -5286,8 +5316,9 @@ def main(argv=None) -> int:
             # the overlay: 5 times a second; 15 with a camera open, 30 for the native feed (its boxes move)
             marking = getattr(ff, "scene", None) is not None and bool(ff.scene.markers)
             following = fol["vid"] is not None or time.time() < fol["show_until"]   # the free-fly map: 5 a second
+            moving_ui = ui_kit.ALPHA and town_events.busy(time.time())   # a notice sliding, its bar running out
             if time.time() - last_hud >= (1 / 30 if native_feed or marking else 1 / 15 if inspecting
-                                          else 1 / 12 if following else 0.2):
+                                          else 1 / 20 if moving_ui else 1 / 12 if following else 0.2):
                 prompt = None
                 if cams is not None and not inspecting and near_i is not None and near_d <= INSPECT_M:
                     prompt = f"H   Inspect traffic camera {cams.names[near_i]}"
@@ -5467,7 +5498,9 @@ def main(argv=None) -> int:
                    "incident_agent": inc_agent_res,
                    # (12 Nov) what the junction agents did in the run (bus priority's holds and cuts among them)
                    "agent_stats": ({k: v for k, v in ff.agents.stats.items() if isinstance(v, (int, float))}
-                                   if getattr(ff, "agents", None) is not None else None)}
+                                   if getattr(ff, "agents", None) is not None else None),
+                   # (12 Nov) the notices and banners the run showed (cosim/hudkit.py)
+                   "notices": dict(feed.counts), "banners": getattr(banner, "shown", 0)}
             out = ROOT / "out" / (f"{args.scenario}_freefly_flight.json" if args.demo_flight_only else f"{args.scenario}_freefly_demo.json")
             out.write_text(json.dumps(res, indent=2), encoding="utf-8")
             print(json.dumps(res), flush=True)

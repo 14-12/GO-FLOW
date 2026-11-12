@@ -174,7 +174,9 @@ On screen:
 * top left: the clock and the time of day (one real minute is one hour in town; the time is kept between runs);
 * the traffic level;
 * camera prompts;
-* the accident markers.
+* the accident markers;
+* top right, notices as things happen near you: accidents (a large title in the middle when one happens close by),
+  the junction agents' decisions for buses and ambulances, the forecasters' alerts (`cosim/hudkit.py`).
 
 ### Options
 
@@ -554,7 +556,7 @@ Urban Traffic CARLA/
 │  ├─ sumo_side.py           SUMO half: TraCI, controllers, walk phases, cycle keeper
 │  ├─ carla_side.py          CARLA half: actors, lights, road heights
 │  ├─ pose_proc.py  fly_proc.py  plate_proc.py  ground_proc.py   helper processes
-│  ├─ overlay.py  ui.py  hud.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
+│  ├─ overlay.py  ui.py  hudkit.py  hud.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
 │  ├─ look.py                                    the sky for the time of day
 │  ├─ controllers.py  coordination.py  signal_plan.py  signal_heads.py  ped_lights.py  signal_audit.py
 │  ├─ agents_actuated.py  agents.py  camera_reports.py  perception.py  inspector.py  cctv.py

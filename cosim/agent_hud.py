@@ -121,11 +121,18 @@ class AgentHud:
             if p is None or not (EDGE <= p[0] <= w - EDGE and EDGE <= p[1] <= h - EDGE):
                 continue
             ago = max(0, int(now - e["t"]))
-            pill = self._pill(e["text"].upper(), f"junction agent {tls}  ·  {self.mode}  ·  {ago} s ago", colour)
+            if ui.ALPHA:   # (12 Nov) the overlay's design system (cosim/hudkit.py)
+                from cosim import hudkit
+
+                pill = hudkit.tag(hudkit.AGENT_KIND.get(e["kind"], "agent"), e["text"],
+                                  f"junction agent {tls}  ·  {self.mode}  ·  {ago} s ago", accent=colour)
+            else:
+                pill = self._pill(e["text"].upper(), f"junction agent {tls}  ·  {self.mode}  ·  {ago} s ago", colour)
             px = min(max(p[0] - pill.get_width() / 2, 8), w - pill.get_width() - 8)
             py = min(max(p[1] - pill.get_height(), 8), h - pill.get_height() - 8)
             rects.append(screen.blit(pill, (px, py)))
-        rects += self._feed(screen, size, loc, centres, events, now)
+        if not ui.ALPHA:   # (12 Nov) with per-pixel alpha the decisions come as notices instead (cosim/hudkit.Feed)
+            rects += self._feed(screen, size, loc, centres, events, now)
         return rects
 
     def _feed(self, screen, size, loc, centres: dict, events: list, now: float) -> list:

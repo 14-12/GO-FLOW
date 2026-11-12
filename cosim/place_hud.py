@@ -68,6 +68,21 @@ class PlaceHud(AgentHud):
         surf = self._cache.get(key)
         if surf is not None:
             return surf
+        if ui.ALPHA:   # (12 Nov) the overlay's design system (cosim/hudkit.py): the place's own icon, its colour
+            from cosim import hudkit
+
+            def glyph(card, cx, cy, size, kind=p["kind"]):
+                n = int(size) * 4
+                big = pygame.Surface((n, n), pygame.SRCALPHA)
+                Painter(big, "pygame").icon(kind, n / 2, n / 2, n - 2)
+                small = pygame.transform.smoothscale(big, (int(size), int(size)))
+                card.blit(small, (int(cx - size / 2), int(cy - size / 2)))
+            surf = hudkit.tag(p["kind"], p["name"], line if full else "", accent=colour(p["kind"]), glyph=glyph,
+                              sub_colour=col)
+            if len(self._cache) > 400:
+                self._cache.clear()
+            self._cache[key] = surf
+            return surf
         name = self.f_name.render(p["name"], True, TEXT, BG)
         info = self.f_info.render(line, True, col, BG) if full else None
         icon = 30
@@ -119,17 +134,32 @@ class PlaceHud(AgentHud):
             full = d <= FULL_M
             line, col = info_line(p, hour, live) if full else ("", None)
             lab = self._label(p, line, col, full)
+            fade = 1.0
+            if ui.ALPHA:   # far ones fade out instead of popping (12 Nov)
+                from cosim.hudkit import distance_alpha
+
+                fade = distance_alpha(d, 0.55 * NEAR_M, NEAR_M) if p["kind"] != "kerb" else distance_alpha(d, 50, 90)
+                if fade < 0.05:
+                    continue
             r = lab.get_rect(midbottom=(int(tip[0]), int(tip[1]) + (ui.MARGIN if ui.ALPHA else 0)))
             r.clamp_ip(pygame.Rect(8, 8, w - 16, h - 16))          # (whole on screen; its stem still to its place)
             if any(r.colliderect(t) for t in taken) or any(r.colliderect(a) for a in avoid):
                 continue
             taken.append(r.inflate(8, 6))
-            shown.append((p, lab, r, (r.centerx, r.bottom - (ui.MARGIN if ui.ALPHA else 0)), (int(base[0]), int(base[1]))))
-        for p, _lab, _r, tip, (bx, by) in shown:        # the stems under every label
+            shown.append((p, lab, r, (r.centerx, r.bottom - (ui.MARGIN if ui.ALPHA else 0)), (int(base[0]), int(base[1])),
+                          fade))
+        if ui.ALPHA:
+            from cosim.hudkit import place_tag
+
+            for p, lab, r, tip, (bx, by), fade in reversed(shown):   # the nearest on top
+                if 0 <= bx < w and 0 <= by < h:
+                    rects += place_tag(screen, lab, (bx, by), tip, colour(p["kind"]), fade)
+            return rects
+        for p, _lab, _r, tip, (bx, by), _f in shown:        # the stems under every label
             if 0 <= bx < w and 0 <= by < h:
                 kc = colour(p["kind"])
                 rects.append(pygame.draw.line(screen, kc, tip, (bx, by), 2))
                 rects.append(pygame.draw.circle(screen, kc, (bx, by), 4))
-        for _p, lab, r, _tip, _base in reversed(shown):   # the nearest on top
+        for _p, lab, r, _tip, _base, _f in reversed(shown):   # the nearest on top
             rects.append(screen.blit(lab, r))
         return rects

@@ -3674,3 +3674,40 @@ bus priority"; the agents' panel lists "838 · green held for a bus"; in the 70 
 steps, 3 greens were held and 1 cut (the demo report now has the agents' counts, `agent_stats`). Frame rate as
 before: 35.4-35.8 / 40.3-40.4 fps at 17:30 (before 36.2 / 41.1), 43.9 / 53.9 at 12:00 (43.3 / 53.5). Tests: 361
 passed. The two guards tried on the quiet dev seeds (`bus_hold_other_max`, `bus_cut_fill`) stay as settings, unused.
+
+## 12 Nov: the overlay redesigned (the user's request: panels as good as the best games')
+
+**Research** (what the games do, as documented: rdr2-case-study.vercel.app, interfaceingame.com's Cyberpunk 2077
+critique, medium.com/super-jump "A UX analysis of Cyberpunk 2077's HUD", uxdesign.cc on The Last of Us Part II,
+thereisnosleep.bearblog.dev "The best HUDs in gaming", bugnet.io "How to design a readable HUD", a UI art director's
+"7 beginner mistakes", gamedeveloper.com "6 examples of UI design"): show little and only while it matters (RDR2
+hides its cores while safe, Cyberpunk shows health only when not full); one corner for the feed of events; one
+colour per meaning, used for nothing else (Half-Life 2's single colour; Cyberpunk criticised for red as ornament);
+two type families, titles in capitals; a dark plate or outline behind text over any scene; labels in the world on a
+leader line, fading with distance; test over real footage. GTA V's mission banners and Forza Horizon's notices for
+the shape of the big title and the feed.
+
+**`cosim/hudkit.py`**, the overlay's design system, and what uses it (with per-pixel alpha; `--overlay key` keeps the
+old drawing):
+* **Notices** top right (`Feed`): slide in (0.22 s), stay 5-7 s with a bar running out, fade (0.35 s); newest on top,
+  4 at most; a repeat refreshes the one on screen, news about the same thing replaces it. Fed by `Events`: accidents
+  as they happen, change phase and are cleared; the junction agents' decisions for buses and ambulances within 700 m
+  ("Green ended early / An ambulance is coming · Junction 1574 · 214 m"); the forecasters' alerts. The agents' list
+  top right (with `--agent-hud`) is replaced by them.
+* **Banner** (`Banner`): a new accident within 450 m: a tag line in red, the status in heavy condensed capitals, what
+  happened under it, a rule opening from the middle; 3.4 s, one every 20 s at most; no place label under it.
+* **Labels** (`tag`, `place_tag`): places, accidents and the agents' pills: the kind's icon on a badge, the name in
+  condensed capitals, a line under it, glass with the kind's bar; the places' labels fade out from 230 to 420 m
+  instead of popping.
+* **Status chips** under the clock (`chips`), **key caps** for the prompt (`prompt`) and the key help (`keys`), the
+  forecast panel's title.
+* Colours: red emergencies and accidents, blue police, amber recovery, yellow buses, orange forecasts, cyan the agents,
+  sky blue parking, green cleared. Fonts: Barlow Condensed Bold and ExtraBold and Barlow Bold and Regular added
+  (`assets/fonts`, SIL OFL as the others; converted from the @fontsource packages' WOFF).
+* The overlay redraws 20 times a second while a notice or the banner moves (else as before).
+
+**Measured** (70 s demo, full screen, forecasts on; flying high / street fps): 17:30 35.7-37.1 / 41.0-42.2 (before,
+with bus priority: 35.4-35.8 / 40.3-40.4); 22:00 29.4-30.0 / 45.6-46.1 (before 29.6 / 45.6); 12:00 43.6 / 53.9
+(before 43.9 / 53.9). Overlay in the main loop 148-157 ms a second (before 153-165). Notices a 70 s demo: 9-11
+(ambulances 7-8, buses 1-4), banners 1-2; a picture with a notice on screen is now taken in each demo
+(`town05_demo_notice.png`). Tests: 366 passed (`tests/test_hudkit.py`).

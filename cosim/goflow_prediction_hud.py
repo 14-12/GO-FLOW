@@ -166,6 +166,14 @@ class ForecastHud(AgentHud):
               alerts_last_minute: int) -> pygame.Surface:
         lines: list[tuple] = []          # (colour or None, surface)
         head = self.f_panel.render("TRAFFIC FORECAST", True, (245, 246, 248), BG)
+        if ui.ALPHA:   # (12 Nov) the overlay's design system: its icon and the titles' type (cosim/hudkit.py)
+            from cosim import hudkit
+
+            t = hudkit.tracked(hudkit.title_font(19), "TRAFFIC FORECAST", (245, 246, 248), 1.0)
+            head = pygame.Surface((t.get_width() + 30, max(t.get_height(), 22)))
+            head.fill(BG)
+            head.blit(hudkit.icon("forecast", 22), (0, (head.get_height() - 22) // 2))
+            head.blit(t, (30, (head.get_height() - t.get_height()) // 2))
         st = status if warm_left_s is None else f"{status}  ·  first forecast in about {max(1, round(warm_left_s / 60))} min"
         lines.append((None, self.f_small.render(st, True, (170, 178, 192), BG)))
         if rows:

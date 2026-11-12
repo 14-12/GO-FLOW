@@ -89,6 +89,11 @@ class MarkerHud:
         pygame.draw.rect(surf, (16, 17, 20), (cx - s * 0.1, cy + s * 0.27, s * 0.2, s * 0.2))
 
     def _pill(self, title: str, sub: str, colour):
+        if ui.ALPHA:   # (12 Nov) the overlay's design system (cosim/hudkit.py)
+            from cosim import hudkit
+
+            kind = {v: k for k, v in COLOURS.items()}.get(colour, "crash")
+            return hudkit.tag(hudkit.INCIDENT_KIND.get(kind, "accident"), title, sub, accent=colour)
         t = self.f_title.render(title, True, (245, 246, 248), (22, 24, 30))
         b = self.f_small.render(sub, True, (200, 206, 216), (22, 24, 30)) if sub else None
         w = max(t.get_width(), b.get_width() if b else 0) + 22

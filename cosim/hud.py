@@ -341,6 +341,17 @@ class Hud:
 
     def strip(self, st: HudState) -> pygame.Surface:
         dot = (255, 196, 84) if st.paused else (255, 84, 84)
+        if ui.ALPHA:   # (12 Nov) small chips (cosim/hudkit.py)
+            from cosim import hudkit
+
+            items = [(st.status or ("PAUSED" if st.paused else "LIVE"), dot),
+                     (f"{st.vehicles:,} vehicles".replace(",", " "), None)]
+            items += [(x, None) for x in (st.setup, st.camera) if x]
+            if st.fps:
+                items.append((f"{st.fps:.0f} fps", None))
+            if st.note:
+                items.append((st.note, (250, 204, 21)))
+            return hudkit.chips(items)
         parts = [st.status or ("PAUSED" if st.paused else "LIVE"), f"{st.vehicles:,} vehicles in the city".replace(",", " ")]
         if st.setup:
             parts.append(st.setup)
