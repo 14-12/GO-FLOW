@@ -217,5 +217,5 @@ def test_a_car_leaving_rolls_onto_the_road_without_stopping(area):
     from standing): seen as a stop in the middle of the road."""
     moves = _drive_out_steps(area)
     assert min(moves) > 0.5, moves                 # never standing (2.2 m/s: 1.1 m a step)
-    assert max(moves[:6]) < 2.0, moves             # nor a jump at the hand-over (after it, SUMO may change lane in a
-                                                   # step: the kerb's car, 3.2 m sideways, as before; drawn as a slide)
+    assert max(moves[:6]) < 2.0, moves             # nor a jump at the hand-over (after it, this SUMO without the
+                                                   # viewer's sublane model changes lane in one step: not checked)

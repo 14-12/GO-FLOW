@@ -3820,7 +3820,10 @@ Measured in SUMO alone, one car into and out of each car park and kerb area (`Cl
 as tests/test_parking_motion.py): steps standing around the hand-over, before 1 (car parks) and 4 (kerbs), now 0 in
 all 11 areas; the moves around it 1.1-1.5 m a step (2.2-3 m/s). `tools/check_parking_motion.py --seed 101 --start
 7.5 --hours 1`: as before (no step over 2 m on a drive, no static or parked hit, 1 overlap with a road car at a kerb
-as before, seams 0.0 m). A kerb's car, once SUMO drives it, may change lane in one step (3.2 m sideways), as before.
+as before, seams 0.0 m). (Correction, same evening: the "3.2 m lane change in one step" after a kerb seen in that
+trace was the trace's SUMO, run without the viewer's sublane model. Run as the viewer runs it (--lateral-resolution
+0.8, vmodels.LANE_CHANGE_ATTRS: `Claude outputs/vq/park/trace_sub.py`), the car steers over 0.25-0.5 m a step,
+2.5 s in all, and none of the 11 areas has a standing step at the hand-over.)
 Tests: `test_a_car_leaving_rolls_onto_the_road_without_stopping` (a car park, a kerb), `test_the_maps_show...`.
 
 **Frame rate** (70 s demo, flying high / street): 17:30 34.4 / 39.0 (before 33.7 / 38.8; a first run 32.4 / 33.0,
