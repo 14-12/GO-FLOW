@@ -3711,3 +3711,41 @@ with bus priority: 35.4-35.8 / 40.3-40.4); 22:00 29.4-30.0 / 45.6-46.1 (before 2
 (before 43.9 / 53.9). Overlay in the main loop 148-157 ms a second (before 153-165). Notices a 70 s demo: 9-11
 (ambulances 7-8, buses 1-4), banners 1-2; a picture with a notice on screen is now taken in each demo
 (`town05_demo_notice.png`). Tests: 366 passed (`tests/test_hudkit.py`).
+
+## 12 Nov: the mini-map and the clock redesigned (the user's request: "another design, a whole other level")
+
+**The radar** (`cosim/radar.py`, bottom right while flying, with per-pixel alpha; following a car keeps the trip's map,
+`--overlay key` the old mini-map). Taken from the open-world games: GTA V's round radar turning with you (heading
+up), a compass bezel whose N moves round the edge (The Witcher 3, Cyberpunk 2077), the zoom following the camera's
+height (110 m round you at street level, up to 330 m high up; the Cyberpunk critique was a map zoomed too close for
+the speed), things off the map as blips on its edge with their distance (GTA), the roads coloured by the traffic on
+them (green moving, amber under 45 % of the limit, red standing; each car is put on its nearest road), the camera's
+view as a cone. Above it the town's numbers as chips (moving, at red, queued, parked), the heading over it
+("NW 327°"), a scale bar under it. The town's map (roads, the places' buildings in their kind's colour, a 50 m grid)
+is drawn once at two scales; each picture crops the disc round the camera and turns and scales it in one step.
+
+**The sky clock** (`cosim/hud.py`, `_sky_card`, with per-pixel alpha; same place and size): a window on the town's
+sky: its colours at this time (darker up, lighter at the horizon, warm round a low sun), the sun across it by the hour
+and up by the real sun elevation, the moon and stars at night, a skyline whose windows light up from dusk (fewer
+after 22:30, few after 01:00), the time of day on a tag; the time in Barlow Condensed ExtraBold, the weekday, the
+speed; the traffic now (dot, words, % of peak) and the day's traffic as one curve, the part gone filled in the
+present traffic colour, a glowing point at now. Redrawn once a game minute (3-6 ms).
+
+**Measured** (70 s demo, full screen, forecasts on, `--agent-hud`; flying high / street fps):
+* first version: 17:30 31.0 / 38.2 (before 35.7-37.1 / 41.0-42.2), overlay in the main loop +50 ms a second. The
+  radar drew in 10.6 ms (Linux VM): the nearest-road search per car, a crop 1.45 times the disc, the bezel drawn and
+  scaled each time. Now: the road per 3 m square remembered, the disc's crop only, the bezel's 15 turns (its ticks
+  repeat every 15 degrees) and the shadow drawn once: 4.3 ms. (The Claude window was over CARLA in that run: part of
+  the drop may be that.)
+* after: 17:30 35.9 / 39.8 (before 35.7-37.1 / 41.0-42.2); 22:00 29.5 / 45.0 (before 29.4-30.0 / 45.6-46.1); 12:00
+  42.1 / 51.5 (before 43.6 / 53.9). Overlay in the main loop 112-210 ms a second at 17:30 (before 105-201).
+  Before = the 12 Nov overlay redesign's runs, same day, same settings.
+* The traffic cameras' detector (the demo's native camera check, the overlay is not in CARLA's pictures): boxes a
+  frame 14.5 / 3.8 / 10.8 at 17:30 / 22:00 / 12:00 (before 14.8 / 3.9 / 11.0).
+* Tests: 375 passed (`tests/test_radar.py`: the map and the cars turn alike, the zoom follows the height, the sky
+  clock at every hour, the windows lit at night and not by day).
+* Three runs before these failed in CARLA's loading (the world never came, 0 % GPU, `nvidia-smi` losing the driver
+  for a few seconds) before any of this code ran; after a restart of the PC and with CARLA left in front they ran.
+
+**Limits.** Accidents on the radar are the route agent's alerts (the ones it plans round), not every accident marker
+on screen. The radar's per-frame cost is still about 4 ms, 5 times a second (about 20 ms a second of the main loop).

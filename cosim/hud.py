@@ -166,6 +166,7 @@ class HudState:
 
 class Hud:
     W, H = 432, 168  # the card, at 1x
+    SKY_W = 140      # (12 Nov) the sky clock's window
 
     def __init__(self):
         if not pygame.font.get_init():
@@ -184,6 +185,10 @@ class Hud:
         self.col_x = 182 + max(self.f_time.size(f"{d}{d}:{d}{d}")[0] for d in "0123456789") + 10
         widest = max(self._spaced(self.f_small, t, (0, 0, 0), 1.6).get_width() for t in ("1 MIN = 1 HOUR", "2.5 MIN = 1 HOUR", "PAUSED"))
         self.W = max(self.W, self.col_x + widest + 18)
+        # (12 Nov) the sky clock's (ui.ALPHA): a sky window SKY_W wide, then the time, then the weekday column
+        self.f_big = _font("BarlowCondensed-ExtraBold.ttf", 78)
+        self.sky_col_x = self.SKY_W + 22 + max(self.f_big.size(f"{d}{d}:{d}{d}")[0] for d in "0123456789") + 8
+        self.W = max(self.W, self.sky_col_x + widest + 18)
 
     # ------------------------------------------------------------ text helpers
     @staticmethod
@@ -297,9 +302,168 @@ class Hud:
         s.blit(ov, (0, 0))
         return pygame.transform.smoothscale(s, (self.W, self.H))
 
+    # ------------------------------------------------------------ (12 Nov) the sky clock
+    def _sky_window(self, st: HudState, w: int, h: int) -> pygame.Surface:
+        """A window on the town's sky: the sky's colours at this time (darker up, lighter at the horizon, warm
+        round a low sun), the sun where it is (its height is the real sun elevation) or the moon, stars at
+        night, and a skyline whose windows light up in the evening. Drawn at SS x, returned at 1x."""
+        W, H = w * SS, h * SS
+        hr = st.hour
+        el = st.sun_elevation
+        sky = sky_colour(hr)
+        night = el < -6.0
+        top = _lerp(sky, (4, 7, 20), 0.62 if night else 0.42)
+        hor = _lerp(sky, (255, 255, 255), 0.06 if night else 0.2)
+        s = pygame.Surface((W, H), pygame.SRCALPHA)
+        for y in range(0, H, SS):
+            pygame.draw.rect(s, (*_lerp(top, hor, (y / H) ** 1.6), 255), (0, y, W, SS))
+        horizon = H * 0.8
+        # where the sun is: across the window by the hour (06 left, 12 middle, 18 right), up by its elevation
+        sx = W * (0.08 + 0.84 * min(max((hr - 5.0) / 14.0, 0.0), 1.0))
+        e = max(min(el, 60.0), -12.0) / 60.0
+        sy = horizon - (H * 0.7) * (math.sqrt(e) if e > 0 else e)
+        layer = pygame.Surface((W, H), pygame.SRCALPHA)
+        if el > -8.0:   # the warm glow along the horizon round a low sun
+            warm = max(0.0, 1.0 - abs(el) / 14.0)
+            for k in range(26, 0, -1):
+                pygame.draw.ellipse(layer, (255, 150, 80, int(7 * warm * (27 - k) / 3)),
+                                    (sx - k * 9 * SS, horizon - k * 3 * SS, k * 18 * SS, k * 6 * SS))
+        if night or el < -2.0:   # stars, the same every night
+            import random
+            rnd = random.Random(12)
+            fade = min(1.0, (-el - 2.0) / 8.0)
+            for _ in range(70):
+                x, y = rnd.random() * W, rnd.random() * horizon * 0.95
+                b = rnd.random()
+                pygame.draw.circle(layer, (230, 236, 255, int((60 + 170 * b) * fade)), (x, y), SS * (0.5 + 0.7 * b))
+            mx, my = W * (0.08 + 0.84 * (((hr + 12.0) % 24.0 - 5.0) / 14.0 if 5 <= (hr + 12) % 24 <= 19 else 0.5)), H * 0.22
+            for k in range(12, 0, -1):
+                pygame.draw.circle(layer, (170, 196, 255, int(4 + (12 - k) * 3 * fade)), (mx, my), (7 + k * 2.4) * SS)
+            pygame.draw.circle(layer, (238, 242, 255, int(255 * fade)), (mx, my), 8 * SS)
+            pygame.draw.circle(layer, (*top, int(255 * fade)), (mx + 4 * SS, my - 3 * SS), 7 * SS)
+        if el > -4.0:   # the sun and its glow
+            for k in range(16, 0, -1):
+                pygame.draw.circle(layer, (255, 214, 120, int(5 + (16 - k) * 5)), (sx, sy), (9 + k * 2.6) * SS)
+            pygame.draw.circle(layer, (255, 236, 170), (sx, sy), 9 * SS)
+            pygame.draw.circle(layer, (255, 250, 228), (sx - 2 * SS, sy - 2 * SS), 5 * SS)
+        s.blit(layer, (0, 0))
+        # the skyline: the same towers every day; its windows light up from dusk and go out late at night
+        import random
+        rnd = random.Random(5)
+        body = _lerp(sky, (6, 8, 16), 0.86 if night else 0.62)
+        far = _lerp(sky, (6, 8, 16), 0.7 if night else 0.42)
+        lit_share = 0.0 if el > 2.0 else (0.12 if 1.0 <= hr < 5.0 else 0.42 if hr >= 22.5 else 0.6)
+        city = pygame.Surface((W, H), pygame.SRCALPHA)
+        x = -4 * SS
+        while x < W:   # the far row first, lighter
+            bw = rnd.randint(10, 22) * SS
+            bh = rnd.randint(14, 34) * SS
+            pygame.draw.rect(city, (*far, 255), (x, horizon - bh + 8 * SS, bw - SS, H))
+            x += bw
+        x = -6 * SS
+        while x < W:
+            bw = rnd.randint(14, 30) * SS
+            bh = rnd.randint(12, 44) * SS
+            top_y = horizon - bh + 18 * SS
+            pygame.draw.rect(city, (*body, 255), (x, top_y, bw, H))
+            if rnd.random() < 0.3:   # a mast
+                pygame.draw.line(city, (*body, 255), (x + bw // 2, top_y), (x + bw // 2, top_y - 9 * SS), SS)
+                if lit_share:
+                    pygame.draw.circle(city, (255, 80, 80), (x + bw // 2, top_y - 9 * SS), int(1.3 * SS))
+            for wy in range(int(top_y + 5 * SS), H - 4 * SS, 6 * SS):
+                for wx in range(int(x + 3 * SS), int(x + bw - 4 * SS), 5 * SS):
+                    r = rnd.random()
+                    if r < lit_share:
+                        pygame.draw.rect(city, (255, 206, 128, 150 + int(100 * rnd.random())), (wx, wy, 2 * SS, 3 * SS))
+                    elif not lit_share and r < 0.25:   # by day: a glint of the sky in some windows
+                        pygame.draw.rect(city, (*_lerp(body, hor, 0.35), 255), (wx, wy, 2 * SS, 3 * SS))
+            x += bw + rnd.randint(0, 3) * SS
+        s.blit(city, (0, 0))
+        # the round corners
+        mask = pygame.Surface((W, H), pygame.SRCALPHA)
+        pygame.draw.rect(mask, (255, 255, 255, 255), (0, 0, W, H), border_radius=14 * SS)
+        s.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+        pygame.draw.rect(s, (255, 255, 255, 46), (0, 0, W, H), width=SS, border_radius=14 * SS)
+        return pygame.transform.smoothscale(s, (w, h))
+
+    def _demand_curve(self, st: HudState, w: int, h: int) -> pygame.Surface:
+        """The day's traffic as one smooth area: the part gone filled in the present traffic colour, the rest faint,
+        a glowing point at now."""
+        W, H = w * SS, h * SS
+        s = pygame.Surface((W, H), pygame.SRCALPHA)
+        n = 96
+        pts = [(W * i / n, H - 2 * SS - (H - 6 * SS) * daily.demand_factor(24.0 * i / n)) for i in range(n + 1)]
+        now = st.hour / 24.0
+        col = traffic_colour(daily.demand_factor(st.hour))
+        k = int(now * n)
+        rest = pygame.Surface((W, H), pygame.SRCALPHA)
+        pygame.draw.polygon(rest, (255, 255, 255, 30), [(0, H)] + pts + [(W, H)])
+        s.blit(rest, (0, 0))
+        past = pts[:k + 1] + [(now * W, H - 2 * SS - (H - 6 * SS) * daily.demand_factor(st.hour))]
+        if len(past) > 1:
+            fill = pygame.Surface((W, H), pygame.SRCALPHA)
+            for y in range(0, H, SS):   # a fill fading downwards
+                pygame.draw.rect(fill, (*col, int(150 - 120 * y / H)), (0, y, W, SS))
+            m = pygame.Surface((W, H), pygame.SRCALPHA)
+            pygame.draw.polygon(m, (255, 255, 255, 255), [(0, H)] + past + [(past[-1][0], H)])
+            fill.blit(m, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+            s.blit(fill, (0, 0))
+            pygame.draw.lines(s, (*col, 255), False, past, 2 * SS)
+        pygame.draw.lines(s, (255, 255, 255, 70), False, pts[k:], SS)
+        for hh in (6, 12, 18):
+            x = W * hh / 24
+            pygame.draw.line(s, (255, 255, 255, 26), (x, 0), (x, H), SS)
+        px, py = past[-1]
+        glow = pygame.Surface((W, H), pygame.SRCALPHA)
+        for r in range(8, 0, -1):
+            pygame.draw.circle(glow, (*col, int(10 + (8 - r) * 14)), (px, py), (3 + r * 1.4) * SS)
+        s.blit(glow, (0, 0))
+        pygame.draw.circle(s, (255, 255, 255), (px, py), 3.5 * SS)
+        return pygame.transform.smoothscale(s, (w, h))
+
+    def _sky_card(self, st: HudState) -> pygame.Surface:
+        from cosim import hudkit
+
+        W, H = self.W, self.H
+        card = hudkit.glass(W, H, radius=20, alpha=214).copy()
+        sw = self.SKY_W
+        card.blit(self._sky_window(st, sw, H - 20), (10, 10))
+        word = hudkit.tracked(hudkit.font("Barlow-Bold.ttf", 11), time_of_day(st.hour, st.sun_elevation),
+                              (255, 255, 255), 1.6)
+        tag = pygame.Surface((word.get_width() + 16, 20), pygame.SRCALPHA)
+        pygame.draw.rect(tag, (6, 9, 18, 150), tag.get_rect(), border_radius=10)
+        tag.blit(word, (8, (20 - word.get_height()) // 2))
+        card.blit(tag, (18, H - 18 - 20))   # on the skyline: the sky stays clear for the sun
+        x0 = sw + 24
+        t = self._shadowed(self.f_big, st.hhmm, (255, 255, 255), off=3)
+        card.blit(t, (x0 - 2, -6))
+        tx = self.sky_col_x
+        wk = hudkit.tracked(hudkit.font("BarlowCondensed-Bold.ttf", 24), st.weekday[:3].upper(), (255, 255, 255), 2.0)
+        card.blit(wk, (tx, 16))
+        sub = self._spaced(self.f_small, "PAUSED" if st.paused else speed_label(st.speed),
+                           (255, 196, 84) if st.paused else (150, 160, 182), 1.6)
+        card.blit(sub, (tx, 46))
+        dem = daily.demand_factor(st.hour)
+        col = traffic_colour(dem)
+        pygame.draw.circle(card, col, (x0 + 5, 92), 4)
+        lab = hudkit.tracked(hudkit.font("Barlow-Bold.ttf", 12), traffic_label(st.hour), (255, 255, 255), 1.6)
+        card.blit(lab, (x0 + 16, 92 - lab.get_height() // 2))
+        pct = hudkit.text(hudkit.font("Barlow-SemiBold.ttf", 12), f"{dem * 100:.0f}% of peak", (150, 160, 182))
+        card.blit(pct, (W - 16 - pct.get_width(), 92 - pct.get_height() // 2))
+        cw = W - x0 - 16
+        card.blit(self._demand_curve(st, cw, 40), (x0, 104))
+        for hh in (0, 6, 12, 18, 24):
+            g = self.f_small.render(f"{hh % 24:02d}", True, (110, 120, 142))
+            gx = x0 + hh / 24 * cw - (0 if hh == 0 else g.get_width() if hh == 24 else g.get_width() // 2)
+            card.blit(g, (gx, 146))
+        return card
+
     def card(self, st: HudState) -> pygame.Surface:
-        key = (int(st.game_s // 60), st.paused, st.sun_elevation > -3.0, st.speed)
+        key = (int(st.game_s // 60), st.paused, st.sun_elevation > -3.0, st.speed, ui.ALPHA)
         if key == self._cache_key and self._card is not None:
+            return self._card
+        if ui.ALPHA:
+            self._card, self._cache_key = self._sky_card(st), key
             return self._card
         card = self._shapes(st)
         # inside the dial

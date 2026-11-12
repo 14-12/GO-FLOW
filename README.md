@@ -171,7 +171,13 @@ letters work. To fly with W A S D instead, edit `MOVE_KEYS` at the top of `cosim
 `{"Z": 0x57, "Q": 0x41, "S": 0x53, "D": 0x44, "A": 0x51, "E": 0x45}` gives W / A / S / D, with Q down and E up.
 
 On screen:
-* top left: the clock and the time of day (one real minute is one hour in town; the time is kept between runs);
+* top left: the clock and the time of day (one real minute is one hour in town; the time is kept between runs): a
+  window on the town's sky (the sun at its real height, the moon and stars at night, a skyline whose windows light
+  up in the evening), the time, the traffic now and the day's traffic curve;
+* bottom right while flying: the radar (`cosim/radar.py`): round and turning with the camera (heading up), the
+  compass round its edge, zooming out as the camera climbs; the roads coloured by the traffic on them (green
+  moving, amber slow, red standing), every car, the places, accidents and forecasts, and those off the map as blips
+  on its edge with their distance;
 * the traffic level;
 * camera prompts;
 * the accident markers;
@@ -537,7 +543,7 @@ The route recommendation agent (`agents/route_recommendation`, Emna's agent 6) d
   (1.8 s, eased, looking at the car all the way); a change of view (V) glides.
 * **The mini-map** (`cosim/route_minimap.py`, bottom right):
   * flying: the whole town, every car as a dot coloured by its speed, the camera and its view, the alerts, the car
-    F would follow;
+    F would follow (with per-pixel alpha, the radar `cosim/radar.py` takes its place: section 3);
   * following: the view eases in to the trip while the camera flies; the camera's marker slides onto the car; the
     routes draw themselves in;
   * then: the car's own route (dashed) and the agent's (green); the alerts; the next signals in this car's colour;
@@ -556,7 +562,7 @@ Urban Traffic CARLA/
 │  ├─ sumo_side.py           SUMO half: TraCI, controllers, walk phases, cycle keeper
 │  ├─ carla_side.py          CARLA half: actors, lights, road heights
 │  ├─ pose_proc.py  fly_proc.py  plate_proc.py  ground_proc.py   helper processes
-│  ├─ overlay.py  ui.py  hudkit.py  hud.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
+│  ├─ overlay.py  ui.py  hudkit.py  hud.py  radar.py  incident_hud.py  agent_hud.py  splash.py   what is drawn over CARLA
 │  ├─ look.py                                    the sky for the time of day
 │  ├─ controllers.py  coordination.py  signal_plan.py  signal_heads.py  ped_lights.py  signal_audit.py
 │  ├─ agents_actuated.py  agents.py  camera_reports.py  perception.py  inspector.py  cctv.py

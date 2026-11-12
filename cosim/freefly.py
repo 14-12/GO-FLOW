@@ -4433,7 +4433,7 @@ def main(argv=None) -> int:
             pend = (fol["vid"], v.x, v.y, v.angle)
         live = getattr(ff, "places_live", None)
         parked = live["parked"] if live else ()
-        return {"cam": (x, y, tf.rotation.yaw + 90.0), "cand": cand, "cam0": fol["cam0"], "pending": pend,
+        return {"cam": (x, y, tf.rotation.yaw + 90.0), "z": tf.location.z, "cand": cand, "cam0": fol["cam0"], "pending": pend,
                 "cars": [(vid, v.x, v.y, v.speed) for vid, v in list(vs.items()) if vid not in parked],
                 "alerts": list(getattr(ff.route_guide, "live_alerts", [])), "places": live}
 
@@ -4504,6 +4504,14 @@ def main(argv=None) -> int:
                 held = fol.get("mm_held")
                 if msnap is None and fol["vid"] is None and held is not None and time.time() - held[0] < 0.2:
                     mm = held[1]  # flying: the town's map 5 times a second, also while a marker redraws 30 times
+                elif msnap is None and fol["vid"] is None and ui_kit.ALPHA:
+                    # (12 Nov) flying: the round, heading-up radar (cosim/radar.py); following keeps the trip's map
+                    if fol.get("radar") is None:
+                        from cosim.radar import Radar
+
+                        fol["radar"] = Radar(rg.router, place_cards())
+                    mm = fol["radar"].render(free, time.time())
+                    fol["mm_held"] = (time.time(), mm)
                 else:
                     mm = fol["map"].render(msnap, time.time(), fol["view"], free=free, intro=intro)
                     fol["mm_held"] = (time.time(), mm)
