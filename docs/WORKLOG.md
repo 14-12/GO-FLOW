@@ -3517,3 +3517,75 @@ spent). Left in as an option, off. Both gates say the same: the drivers are alre
 full exit already ends a green (spill); holding the feeding green earlier adds nothing that shows through the runs'
 spread. **Parking guidance** (third on the list) is already what the town does: a full car park is not driven to,
 the nearest other one with room is (`purposes.area_for`, counted as `redirected_full`).
+
+## 12 Nov: bus priority at the signals (`+bus`): dev runs, and the bar written before the test
+
+The user's choice after the gates failed. **The rule** (`cosim/agents_actuated.py`, optional `+bus`, off by default):
+a line bus in service within 120 m of its signal, not at its stop and with no stop left before the line, asks for
+itself (as the emergency vehicles do; `buses` gives the buses in service). At its green's end a bus about to get
+through (moving, or at most one vehicle standing ahead) gets the green held, at most 10 s past the green's maximum.
+With `bus_cut=1` the other car greens are ended after 10 s while it waits, in the program's order (nothing skipped,
+walks never cut), unless their own road is 60 % full. A request counts only while the bus can move (exit lane not
+full, at most 6 standing ahead) and for 60 s at a junction; an emergency request comes first. Unit test:
+`tests/test_town05_agents.py::test_bus_priority_...`.
+
+**Measured on the buses** (`tools/eval_agents_forecast.py`, new columns): time lost per km and speed between stops of
+the line buses (SUMO's tripinfo of the `pt_*` vehicles, their laps written unfinished; time at stops not counted).
+
+**Dev** (seeds 11-20, the forecasters' recipe, 35 min at clock 30 from 06:00; `out/bus/dev2`). Paired against
+`agents_observed`, mean +- standard error (seeds better of 10). Reference: buses lose 210 / 214 / 251 s a km and
+drive 11.9 / 11.7 / 10.5 km/h between stops; cars wait 109.0 / 115.5 / 167.7 s a trip.
+
+| Traffic | Setting | Greens held, cut a run | Bus time loss /km | Bus speed | Cars: waiting /trip | Cars: time loss /trip | Throughput /h | Ambulance time loss |
+|---|---|---|---|---|---|---|---|---|
+| x1 | hold | 72, 0 | -18.2 +- 9.0 s (8) | +0.7 km/h (8) | -8.5 +- 9.8 s (6) | -10.1 +- 9.0 s (6) | +10 +- 15 | -0.9 +- 8.1 s |
+| x1 | hold + cut | 64, 35 | -17.6 +- 4.8 s (8) | +0.7 km/h (8) | +1.2 +- 5.3 s (5) | -1.5 +- 5.0 s (6) | +4 +- 12 | -7.6 +- 5.0 s |
+| x1.15 | hold | 68, 0 | +6.7 +- 15.4 s (5) | -0.1 km/h (5) | +44.8 +- 13.0 s (0) | +49.8 +- 13.4 s (1) | -58 +- 18 | +36.9 +- 11.3 s |
+| x1.15 | hold + cut | 70, 38 | -17.0 +- 7.5 s (8) | +0.8 km/h (8) | +7.7 +- 8.2 s (3) | +5.7 +- 7.3 s (4) | -20 +- 11 | -4.3 +- 5.5 s |
+| x1.3 | hold | 76, 0 | -42.7 +- 12.0 s (10) | +1.6 km/h (10) | -17.2 +- 13.9 s (7) | -18.6 +- 14.6 s (7) | -51 +- 12 | -31.6 +- 14.8 s |
+| x1.3 | hold + cut | 66, 40 | -37.6 +- 15.5 s (8) | +1.4 km/h (8) | -24.9 +- 16.3 s (6) | -27.0 +- 16.6 s (6) | -67 +- 17 | -30.5 +- 13.8 s |
+
+A first version kept every other rule off a green with a bus anywhere in its queue; changed (hold only at the
+green's end, only for a bus about to get through) before these runs: the numbers hardly moved. Reading: the buses
+gain with hold + cut at every level (8 of 10 seeds, about 8 % of their time loss at x1 and x1.15, 15 % at x1.3).
+The cars: nothing clear at x1; at x1.15 hold alone is worse on every seed, which 70 held greens a run cannot explain
+by themselves (the number of accidents in a run changes with any change: 2 -> 5 on seeds 12 and 15); throughput is
+lower at x1.15 and x1.3 with both. Ten seeds cannot settle the cars' side (a seed's waiting moves by 15-50 s).
+
+**The bar, written before the test (12 Nov).** New seeds 121-150 (30), x1, x1.15, x1.3, opened once, both settings
+measured against `agents_observed`: `agents_observed+bus@bus_cut=1` is the candidate, `agents_observed+bus` (hold
+only) is measured beside it. A setting goes on by default only if all hold:
+1. buses: time loss per km lower on the mean and on at least 20 of 30 seeds, at x1 and at x1.15;
+2. cars: time loss per trip not higher on the mean by more than 5 %, at x1, x1.15 and x1.3;
+3. cars: trips completed an hour not lower on the mean by more than 3 %, at x1 and x1.15;
+4. ambulances: time loss not higher on the mean by more than 5 s at x1.
+If both pass, the one with the lower cars' time loss at x1.15. Otherwise `+bus` stays an option, off, with these
+numbers. Test seeds used after this: 21-150.
+
+**The test (12 Nov, opened once, seeds 121-150, `out/bus/test`, 270 runs): bus priority fails its bar and stays
+off.** Paired against `agents_observed`, mean +- standard error (seeds better of 30). Reference: buses lose 205 /
+216 / 244 s a km; cars lose 136.9 / 151.3 / 184.7 s a trip, 759 / 810 / 843 trips an hour.
+
+| Traffic | Setting | Bus time loss /km | Cars: time loss /trip | Throughput /h | Ambulance time loss | Cars taken off a run |
+|---|---|---|---|---|---|---|
+| x1 | hold + cut | -0.6 +- 9.8 s (18) | +10.1 +- 8.3 s, +7.4 % (12) | +4 +- 7 | +5.8 +- 8.9 s | 8.0 -> 16.4 |
+| x1 | hold | +0.9 +- 8.8 s (20) | +11.3 +- 9.2 s, +8.3 % (12) | +1 +- 9 | +10.7 +- 8.4 s | 8.0 -> 19.5 |
+| x1.15 | hold + cut | -12.9 +- 8.8 s (22) | +14.7 +- 8.2 s, +9.7 % (15) | -6 +- 11 | +20.8 +- 8.7 s | 11.7 -> 16.2 |
+| x1.15 | hold | -5.1 +- 10.4 s (20) | +11.5 +- 10.0 s, +7.6 % (13) | -6 +- 8 | +17.5 +- 11.3 s | 11.7 -> 16.0 |
+| x1.3 | hold + cut | -12.8 +- 10.4 s (22) | +8.9 +- 9.9 s, +4.8 % (15) | +4 +- 12 | +6.9 +- 9.9 s | 16.3 -> 22.0 |
+| x1.3 | hold | -6.5 +- 13.2 s (17) | +9.2 +- 9.4 s, +5.0 % (14) | +1 +- 10 | +17.3 +- 10.8 s | 16.3 -> 23.9 |
+
+Against the bar: (1) buses lower on the mean and on 20 of 30 seeds at x1 and x1.15: hold + cut 18 of 30 at x1 with no
+gain on the mean (-0.6 s), hold alone higher on the mean at x1: failed; (2) cars' time loss within 5 %: +7.4 to +9.7
+% at x1 and x1.15: failed; (3) throughput within 3 %: held; (4) ambulances within 5 s at x1: +5.8 and +10.7 s:
+failed. The buses' gain on the dev seeds at x1 (-18 s a km, 8 of 10) did not come again; what is left is 5-6 % at
+x1.15 and x1.3 with the cut. The cars are worse in all six rows (each about one standard error, all the same way),
+with 4-11 more cars a run taken off behind accidents and knots. `+bus` is left in as an option, off. Test seeds
+used: 21-150; anything new: 151 and above.
+
+**Three rules, three times the same lesson.** Forecast gating, accident gating and bus priority each looked right on
+the 10 dev seeds somewhere and did nothing, or harm, on 30 new seeds. On this town a run's result moves by 8-50 s a
+trip with any change to the signals, because accidents and the knots behind them decide it and a different green
+changes which ones happen. Ten dev seeds cannot tell a 5 % effect from that; thirty can only just. Before another
+signal rule: either a much larger effect is expected, or the evaluation needs less noise (accidents off or the same
+accidents replayed in both runs).

@@ -143,6 +143,8 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
         state.update(sumo=sumo, im=im, fc=fc, t0=sumo.time)
         if reads:
             pol.forecast = lambda: fc.risk(sumo.time)
+        if pol is not None and "bus" in getattr(pol, "on", ()):       # the line buses in service ask for themselves
+            pol.buses = lambda: [v for v in sumo.conn.vehicle.getIDList() if v.startswith("pt_")]
         if pol is not None and "accgate" in getattr(pol, "on", ()):   # the roads the drivers' navigation counts as slow
             pol.incident_roads = lambda: {e for inc in im.incidents for e in getattr(inc, "diverted", ())}
 
@@ -163,6 +165,11 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     ems = state["ems"]
     cars = [x for x in trips if x.get("id") not in ems and not x.get("id", "").startswith("pt_")]
     on_run = [x for x in trips if x.get("id") in ems]
+    # the line buses (ids pt_*: one long trip of laps each, written unfinished): time lost a km, speed between stops
+    buses = [x for x in root.findall("tripinfo") if x.get("id", "").startswith("pt_")]
+    b_km = sum(float(x.get("routeLength", 0)) for x in buses) / 1000.0
+    b_loss = sum(float(x.get("timeLoss", 0)) for x in buses)
+    b_drive = sum(float(x.get("duration", 0)) - float(x.get("stopTime", 0)) for x in buses)
 
     def mean(xs, key):
         return round(st.mean(float(x.get(key)) for x in xs), 2) if xs else None
@@ -173,6 +180,8 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
          "waiting": mean(cars, "waitingTime"), "time_loss": mean(cars, "timeLoss"),
          "throughput": round(sum(float(x.get("arrival", -1)) >= 0 for x in cars) * 60.0 / args["minutes"], 1),
          "ems_n": len(on_run), "ems": mean(on_run, "timeLoss"),
+         "buses": len(buses), "bus_km": round(b_km, 2), "bus_loss_km": round(b_loss / b_km, 2) if b_km > 0 else None,
+         "bus_kmh": round(3.6 * 1000.0 * b_km / b_drive, 2) if b_drive > 0 else None,
          "t_from": t_from, "rows": state["fc"].rows,      # the 30 s samples: long_queue at the summary
          "forecasts": state["fc"].forecasts, "stuck_over_300s": res["stuck_over_300s"], "gridlock": res["gridlock"],
          "incidents": res["incidents"], "removed": res.get("removed"), "agent_stats": dict(pol.stats) if pol is not None and hasattr(pol, "stats") else None,
@@ -185,7 +194,8 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
 
 METRICS = [("waiting", "waiting /trip (s)", -1), ("time_loss", "time loss /trip (s)", -1),
            ("throughput", "throughput /h", 1), ("ems", "ambulance time loss (s)", -1),
-           ("long_queue", "long-queue approach-minutes", -1)]
+           ("long_queue", "long-queue approach-minutes", -1),
+           ("bus_loss_km", "bus time loss (s/km)", -1), ("bus_kmh", "bus speed between stops (km/h)", 1)]
 
 
 def summarize(results: list[dict], variants: list[str], out: Path, models: Path) -> dict:
@@ -201,12 +211,13 @@ def summarize(results: list[dict], variants: list[str], out: Path, models: Path)
         for v in variants:
             row = {"variant": v, "scale": scale, "seeds": seeds}
             for key, _, sign in METRICS:
-                xs = [by[(v, scale, s)][key] for s in seeds if by.get((v, scale, s)) and by[(v, scale, s)][key] is not None]
+                xs = [by[(v, scale, s)].get(key) for s in seeds if by.get((v, scale, s))
+                      and by[(v, scale, s)].get(key) is not None]
                 row[key] = round(st.mean(xs), 2) if xs else None
                 if v != base:
                     d = [by[(v, scale, s)][key] - by[(base, scale, s)][key] for s in seeds
                          if by.get((v, scale, s)) and by.get((base, scale, s))
-                         and by[(v, scale, s)][key] is not None and by[(base, scale, s)][key] is not None]
+                         and by[(v, scale, s)].get(key) is not None and by[(base, scale, s)].get(key) is not None]
                     row[f"d_{key}"] = round(st.mean(d), 2) if d else None
                     row[f"better_{key}"] = sum(1 for x in d if x * sign > 0)
                     row[f"n_{key}"] = len(d)

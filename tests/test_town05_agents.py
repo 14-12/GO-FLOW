@@ -646,6 +646,73 @@ def test_gate_shortens_the_green_that_feeds_a_road_forecast_to_queue():
     assert calls == []
 
 
+def test_bus_priority_holds_its_green_and_may_shorten_the_others():
+    """+bus (cosim/agents_actuated.py): a line bus near its signal asks; its green is held past the maximum by at
+    most bus_extend_s; with bus_cut the other greens end after bus_cut_min_s unless their road is full. Not at its
+    stop, not with a stop still before the line, not behind a long standing queue, not for ever."""
+    from types import SimpleNamespace as NS
+
+    from cosim.agents_actuated import ActuatedAgents, _Agent
+
+    calls = []
+    bus = {"dist": 80.0, "stopped": False, "stops": [], "pos": 10.0, "ahead": 0}
+    lane_ids = lambda lane: ["bus1"] + [f"c{i}" for i in range(bus["ahead"])]  # noqa: E731
+    tc = NS(trafficlight=NS(getNextSwitch=lambda tls: 100.5, setPhaseDuration=lambda tls, d: calls.append(d)),
+            vehicle=NS(getNextTLS=lambda v: [("J", 0, bus["dist"], "r")], isStopped=lambda v: bus["stopped"],
+                       getStops=lambda v, n: bus["stops"], getRoadID=lambda v: "in0", getLaneID=lambda v: "in0_0",
+                       getLanePosition=lambda v: bus["pos"] if v == "bus1" else 50.0, getSpeed=lambda v: 0.0),
+            lane=NS(getLastStepHaltingNumber=lambda ln: 0, getLastStepVehicleIDs=lane_ids),
+            inductionloop=NS(getTimeSinceDetection=lambda d: 1e9))
+    ag = ActuatedAgents(fallback=set(), extra={"bus"})
+    assert "bus" in ag.on and "bus" not in ActuatedAgents(fallback=set()).on
+    ag._len = {"in0": 75.0, "in2": 75.0, "out0": 75.0, "out2": 75.0}
+    ag._pred, ag._up, ag._waiting = {}, {}, {}
+    a = _Agent("J", ["GGrr", "yyrr", "rrrr", "rrGG", "rryy", "rrrr"], ["car", "yellow", "red", "car", "yellow", "red"],
+               [5.0, 3.0, 2.0, 5.0, 3.0, 2.0], [45.0, 3.0, 2.0, 45.0, 3.0, 2.0], [0, 3], {0: 5, 3: 2},
+               {0: [("in0", "out0")], 3: [("in2", "out2")]}, {}, {}, link_out={0: "out0", 1: "out0", 2: "out2", 3: "out2"})
+    ag.junctions, ag.served, ag.fed = {"J": a}, {}, {}
+    ag.buses = lambda: ["bus1"]
+
+    def ask(now=100.0):
+        ag._bus_requests(tc, now)
+        return dict(ag.bus_requests)
+
+    assert ask() == {"J": {0}}
+    bus["dist"] = 200.0
+    assert ask() == {}                                   # too far
+    bus.update(dist=80.0, stopped=True)
+    assert ask() == {}                                   # at its stop
+    bus.update(stopped=False, stops=[NS(lane="in0_0", endPos=40.0)])
+    assert ask() == {}                                   # a stop still before the line
+    bus.update(stops=[NS(lane="other_0", endPos=40.0)], ahead=7)
+    assert ask() == {}                                   # 7 standing ahead of it
+    bus.update(ahead=4)
+    assert ask() == {"J": {0}} and ag._bus_near == set()   # 4 standing ahead: asks, but no hold is worth it yet
+    bus.update(ahead=0)
+    assert ask(100.0) == {"J": {0}} and ag._bus_near == {"J"} and ask(150.0) == {"J": {0}} and ask(170.0) == {}   # 60 s of asking, no more
+
+    def green(ph, spent, counts=((3, 3), (2, 2))):
+        calls.clear()
+        a.green_since, ag._now = 100.0 - spent, 100.0
+        ag._cache = {"in0": counts[0], "in2": counts[1], "out0": (0, 0), "out2": (0, 0)}
+        ag._green(tc, a, ph, 100.0)
+        return list(calls)
+
+    ag.bus_requests, ag.bus_by, ag._bus_near = {"J": {0}}, {"J": "bus1"}, {"J"}
+    assert green(0, 45.0) == [2.0] and green(0, 54.0) == [2.0]     # its green held at and past the 45 s maximum
+    assert green(0, 56.0) == []                                    # but not past 45 + 10 s
+    ag._bus_near = set()
+    assert green(0, 45.0) == []                                    # nor for a bus deep in the queue
+    ag._bus_near = {"J"}
+    assert green(3, 12.0) == []                                    # the other green: left alone without bus_cut
+    ag.bus_cut = 1
+    assert green(3, 12.0) == [0] and green(3, 8.0) == []           # ended after its 10 s
+    assert green(3, 12.0, ((3, 3), (8, 8))) == []                  # not when its own road is 8 of 10 full
+    assert ag.stats["bus_cuts"] == 1 and ag.stats["bus_greens_held"] == 1
+    ag.bus_requests = {}
+    assert green(0, 45.0) == [] and green(3, 12.0) == []           # no bus: nothing
+
+
 def test_camera_backup_gives_green_to_a_siren_without_a_request():
     """camback (10 Nov, on by default): a siren the cameras confirm on an approach with no request at the junction gets that
     approach's links, within the same limits as a request; request_loss drops a fixed share of requests."""

@@ -70,6 +70,15 @@ its approaches and steps in only with commands that keep the program's own state
          counts as a road at risk 1 for the greens that feed it. Fewer cars are sent into the queue behind the
          wreck; those held at the junction before it take another way after 45 s (incidents._relieve). Needs no
          forecaster. Off by default until measured.
+* bus    (optional, "+bus", 12 Nov) Priority for the line buses, as bus priority at signals works: a bus in service
+         within `bus_detect_m` of its signal, not at its stop and with no stop left before the line, asks (its own
+         request, as the emergency vehicles'; `buses` gives the buses in service). At its green's end, a bus about
+         to get through (moving, or at most one vehicle standing ahead) gets the green held, up to `bus_extend_s`
+         past the green's maximum. With `bus_cut` the other car greens are ended
+         after `bus_cut_min_s` while it waits, in the program's order (nothing skipped, walks never cut), unless
+         their own road is `bus_cut_fill` full. A request counts only while the bus can move (exit free, at most
+         `bus_queue_max` standing ahead) and for `bus_patience_s` at a junction. An emergency request comes first.
+         Off by default until measured (bus time loss a km, the cars' waiting).
 * batch  (optional, "+batch") The walk is served once `batch_n` people wait at its crossings or the
          first has waited `batch_s`, instead of for the first person: fewer 15 s walks, more
          car green, at a cost in pedestrian delay.
@@ -100,7 +109,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COVERAGE = ROOT / "out" / "town05_cameras" / "coverage.json"
 VEH_M = 7.5
 FEATURES = ("skip", "spill", "trickle", "balance", "preempt", "corridor", "pedcall", "camback")
-OPTIONAL = ("batch", "extend", "noflow", "forecast", "gate", "accgate")  # off unless named: "agents+batch"
+OPTIONAL = ("batch", "extend", "noflow", "forecast", "gate", "accgate", "bus")  # off unless named: "agents+batch"
 # camback (cameras as a back-up for lost emergency requests, agents_observed only): on since 10 Nov (the user's
 # decision), "agents_observed-camback" without it; measured in docs/WORKLOG.md (10 Nov, afternoon)
 DEFAULT_OFF = ("trickle",)  # off unless named ("agents+trickle") since 25 Oct: with two greens a cycle
@@ -190,6 +199,13 @@ class ActuatedAgents:
     min_coverage = 0.70
     forecast_w = 0.5               # +forecast: fill counted this much more per unit of risk (balance)
     forecast_extend_p = 0.8        # +forecast: risk from which a green at its maximum is extended
+    bus_detect_m = 120.0           # +bus: a bus asks this close to its signal
+    bus_extend_s = 10.0            # +bus: its green held this long past the green's maximum at most
+    bus_cut = 0                    # +bus: 1 = the other greens are also ended early while a bus waits
+    bus_cut_min_s = 10.0           # +bus: the green another road still gets
+    bus_cut_fill = 0.6             # +bus: a green whose own road is this full is not ended for a bus
+    bus_queue_max = 6              # +bus: vehicles standing ahead of the bus beyond which it does not ask
+    bus_patience_s = 60.0          # +bus: a bus still not through after this long asks no more at that junction
     gate_p = 0.7                   # +gate: risk on the road ahead from which the feeding green is shortened
     gate_share = 0.5               # +gate: share of the green's movements that lead to roads at that risk
     gate_min_s = 10.0              # +gate: the green it still gets
@@ -219,6 +235,10 @@ class ActuatedAgents:
         self.forecast = None            # +forecast: callable -> {approach node: risk 0-1} (GoflowPrediction.risk)
         self.forecast_nodes: list[dict] | None = None  # the approaches (nodes.json); default models/goflow/graph
         self._risk: dict[str, float] = {}
+        self.buses = None               # +bus: callable -> the line buses in service (vehicle ids)
+        self.bus_requests: dict[str, set[int]] = {}
+        self.bus_by: dict[str, str] = {}
+        self._bus_asked: dict[tuple[str, str], float] = {}
         self.incident_roads = None      # +accgate: callable -> the roads (edges) with an open accident
         self._gate_risk: dict[str, float] = {}   # what the gate reads: the forecast (+gate), accidents (+accgate)
         self._acc_nodes: dict[str, tuple[str, ...]] = {}
@@ -565,6 +585,7 @@ class ActuatedAgents:
         self._cache: dict[str, tuple[int, int]] = {}
         self._pedestrians(tc)
         self._requests(tc, now)
+        self._bus_requests(tc, now)
         if ("forecast" in self.on or "gate" in self.on) and self.forecast is not None:
             try:
                 self._risk = self.forecast() or {}
@@ -675,6 +696,68 @@ class ActuatedAgents:
                                     "green wave: getting ready for an ambulance")
         self._asked = asked
         self._camera_backup(tc, now)
+
+    def _bus_requests(self, tc, now: float) -> None:
+        """+bus: the line buses' requests, junction -> the links they need."""
+        self.bus_requests, self.bus_by = {}, {}
+        self._bus_near: set[str] = set()   # junctions whose asking bus is about to get through (a hold is worth it)
+        if "bus" not in self.on or self.buses is None:
+            return
+        try:
+            wanted = set(self.buses())
+        except Exception as e:  # noqa: BLE001 - the signals never fail with the buses' side
+            self.stats.setdefault("bus_error", repr(e)[:200])
+            return
+        self.stats["bus_steps"] = self.stats.get("bus_steps", 0) + (1 if wanted else 0)
+        asked = {}
+        for vid in wanted:
+            try:
+                upcoming = tc.vehicle.getNextTLS(vid)
+                if not upcoming:
+                    continue
+                tls, link, dist, _state = upcoming[0]
+                a = self.junctions.get(tls)
+                if a is None or dist > self.bus_detect_m or tc.vehicle.isStopped(vid):
+                    continue
+                stops = tc.vehicle.getStops(vid, 1)
+                if stops and stops[0].lane.rsplit("_", 1)[0] == tc.vehicle.getRoadID(vid) \
+                        and stops[0].endPos > tc.vehicle.getLanePosition(vid):
+                    continue  # its stop comes before the line: it will stand there first
+                first = asked[(tls, vid)] = self._bus_asked.get((tls, vid), now)
+                if now - first > self.bus_patience_s:
+                    self.stats["bus_patience"] = self.stats.get("bus_patience", 0) + 1
+                    continue
+                ahead = self._bus_can_pass(tc, a, vid, int(link))
+                if ahead is None:
+                    self.stats["bus_blocked"] = self.stats.get("bus_blocked", 0) + 1
+                    continue
+                if ahead <= 1 or tc.vehicle.getSpeed(vid) > 1.0:
+                    self._bus_near.add(tls)
+            except Exception as e:  # noqa: BLE001 - a bus that just left the road
+                self.stats["bus_errors"] = self.stats.get("bus_errors", 0) + 1
+                self.stats.setdefault("bus_error", repr(e)[:200])
+                continue
+            self.bus_requests.setdefault(tls, set()).add(int(link))
+            self.bus_by[tls] = vid
+        self._bus_asked = asked
+        if self.bus_requests:
+            self.stats["bus_request_steps"] = self.stats.get("bus_request_steps", 0) + 1
+
+    def _bus_can_pass(self, tc, a: _Agent, vid: str, link: int) -> int | None:
+        """As _can_pass, for a bus: the vehicles standing ahead of it on its lane, or None when a green would not
+        move it (its exit lane full, or more than bus_queue_max standing ahead)."""
+        out = a.link_out.get(link)
+        if out is not None:
+            cap = max(1.0, self._len.get(out, 0.0) / VEH_M)
+            if tc.lane.getLastStepHaltingNumber(out) >= max(1.0, self.full_share * cap):
+                return None
+        lane = tc.vehicle.getLaneID(vid)
+        if lane.startswith(":"):
+            return 0
+        pos = tc.vehicle.getLanePosition(vid)
+        ahead = sum(1 for v in tc.lane.getLastStepVehicleIDs(lane)
+                    if v != vid and tc.vehicle.getLanePosition(v) > pos and tc.vehicle.getSpeed(v) < 0.5)
+        return ahead if ahead <= self.bus_queue_max else None
 
     def _lost(self, vid: str, tls: str) -> bool:
         """Whether this vehicle's request to this junction is one of the lost ones (request_loss)."""
@@ -950,6 +1033,28 @@ class ActuatedAgents:
                 return
         if spent < min_d:
             return
+        breq = self.bus_requests.get(a.tls)
+        if breq:  # +bus (an emergency request, above, comes first)
+            if breq & _greens(a.states[ph]):
+                # held only at the green's end and only for a bus about to get through (moving, or at most one
+                # vehicle standing ahead of it); until then the green runs under the agent's other rules. (The first
+                # version kept every other rule off a green with a bus anywhere in its queue: at x1.15 the cars'
+                # waiting rose by 48 s on the dev seeds, 24 more cars a run taken off.)
+                if remaining < 1.0 and spent < max_d + self.bus_extend_s and a.tls in self._bus_near:
+                    tc.trafficlight.setPhaseDuration(a.tls, 2.0)
+                    self.stats["bus_holds"] = self.stats.get("bus_holds", 0) + 1
+                    who = self.bus_by.get(a.tls)
+                    if who != a.held_for:
+                        a.held_for = who
+                        self.stats["bus_greens_held"] = self.stats.get("bus_greens_held", 0) + 1
+                        self._event(a, "bus", [ph], "green held for a bus")
+                    return
+            elif self.bus_cut and spent >= max(min_d, self.bus_cut_min_s) \
+                    and self._fill(tc, a, ph) < self.bus_cut_fill:
+                tc.trafficlight.setPhaseDuration(a.tls, 0)
+                self.stats["bus_cuts"] = self.stats.get("bus_cuts", 0) + 1
+                self._event(a, "bus", [ph], "green shortened: a bus is waiting")
+                return
         others = [k for k in a.cycle if k != ph]
         if "noflow" in self.on:  # on every junction: where the cameras see too little, the loops tell
             if self._stalled(tc, a, ph, now):
