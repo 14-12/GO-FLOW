@@ -121,7 +121,7 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     from cosim.daily import GAME_SPEED
 
     out = Path(args["out"])
-    tag = f"{variant}_x{scale:g}_seed{seed}"
+    tag = f"{variant}_x{scale:g}_seed{seed}".replace("|", "~")   # (Windows: no "|" in a file name)
     dst = out / "runs" / f"{tag}.json"
     if args["skip_done"] and dst.is_file():
         return json.loads(dst.read_text(encoding="utf-8"))
@@ -129,8 +129,12 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     (work / "runs").mkdir(parents=True, exist_ok=True)
     trip = work / "tripinfo.xml"
     models = Path(args["models"])
+    # (12 Nov) a variant may carry options after "|": "park=random" (cosim/purposes.PARK_SIDE for the run)
+    controller, _, opts = variant.partition("|")
+    opt = dict(o.split("=", 1) for o in opts.split(",") if "=" in o)
     a = {"minutes": args["minutes"], "warmup": args["warmup"], "start_hour": args["start_hour"],
-         "clock_speed": GAME_SPEED, "dt": 30.0, "controller": variant, "scale": scale,
+         "clock_speed": GAME_SPEED, "dt": 30.0, "controller": controller, "scale": scale,
+         "park_side": opt.get("park"),
          "accidents": args.get("accidents", True),
          "careless_share": None, "buses": True, "ring": True, "junction_blocker": 60.0, "trips": "purpose",
          "sumo_extra": ["--tripinfo-output", str(trip), "--tripinfo-output.write-unfinished", "true"]}
@@ -178,6 +182,10 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
          "accidents": args.get("accidents", True),
          "trips": len(cars), "completed": sum(float(x.get("arrival", -1)) >= 0 for x in cars),
          "waiting": mean(cars, "waitingTime"), "time_loss": mean(cars, "timeLoss"),
+         # (12 Nov) km: per completed trip, and all the cars' together (the unfinished ones as far as they got)
+         "km_trip": round(mean([x for x in cars if float(x.get("arrival", -1)) >= 0], "routeLength") / 1000.0, 4)
+         if any(float(x.get("arrival", -1)) >= 0 for x in cars) else None,
+         "car_km": round(sum(float(x.get("routeLength", 0)) for x in cars) / 1000.0, 2),
          "throughput": round(sum(float(x.get("arrival", -1)) >= 0 for x in cars) * 60.0 / args["minutes"], 1),
          "ems_n": len(on_run), "ems": mean(on_run, "timeLoss"),
          "buses": len(buses), "bus_km": round(b_km, 2), "bus_loss_km": round(b_loss / b_km, 2) if b_km > 0 else None,
@@ -193,6 +201,7 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
 
 
 METRICS = [("waiting", "waiting /trip (s)", -1), ("time_loss", "time loss /trip (s)", -1),
+           ("km_trip", "km /completed trip", -1),
            ("throughput", "throughput /h", 1), ("ems", "ambulance time loss (s)", -1),
            ("long_queue", "long-queue approach-minutes", -1),
            ("bus_loss_km", "bus time loss (s/km)", -1), ("bus_kmh", "bus speed between stops (km/h)", 1)]

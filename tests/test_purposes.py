@@ -220,3 +220,22 @@ def test_the_places_are_drawn_on_the_map_and_over_the_town():
     hud = PlaceHud(cards, Frame(209.41, 199.645))
     screen = pygame.Surface((1600, 900))
     assert hud.draw(screen, (1600, 900), Tf(), 12.5, live)       # some labels are in view
+
+
+def test_park_side_route_takes_the_side_that_makes_the_trip_shortest():
+    """(12 Nov) PARK_SIDE "route" (an option, off by default since its test with accidents): among a place's areas on
+    both sides of its street, the one with the shortest way there and back; "random" keeps the draw."""
+    d = P.PurposeDemand(None, clock_speed=30.0, seed=1)
+    pl, r = d.places, d.places.router
+    d.free = lambda a: 5                                        # (room everywhere)
+    sides = pl.park_of["q_cypres"]                               # kerb_20: one area on each side of road 20
+    assert len(sides) == 2
+    start = next(e for e in r.roads if e not in {pl.areas[a]["edge"] for a in sides})
+    cost = {a: d._len(r.best(start, pl.areas[a]["edge"])) + d._len(r.best(pl.areas[a]["edge"], start)) for a in sides}
+    far = max(sides, key=cost.get)
+    d.park_side = "route"
+    a_dest, a_home, s, b = d._sides("q_cypres", far, None, None, None, start, start)
+    assert a_dest == min(sides, key=cost.get) and (s, b) == (start, start)
+    if cost[far] > cost[a_dest]:
+        assert d.stats["sides_changed"] == 1
+    assert P.PARK_SIDE == "random"                               # (the default: the side drawn, as before)

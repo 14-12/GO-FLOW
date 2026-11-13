@@ -3828,3 +3828,82 @@ Tests: `test_a_car_leaving_rolls_onto_the_road_without_stopping` (a car park, a 
 
 **Frame rate** (70 s demo, flying high / street): 17:30 34.4 / 39.0 (before 33.7 / 38.8; a first run 32.4 / 33.0,
 not seen again), 22:00 28.9 / 45.0 (28.7 / 44.3), 12:00 42.0 / 50.8 (41.0 / 49.9).
+
+## 12 Nov, night: the side of the street a car parks on (the user's idea: a U-turn instead of a trip round the block)
+
+**Looked at first.** Town05's network has no U-turn anywhere (0 turnaround connections); coming back along the
+other side of a road costs 214 m round the blocks (median of the 58 roads with a twin; p90 596 m, max 1382 m). A
+U-turn in the middle of a road is not something SUMO does (the viewer would have to drive it across the lanes coming
+the other way, on roads of up to 4 lanes each way), and U-turns at junctions change the network: every signal
+program's link numbering, the junction agents, the forecasters, and CARLA has no path for them. So not that. What
+makes the trips round the blocks: a place with kerb parking has an area on each side of its street, and
+`PurposeDemand.area_for` drew the side at random; all the town's homes are on two such streets (kerb_19, kerb_20),
+whose sides are 40 m and 659 m apart by road (median over all starts).
+
+**Measured (dev seeds 11-13, SUMO alone, the evaluation's run without accidents, `tools/check_park_side.py`):** 429
+trips, 359 km planned; the side drawn against the shortest side from the same start: out 0.4 km more (2 trips over
+50 m), back home 15.5 km more (39 trips over 50 m, 90 m a trip), 4.4 % of these trips' km.
+
+**The change (`cosim/purposes.py`, PARK_SIDE "route"):** the destination's side and the home's side (the way back;
+a new car also starts there) chosen together, the pair that makes the trip there and back shortest among the
+place's areas with room; a car sent to another car park (its own full) keeps it; the random draw is still made, so a
+seed's other draws do not move. Seed 11: home trips 1139 -> 862 m planned (-24 %), the side's extra 0.7 m a trip.
+
+**The bar, written before the tests.** `agents_observed+bus@bus_cut=1` (the viewer's x1) with PARK_SIDE "route"
+against "random", x1, each test opened once:
+* quiet (`--no-accidents`), seeds 271-300: (a) cars' km per completed trip lower on the mean and on at least 20 of
+  30 seeds; (b) cars' time loss per trip not higher on the mean by more than 3 %; (c) trips completed an hour not
+  lower by more than 3 %; (d) buses' time loss per km not higher by more than 3 %;
+* with accidents, seeds 301-390 (on the PC when it is free): (e) cars' time loss per trip not higher by more than
+  5 %; (f) trips completed an hour not lower by more than 3 %; (g) ambulances' time loss not higher by more than 8 s;
+  (h) buses' time loss per km not higher by more than 5 %.
+All eight, or it goes back to "random". Then the forecasters' accuracy on the new traffic (they learnt the old).
+Test seeds used after this: 21-390.
+
+**Quiet test (seeds 271-300, x1, `out/park_side/test_quiet`, 60 runs): passed.** "route" paired against "random",
+mean +- standard error (seeds where "route" was better): (a) km per completed trip -0.017 +- 0.008 km (-0.9 %, 20 of
+30: passed, just); (b) cars' time loss per trip -7.8 +- 2.9 s (-6.4 %, 19); (c) trips completed an hour +11 +- 7
+(+1.4 %, 16 of 30 not lower); (d) buses' time loss per km -3.8 +- 3.7 s (-2.2 %, 15). Also: waiting per trip -8.8
++- 2.9 s (-9.4 %, 21), all the cars' km -22 +- 6 km a run (-2.7 %, 21), ambulances -3.2 +- 2.6 s. The km per trip
+moves less than the planned trips said (the town's trips include 20 % through traffic and trips to car parks with one
+side); the time moves more: the trips round the blocks were made at the evening rush on roads 19 and 20.
+
+**The forecasters on the new traffic: the bar, written before.** The shipped v7 learnt traffic with the random side.
+New test seeds 391-400, the T7 recipe (agents_observed, a day at clock 30 from 06:00, accidents, junction blocker 0,
+trips with a purpose) at x1, x1.15 and x1.3, each made twice on the same seeds: "random" (T8r_*) and "route" (T8_*);
+all six scored in one opening (`tools/goflow_prediction_test_score.py --seeds 391-400`). The route side stays if:
+1. DSO4's queue fill MAE on the "route" data below "it stays as now" at +60, +120 and +300 s (9 rows of 9);
+2. on each of the 9 rows, the MAE on "route" at most 5 % above the MAE on "random" (the same seeds);
+3. the long-queue alerts at 0.7 on "route" x1.15 and x1.3: at least 40 % of alerts right and at least half of the
+   long queues caught (v7's own ship bar).
+If 1 or 3 fails, the forecasters are retrained on the new traffic before the route side ships; if only 2, the same.
+Test seeds used after this: 21-400.
+
+**The forecasters on the new traffic (seeds 391-400, opened once, `out/park_side/fc/score`): bar 2 failed.** DSO4's
+queue fill MAE, "route" / "it stays as now" / "random" (same seeds):
+
+| Traffic | +60 s | +120 s | +300 s | Long queues at 0.7, route: right, caught | random |
+|---|---|---|---|---|---|
+| x1 | 0.0371 / 0.0426 / 0.0376 | 0.0408 / 0.0485 / 0.0412 | 0.0454 / 0.0547 / 0.0462 | 21 of 52, 20 of 36 | 29 of 58, 28 of 42 |
+| x1.15 | 0.0385 / 0.0443 / 0.0418 | 0.0425 / 0.0503 / 0.0462 | 0.0484 / 0.0576 / 0.0527 | 29 of 66, 27 of 42 | 37 of 67, 37 of 49 |
+| x1.3 | 0.0484 / 0.0572 / 0.0458 | 0.0534 / 0.0643 / 0.0501 | 0.0605 / 0.0741 / 0.0572 | 61 of 141, 56 of 80 | 61 of 115, 56 of 73 |
+
+(1) below "stays as now" 9 of 9: passed. (2) at most 5 % above "random": x1 and x1.15 below it (0.92-0.99), x1.3
+5.8-6.5 % above: failed. (3) at 0.7, x1.15 44 % right and 64 % caught, x1.3 43 % and 70 %: passed. Against "stays as
+now" (skill = 1 - MAE / stays), the forecasters do a little less well on the new traffic on 8 of 9 rows (by 0.00 to
+0.02) and their alerts are right less often (40-44 % against 50-55 %): they learnt the old traffic. As written:
+they are retrained on the new traffic before "route" ships; PARK_SIDE is back to "random" until then.
+
+**With accidents (seeds 301-390, x1, `out/park_side/test_acc`, 180 runs: 301-345 in the Linux VM, 346-390 on the
+PC, each seed's pair on one machine): failed.** "route" paired against "random", mean +- standard error: (e) cars'
+time loss per trip +0.7 +- 3.9 s (+0.5 %: passed); (f) trips completed an hour +9 +- 5 (+1.2 %: passed);
+(g) ambulances' time loss +8.7 +- 4.4 s (+20 %, worse on 54 of 90: failed, the bar was 8 s); (h) buses' time loss
+per km +15.9 +- 6.0 s (+8.2 %, worse on 54 of 90: failed, the bar was 5 %). Also all the cars' km -2.1 +- 1.1 %,
+waiting +1.0 +- 4.2 s, accidents a run +0.14 +- 0.16.
+
+**So PARK_SIDE stays "random".** Without accidents "route" saved the cars 6 % of their time and cost nobody; with
+accidents the cars' gain is gone and the buses and ambulances lose. Not looked into yet (it needs dev seeds, then new
+test seeds): which roads the buses lose their time on with "route" (more cars pulling in and out of the kerb lanes of
+roads 19 and 20 on the side the buses use, near a crash?). The forecasters' check also asked for a retraining first.
+The code stays as an option (`PurposeDemand.park_side`, `tools/eval_agents_forecast.py` variants "...|park=random",
+`tools/goflow_prediction_dataset.py --park-side`, `tools/check_park_side.py`). Test seeds used after this: 21-400.

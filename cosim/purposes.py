@@ -37,6 +37,11 @@ THROUGH_SHARE = 0.2          # new trips that keep the old random routes (throug
 OPEN_STOP_S = 1e7            # parked at home: until a trip takes the car out
 MIN_IDLE_S = 40.0            # a car parked at home is taken out for a trip only after this long (it has parked)
 PURPOSE_CLASSES = ("passenger", "motorcycle", "delivery")
+# (12 Nov) which side of a street a car parks on, where a place has parking on both (its kerbs): "route", the side (at
+# the destination, and at home for the way back) that makes the trip there and back shortest; "random", drawn (before:
+# 4.4 % of these trips' km was driving round a block for the other side, 15.5 of 359 km on three dev days, almost all
+# on the way home: tools/check_park_side.py). The draw is made either way, so a seed's trips stay the same.
+PARK_SIDE = "random"         # (12 Nov) "route" passed its quiet test; it waits for the forecasters retrained on its traffic
 
 
 def _bump(h: float, at: float, width: float) -> float:
@@ -180,8 +185,9 @@ class PurposeDemand:
         self.exit_delay = None
         self.resume_at: dict[str, float] = {}
         self.n = 0
+        self.park_side = PARK_SIDE
         self.stats = {"trips": {}, "reused": 0, "inserted": 0, "through": 0, "redirected_full": 0, "failed": 0,
-                      "arrived_parked": 0, "by_hour": {}}
+                      "arrived_parked": 0, "by_hour": {}, "sides_changed": 0}
 
     # ---------------------------------------------------------------- the car parks
     def free(self, aid: str) -> int:
@@ -223,6 +229,43 @@ class PurposeDemand:
             self.stats["redirected_full"] += 1
             return others[0]
         return None
+
+    def _len(self, edges) -> float:
+        roads = self.places.router.roads
+        return sum(roads[e].length for e in edges if e in roads) if edges else float("inf")
+
+    def _sides(self, dest, a_dest, home, a_home, reuse, start, back, start_ok=None):
+        """(12 Nov, PARK_SIDE "route") The destination's area and the home's (for the way back; a new car also
+        starts there) that make the trip there and back shortest, among the place's areas with room. Only between
+        a place's own areas (a car sent to another car park, its own full, keeps it); ties keep the draw."""
+        pl, r = self.places, self.places.router
+        own_d = [a for a in pl.park_of.get(dest, []) if self.free(a) > 0]
+        D = own_d if a_dest in own_d else [a_dest]
+        if home is None:
+            H = [None]
+        elif reuse:
+            H = sorted({a for a in pl.park_of.get(home, []) if self.free(a) > 0} | {reuse[0]})
+        else:
+            H = [a for a in pl.park_of.get(home, []) if self.free(a) > 0
+                 and (start_ok is None or start_ok(pl.areas[a]["edge"]))] or [a_home]
+        if len(D) == 1 and len(H) == 1:
+            return a_dest, a_home, start, back
+        best, pick = None, (a_dest, a_home, start, back)
+        for h in H:
+            hs = pl.areas[h]["edge"] if h is not None else None
+            s = start if h is None or reuse else hs
+            b = back if h is None else hs
+            for d in D:
+                e = pl.areas[d]["edge"]
+                if s == e and h is not None and not reuse:
+                    continue                                   # (a trip from home to its own street's side)
+                cost = self._len(r.best(s, e)) + (self._len(r.best(e, b)) if b != e else 0.0)
+                key = (cost, d != a_dest, h != a_home)
+                if best is None or key < best:
+                    best, pick = key, (d, h, s, b)
+        if pick[:2] != (a_dest, a_home):
+            self.stats["sides_changed"] += 1
+        return pick
 
     def dwell_s(self, mean_h: float, spread_h: float) -> float:
         h = max(0.15, self.rng.gauss(mean_h, spread_h))
@@ -273,6 +316,10 @@ class PurposeDemand:
             a_home = None
             start = self.rng.choice(sources)
             back = self.rng.choice(sinks)
+        if self.park_side == "route":
+            a_dest, a_home, start, back = self._sides(dest, a_dest, home, a_home, reuse, start, back,
+                                                      start_ok if not reuse else None)
+            dest_edge = self.places.areas[a_dest]["edge"]
         out = r.best(start, dest_edge)
         ret = r.best(dest_edge, back) if back != dest_edge else [dest_edge]
         if out is None or ret is None or (start == dest_edge and a_home is not None):
@@ -342,6 +389,10 @@ class PurposeDemand:
             purpose = KIND_PURPOSE[pl.places[dest]["kind"]]
             home = pl.home(rng)
             a_home = self.area_for(home)
+            if a_home and self.park_side == "route":   # (12 Nov) home on the side its way back reaches first
+                own = [a for a in pl.park_of.get(home, []) if self.free(a) > 0]
+                if a_home in own and len(own) > 1:
+                    a_home = min(own, key=lambda a: (self._len(pl.router.best(edge, pl.areas[a]["edge"])), a != a_home))
             ret = pl.router.best(edge, pl.areas[a_home]["edge"]) if a_home else None
             if ret is None:
                 return False

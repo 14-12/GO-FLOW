@@ -86,6 +86,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
 
         pop = purpose_population(Population)(c, pool, rids, curve, seed=seed, mean_trip_s=140.0)
         pop.demand = PurposeDemand(c, a["clock_speed"], seed=seed)
+        if a.get("park_side"):              # (12 Nov) the side of the street a car parks on (cosim/purposes.PARK_SIDE)
+            pop.demand.park_side = a["park_side"]
         pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
         pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
     else:
@@ -263,6 +265,8 @@ def main(argv=None) -> int:
     ap.add_argument("--no-ring", dest="ring", action="store_false")
     ap.add_argument("--trips", choices=("purpose", "random"), default="purpose",
                     help="(10 Nov) trips between the town's places, as the viewer (cosim/purposes.py; before: random)")
+    ap.add_argument("--park-side", choices=("route", "random"), default=None,
+                    help="(12 Nov) the side of the street a car parks on (cosim/purposes.PARK_SIDE; default: its value)")
     ap.add_argument("--junction-blocker", type=float, default=60.0,
                     help="SUMO --ignore-junction-blocker (60 as agents_final_jb; 0 = off)")
     ap.add_argument("--graph", default=str(ROOT / "out" / "goflow_prediction" / "graph"))
@@ -313,7 +317,7 @@ def main(argv=None) -> int:
     meta = {"dt_s": args.dt, "horizons_s": list(HORIZONS_S), "source": "exact", "controller": args.controller,
                 "clock_speed": args.clock_speed, "start_hour": args.start_hour, "scale": args.scale, "minutes": args.minutes,
                 "warmup": args.warmup, "accidents": args.accidents, "careless_share": args.careless_share, "buses": args.buses,
-                "ring": args.ring, "junction_blocker": args.junction_blocker, "trips": args.trips, "git_commit": git_commit(),
+                "ring": args.ring, "junction_blocker": args.junction_blocker, "trips": args.trips, "park_side": args.park_side, "git_commit": git_commit(),
                 "tool": "tools/goflow_prediction_dataset.py", "runs": good}
     np.savez_compressed(
         out / "dataset.npz", nodes=np.array([n["node"] for n in nodes]),
