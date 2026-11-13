@@ -3907,3 +3907,41 @@ test seeds): which roads the buses lose their time on with "route" (more cars pu
 roads 19 and 20 on the side the buses use, near a crash?). The forecasters' check also asked for a retraining first.
 The code stays as an option (`PurposeDemand.park_side`, `tools/eval_agents_forecast.py` variants "...|park=random",
 `tools/goflow_prediction_dataset.py --park-side`, `tools/check_park_side.py`). Test seeds used after this: 21-400.
+
+## 13 Nov, night: why the buses lost with the parking side by route (the user: find it, fix it, test again, then retrain)
+
+**Where they lost it** (dev seeds 11-20, accidents, x1, `tools/check_bus_loss.py`: time lost road by road, a bus at
+its stop left out; cars parking per road): with "route" the buses lost 215 s a run more (worse on 6 of 10), the
+emergency vehicles 276 s more (8 of 10). The roads: -20 (buses +376 s, emergency +224 s) and -19 (+131 s, +112 s),
+the sides of the two home streets that bus lines 1 and 3 drive along. Cars parking there a run: -20 24.7 -> 30.6
+(its other side 20: 13 -> 0), -19 43.3 -> 47.2 (19: 24.9 -> 17.6); accidents a run 1.5 -> 2.5. Most cars reach the
+home streets coming the way the buses go, so "the nearer side" is the bus's side: more cars slowing to turn in and
+pulling out in front of the buses (and of the ambulances using the same roads), and more crashes there.
+
+**The fix tried:** with "route", a side a bus line drives along counts BUS_SIDE_M metres further (`purposes.py`; the
+bus lines' roads from town05.pt.json: of the kerb streets -19, -20, -51 and 4). Dev sweep: random, route, and route
+with 150, 400 and 1000 m, accidents on dev seeds 11-20 and 401-430 (401-430 added as dev seeds: never a test seed),
+quiet on 11-20 (`out/park_side/dev_sweep`, `out/park_side/dev_quiet`).
+
+**Dev sweep (13 Nov, 03:17; 40 seeds with accidents, 10 quiet; paired against "random", mean +- standard error):**
+
+| With accidents | buses' time loss /km | ambulances | cars' time loss /trip | waiting /trip | all cars' km |
+|---|---|---|---|---|---|
+| route | +1.0 +- 3.9 % | +3.1 +- 6.0 s | -4.8 % | -7.4 % | -1.3 % |
+| route, bus side +150 m | +4.0 +- 3.6 % | +7.8 +- 6.0 s | -2.6 % | -4.3 % | -1.5 % |
+| route, bus side +400 m | +4.9 +- 3.8 % | +9.5 +- 6.5 s | -2.0 % | -2.4 % | -1.3 % |
+| route, bus side +1000 m | -2.5 +- 3.9 % | +10.7 +- 8.3 s | -0.1 % | +0.4 % | 0.0 % |
+
+Quiet (10 seeds): buses within +-1 % for all; cars' time loss route 0.0 %, +150 m -6.7 %, +400 m -5.6 %, +1000 m
++1.9 %; all the cars' km -3.5 to -4.7 %.
+
+**Read:** with accidents the buses' difference is within its noise for every version (+-4 %), so the penalty on the
+bus sides shows no gain for them; the ambulances lose with every version, more with the penalty; the cars' gain
+shrinks as the penalty grows and is gone at 1000 m. The parking on the bus sides (seen road by road on 10 seeds) is
+real, but it is not shown to be what costs the buses and ambulances across 40 seeds, and keeping cars off those sides
+does not help them. No version is expected to pass the bar on new seeds (the ambulances' +8 s alone), so no new test
+is run (it would only be a new draw of seeds for the same idea), and no retraining (step 2 was for a version that
+passes). **Stopped: PARK_SIDE stays "random", BUS_SIDE_M 0;** both stay as options. The idea's gain (cars -5 to -7 %
+of their time at the town's own traffic without accidents) is real; its cost to the emergency vehicles with
+accidents is not explained. What could be looked at next, if wanted: the ambulances' runs road by road (which runs
+lose, near which crashes), not the buses.

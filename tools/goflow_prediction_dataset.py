@@ -88,6 +88,8 @@ def one_run(seed: int, a: dict, nodes: list[dict], out_dir: str, port: int, prob
         pop.demand = PurposeDemand(c, a["clock_speed"], seed=seed)
         if a.get("park_side"):              # (12 Nov) the side of the street a car parks on (cosim/purposes.PARK_SIDE)
             pop.demand.park_side = a["park_side"]
+        if a.get("bus_side_m") is not None:  # (13 Nov) a bus line's side counts this much further (BUS_SIDE_M)
+            pop.demand.bus_side_m = float(a["bus_side_m"])
         pop.sources = tuple(sorted({r.split()[0] for routes in pool.routes.values() for r in routes}))
         pop.sinks = tuple(sorted({r.split()[-1] for routes in pool.routes.values() for r in routes}))
     else:

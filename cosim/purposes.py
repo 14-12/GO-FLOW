@@ -41,6 +41,9 @@ PURPOSE_CLASSES = ("passenger", "motorcycle", "delivery")
 # the destination, and at home for the way back) that makes the trip there and back shortest; "random", drawn (before:
 # 4.4 % of these trips' km was driving round a block for the other side, 15.5 of 359 km on three dev days, almost all
 # on the way home: tools/check_park_side.py). The draw is made either way, so a seed's trips stay the same.
+# (13 Nov) with "route": a side of a street a bus line drives along counts this many metres further (the cars pulling in
+# and out there held up the buses and the ambulances: tools/check_bus_loss.py); 0 for none
+BUS_SIDE_M = 0.0
 PARK_SIDE = "random"         # (12 Nov) "route" passed its quiet test; it waits for the forecasters retrained on its traffic
 
 
@@ -186,6 +189,8 @@ class PurposeDemand:
         self.resume_at: dict[str, float] = {}
         self.n = 0
         self.park_side = PARK_SIDE
+        self.bus_side_m = BUS_SIDE_M
+        self._bus_edges = None
         self.stats = {"trips": {}, "reused": 0, "inserted": 0, "through": 0, "redirected_full": 0, "failed": 0,
                       "arrived_parked": 0, "by_hour": {}, "sides_changed": 0}
 
@@ -230,6 +235,16 @@ class PurposeDemand:
             return others[0]
         return None
 
+    def bus_edges(self) -> set:
+        """(13 Nov) The roads (one direction each) the bus lines drive along (scenarios/town05/town05.pt.json)."""
+        if self._bus_edges is None:
+            try:
+                lines = json.loads((ROOT / "scenarios" / "town05" / "town05.pt.json").read_text(encoding="utf-8"))
+                self._bus_edges = {e for v in lines.values() for e in (v if isinstance(v, list) else v.get("edges", []))}
+            except (OSError, ValueError):
+                self._bus_edges = set()
+        return self._bus_edges
+
     def _len(self, edges) -> float:
         roads = self.places.router.roads
         return sum(roads[e].length for e in edges if e in roads) if edges else float("inf")
@@ -260,6 +275,7 @@ class PurposeDemand:
                 if s == e and h is not None and not reuse:
                     continue                                   # (a trip from home to its own street's side)
                 cost = self._len(r.best(s, e)) + (self._len(r.best(e, b)) if b != e else 0.0)
+                cost += self.bus_side_m * ((e in self.bus_edges()) + (h is not None and hs in self.bus_edges()))
                 key = (cost, d != a_dest, h != a_home)
                 if best is None or key < best:
                     best, pick = key, (d, h, s, b)
@@ -392,7 +408,9 @@ class PurposeDemand:
             if a_home and self.park_side == "route":   # (12 Nov) home on the side its way back reaches first
                 own = [a for a in pl.park_of.get(home, []) if self.free(a) > 0]
                 if a_home in own and len(own) > 1:
-                    a_home = min(own, key=lambda a: (self._len(pl.router.best(edge, pl.areas[a]["edge"])), a != a_home))
+                    a_home = min(own, key=lambda a: (self._len(pl.router.best(edge, pl.areas[a]["edge"]))
+                                                     + self.bus_side_m * (pl.areas[a]["edge"] in self.bus_edges()),
+                                                     a != a_home))
             ret = pl.router.best(edge, pl.areas[a_home]["edge"]) if a_home else None
             if ret is None:
                 return False

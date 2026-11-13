@@ -129,12 +129,13 @@ def run_one(variant: str, scale: float, seed: int, args: dict, port: int) -> dic
     (work / "runs").mkdir(parents=True, exist_ok=True)
     trip = work / "tripinfo.xml"
     models = Path(args["models"])
-    # (12 Nov) a variant may carry options after "|": "park=random" (cosim/purposes.PARK_SIDE for the run)
+    # (12 Nov) a variant may carry options after "|", separated by ";": "park=random" (cosim/purposes.PARK_SIDE for
+    # the run), (13 Nov) "buspen=300" (cosim/purposes.BUS_SIDE_M)
     controller, _, opts = variant.partition("|")
-    opt = dict(o.split("=", 1) for o in opts.split(",") if "=" in o)
+    opt = dict(o.split("=", 1) for o in opts.split(";") if "=" in o)   # (13 Nov) "park=route;buspen=300"
     a = {"minutes": args["minutes"], "warmup": args["warmup"], "start_hour": args["start_hour"],
          "clock_speed": GAME_SPEED, "dt": 30.0, "controller": controller, "scale": scale,
-         "park_side": opt.get("park"),
+         "park_side": opt.get("park"), "bus_side_m": opt.get("buspen"),
          "accidents": args.get("accidents", True),
          "careless_share": None, "buses": True, "ring": True, "junction_blocker": 60.0, "trips": "purpose",
          "sumo_extra": ["--tripinfo-output", str(trip), "--tripinfo-output.write-unfinished", "true"]}
