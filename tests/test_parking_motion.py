@@ -110,10 +110,11 @@ def test_a_car_drives_into_its_space_and_out_without_a_jump():
             h = math.radians(s[3])
             return s[1] - math.sin(h) * 2.5, s[2] - math.cos(h) * 2.5
         steps = [math.dist(mid(a), mid(b)) for a, b in zip(shown, shown[1:], strict=False)]
-        # no jump: never more than a road's speed limit allows in a step (14 m/s: 7 m), and on a drive in or out at
-        # most its own pace (3.6 m/s: 1.8 m)
+        # no jump: never more than a road's speed limit allows in a step (13.9 m/s, a driver up to 20 % over it, SUMO's
+        # speedFactor: 8.4 m; 13 Nov: with the parking side by route this car takes a road where it drives 15.2 m/s),
+        # and on a drive in or out at most its own pace (3.6 m/s: 1.8 m)
         jumps = [(round(shown[k][0], 1), round(steps[k], 1)) for k in range(len(steps))
-                 if steps[k] > 7.5 or ((shown[k][5] or shown[k + 1][5]) and steps[k] > 2.0)]
+                 if steps[k] > 8.4 or ((shown[k][5] or shown[k + 1][5]) and steps[k] > 2.0)]
         assert not jumps, jumps
         parked = [s for s in shown if s[4] == "pa_lot_marche" and not s[5]]
         assert parked                                        # standing in its space between the drives

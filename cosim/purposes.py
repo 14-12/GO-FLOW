@@ -44,7 +44,7 @@ PURPOSE_CLASSES = ("passenger", "motorcycle", "delivery")
 # (13 Nov) with "route": a side of a street a bus line drives along counts this many metres further (the cars pulling in
 # and out there held up the buses and the ambulances: tools/check_bus_loss.py); 0 for none
 BUS_SIDE_M = 0.0
-PARK_SIDE = "random"         # (12 Nov) "route" passed its quiet test; it waits for the forecasters retrained on its traffic
+PARK_SIDE = "route"          # (13 Nov) on, the user's decision: it failed its test with accidents (docs/WORKLOG.md)
 
 
 def _bump(h: float, at: float, width: float) -> float:

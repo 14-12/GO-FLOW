@@ -3945,3 +3945,11 @@ passes). **Stopped: PARK_SIDE stays "random", BUS_SIDE_M 0;** both stay as optio
 of their time at the town's own traffic without accidents) is real; its cost to the emergency vehicles with
 accidents is not explained. What could be looked at next, if wanted: the ambulances' runs road by road (which runs
 lose, near which crashes), not the buses.
+
+**13 Nov, morning: on, the user's decision.** PARK_SIDE "route" (BUS_SIDE_M 0, the version tested) is the default
+from now on, in the viewer and in every tool, knowing what the tests showed: at the town's own traffic without
+accidents the cars wait 9 % less and lose 6 % less time; with accidents the ambulances lose 8.7 s more a run on run
+(+20 %) and the buses 8 % more time a km; the forecasters (v7) predict its traffic a little less well (they learnt the
+old: retraining them on it is the next step if wanted). `tests/test_parking_motion.py`: its car now takes a road
+where it drives 15.2 m/s (a driver over the limit, SUMO's speedFactor): the jump limit is 8.4 m a step (20 % over
+13.9 m/s), was 7.5.

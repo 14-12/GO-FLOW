@@ -223,8 +223,8 @@ def test_the_places_are_drawn_on_the_map_and_over_the_town():
 
 
 def test_park_side_route_takes_the_side_that_makes_the_trip_shortest():
-    """(12 Nov) PARK_SIDE "route" (an option, off by default since its test with accidents): among a place's areas on
-    both sides of its street, the one with the shortest way there and back; "random" keeps the draw."""
+    """(12 Nov) PARK_SIDE "route" (on by default since 13 Nov, the user's decision): among a place's areas on both
+    sides of its street, the one with the shortest way there and back; "random" keeps the draw."""
     d = P.PurposeDemand(None, clock_speed=30.0, seed=1)
     pl, r = d.places, d.places.router
     d.free = lambda a: 5                                        # (room everywhere)
@@ -238,4 +238,4 @@ def test_park_side_route_takes_the_side_that_makes_the_trip_shortest():
     assert a_dest == min(sides, key=cost.get) and (s, b) == (start, start)
     if cost[far] > cost[a_dest]:
         assert d.stats["sides_changed"] == 1
-    assert P.PARK_SIDE == "random"                               # (the default: the side drawn, as before)
+    assert P.PARK_SIDE == "route" and P.BUS_SIDE_M == 0.0        # (the default since 13 Nov)
