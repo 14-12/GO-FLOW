@@ -1,5 +1,5 @@
 {
- "version": "xgb_c30_v7",
+ "version": "xgb_c30_v8",
  "task": "GO-FLOW occupancy forecast",
  "horizon_s": 120,
  "dt_s": 30.0,
@@ -105,6 +105,7 @@
   ]
  },
  "notes": [
+  "Retrained 13 Nov (v8) on D8_ao_x1, D8_ao_x1.15, D8_ao_x1.3 and D8_c_x1: the v7 recipe on the town with the parking side by route (cosim/purposes.PARK_SIDE); seeds 101-130 train, 11-20 dev; test seeds 431-440 opened once (docs/WORKLOG.md 13 Nov). v7 in git history and out/goflow_prediction/v7_shipped.",
   "Retrained 10 Nov (v7) on D7_ao_x1, D7_ao_x1.15, D7_ao_x1.3 (the junction agents on the cameras) and D7_c_x1 (coordinated): the town since 9-10 Nov (skipped greens fixed, trips at the day's rate with nobody taken off, the town's own traffic 0.45 of the old curve, trips with a purpose, junction crashes rerouted), the clock at 30, crashes on; seeds 101-130 train, 11-20 dev; test seeds 81-90 opened once (docs/WORKLOG.md 10 Nov)."
  ]
 }

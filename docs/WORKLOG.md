@@ -3953,3 +3953,39 @@ accidents the cars wait 9 % less and lose 6 % less time; with accidents the ambu
 old: retraining them on it is the next step if wanted). `tests/test_parking_motion.py`: its car now takes a road
 where it drives 15.2 m/s (a driver over the limit, SUMO's speedFactor): the jump limit is 8.4 m a step (20 % over
 13.9 m/s), was 7.5.
+
+## 13 Nov: the forecasters v8, retrained on the traffic with the parking side by route (the user: start it)
+
+The v7 recipe exactly (`tools/goflow_v8_build.bat`: datasets D8_ao_x1, x1.15, x1.3 and D8_c_x1 on seeds 101-130 and
+11-20, a day at clock 30 from 06:00, accidents, junction blocker 0, trips with a purpose; the same training steps),
+with the town as it is now: PARK_SIDE "route" (written into each dataset's meta). Bus priority is left out, as in v7
+(the recipe's controllers are agents_observed and coordinated), so the one change is the parking side. Test datasets
+T9_* on new seeds 431-440.
+
+**The bar, written before** (v7's own ship bar, v8 against v7 on T9, `tools/goflow_prediction_test_score.py
+--seeds 431-440`, each opened once): v8 ships if all three hold:
+1. DSO4's queue fill: MAE below "it stays as now" at +60, +120 and +300 s on each of the three junction-agent
+   datasets (9 rows of 9);
+2. DSO4's queue fill: MAE below v7's on at least 7 of the 12 rows (4 datasets x 3 horizons);
+3. the long-queue alerts at the shipped threshold (0.7): at least 40 % of alerts right and at least half of the
+   long queues caught, on T9_ao_x1.15 and T9_ao_x1.3.
+Test seeds used after this: 21-440.
+
+**v8: dev, test, shipped (13 Nov, 08:57-10:05 on the PC, `tools/goflow_v8_build.bat`, 10 runs at a time: 1 h 08 min
+in all).** Dev (seeds 11-20) long-queue classifier at 0.7: x1 33 of 59 alerts right, 33 of 41 caught; x1.15 32 of
+72, 31 of 46; x1.3 75 of 147, 67 of 93; coordinated 79 of 141, 74 of 104.
+
+**Test, opened once** (seeds 431-440, `out/goflow_prediction/v8/test_v8` and `test_v7`, v8 and v7 on the same runs):
+
+| Data | Fill MAE +60 / +120 / +300 s: v8 | v7 | stays as now | Long queues at 0.7, v8: right, caught | v7 | GO-FLOW occ. +120 s: v8 / v7 / now |
+|---|---|---|---|---|---|---|
+| agents x1 | 0.0331 / 0.0364 / 0.0406 | 0.0335 / 0.0368 / 0.0414 | 0.0380 / 0.0428 / 0.0471 | 11 of 26, 10 of 17 | 10 of 27, 9 of 18 | 0.0336 / 0.0339 / 0.0396 |
+| agents x1.15 | 0.0405 / 0.0444 / 0.0508 | 0.0408 / 0.0447 / 0.0516 | 0.0471 / 0.0536 / 0.0614 | 37 of 76, 34 of 50 | 40 of 74, 38 of 51 | 0.0380 / 0.0384 / 0.0470 |
+| agents x1.3 | 0.0437 / 0.0498 / 0.0600 | 0.0440 / 0.0504 / 0.0607 | 0.0478 / 0.0557 / 0.0678 | 60 of 133, 55 of 74 | 56 of 120, 52 of 72 | 0.0407 / 0.0411 / 0.0468 |
+| coordinated x1 | 0.0389 / 0.0443 / 0.0504 | 0.0392 / 0.0444 / 0.0518 | 0.0740 / 0.0523 / 0.0856 | 67 of 127, 64 of 87 | 59 of 114, 56 of 82 | 0.0382 / 0.0383 / 0.0436 |
+
+The bar: (1) below "stays as now" 9 of 9; (2) below v7 12 of 12 (by 1-3 %); (3) at 0.7, x1.15 49 % of alerts right
+and 68 % of long queues caught, x1.3 45 % and 74 %. **Passed: v8 shipped** in `models/goflow` (dso4, dso4_goflow,
+goflow_xgb; the model cards updated; v7 kept in git history and out/goflow_prediction/v7_shipped). Note: v7 on these
+runs was itself good (this test's traffic is easier than the 391-400 check's at x1); v8 gains a little everywhere on
+the queue fill, and on the alerts at x1.15 it is a little less sure than v7 (49 % right against 54 %).
